@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// USER MODEL
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userActivated Status?
+ 
+  student Student?
+  tutor   Tutor?
+}
+
+model Student {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // paketId String
+  // paket   Paket  @relation(fields: [paketId], references: [id])
+
+  nisn       String
+  gender     String?
+  birthPlace String?
+  birthDate  DateTime?
+  address    String?
+  photoUrl   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // answers Answer[]
+}
+
+model Tutor {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  bio        String?
+  education  String?
+  experience String?
+  phone      String?
+  photoUrl   String?
+  // bidangKeahilian String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
+
+  // subjects Subject[]
+}
+
+
+
+// model Paket {
+//   id       String    @id @default(uuid())
+//   name     String // Paket A, B, C
+//   students Student[]
+//   subjects Subject[]
+// }
+
+// model Subject {
+//   id      String @id @default(uuid())
+//   name    String
+//   paketId String
+//   paket   Paket  @relation(fields: [paketId], references: [id])
+
+//   tutorId String?
+//   tutor   Tutor?  @relation(fields: [tutorId], references: [id])
+// }
+
+// model Answer {
+//   id        String  @id @default(uuid())
+//   studentId String
+//   student   Student @relation(fields: [studentId], references: [id])
+
+//   // tambahkan detail soal ujian nanti
+// }
+
+enum Role {
+  ADMIN
+  TUTOR
+  STUDENT
+}
+
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
