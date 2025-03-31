@@ -1,68 +1,53 @@
-import { NextResponse } from 'next/server';
-import { getAuthUser, createApiResponse } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { createApiResponse } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 // GET all students (with pagination and filtering)
 export async function GET(request) {
   try {
-    // Check authentication - only admin and tutors can view all students
-    const { user, error, status } = await getAuthUser(request, ['ADMIN', 'TUTOR']);
-    
-    if (error) {
-      return createApiResponse(null, error, status);
-    }
-    
-    // Get query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search');
-    const classId = searchParams.get('classId');
-    const gender = searchParams.get('jenisKelamin');
-    
-    // Calculate pagination
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search");
+    const classId = searchParams.get("classId");
+    const gender = searchParams.get("jenisKelamin");
+
     const skip = (page - 1) * limit;
-    
+
     // Build filter
-    let filter = {};
-    
-    // Add search filter
+    const filter = {};
+
     if (search) {
-      filter = {
-        OR: [
-          { 
-            user: { 
-              name: { contains: search, mode: 'insensitive' } 
-            } 
+      filter.OR = [
+        { namaLengkap: { contains: search, mode: "insensitive" } },
+        { nisn: { contains: search, mode: "insensitive" } },
+        { alamat: { contains: search, mode: "insensitive" } },
+        { tempatLahir: { contains: search, mode: "insensitive" } },
+        {
+          user: {
+            OR: [
+              { nama: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+            ],
           },
-          { 
-            user: { 
-              email: { contains: search, mode: 'insensitive' } 
-            } 
-          },
-          { nisn: { contains: search, mode: 'insensitive' } },
-          { alamat: { contains: search, mode: 'insensitive' } },
-          { tempatLahir: { contains: search, mode: 'insensitive' } }
-        ]
-      };
+        },
+      ];
     }
-    
-    // Add class filter
+
     if (classId) {
       filter.classId = classId;
     }
-    
-    // Add gender filter
+
     if (gender) {
       filter.jenisKelamin = gender;
     }
-    
+
     // Execute query with count
     const [students, total] = await Promise.all([
       prisma.student.findMany({
         where: filter,
         select: {
           id: true,
+          namaLengkap: true,
           nisn: true,
           jenisKelamin: true,
           tempatLahir: true,
@@ -74,57 +59,105 @@ export async function GET(request) {
           user: {
             select: {
               id: true,
-              name: true,
+              nama: true,
               email: true,
-            }
+            },
           },
           class: {
             select: {
               id: true,
-              name: true,
+              namaKelas: true,
               program: {
                 select: {
                   id: true,
-                  namaPaket: true
-                }
-              }
-            }
-          }
+                  namaPaket: true,
+                },
+              },
+            },
+          },
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       }),
-      prisma.student.count({ where: filter })
+      prisma.student.count({ where: filter }),
     ]);
-    
-    // Format the response
-    const formattedStudents = students.map(student => ({
-      id: student.id,
-      user: student.user,
-      nisn: student.nisn,
-      jenisKelamin: student.jenisKelamin,
-      tempatLahir: student.tempatLahir,
-      tanggalLahir: student.tanggalLahir,
-      alamat: student.alamat,
-      fotoUrl: student.fotoUrl,
-      class: student.class,
-      createdAt: student.createdAt,
-      updatedAt: student.updatedAt
-    }));
-    
-    // Return paginated result
+
+    // Return formatted response
     return createApiResponse({
-      students: formattedStudents,
+      students,
       pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
-    console.error('Error fetching students:', error);
-    return createApiResponse(null, 'Failed to fetch students', 500);
+    console.error("Error fetching students:", error);
+    return createApiResponse(null, "Failed to fetch students", 500);
+  }
+}
+
+// POST - Create new student
+// POST - Create new student
+export async function POST(request) {
+  try {
+    const data = await request.json();
+
+    if (
+      !data.userId ||
+      !data.namaLengkap?.trim() ||
+      !data.nisn?.trim() ||
+      !data.jenisKelamin ||
+      !data.tempatLahir?.trim() ||
+      !data.tanggalLahir ||
+      !data.alamat?.trim()
+    ) {
+      return createApiResponse(null, "Semua field wajib diisi", 400);
+    }
+
+    const newStudent = await prisma.student.create({
+      data: {
+        userId: data.userId,
+        namaLengkap: data.namaLengkap.trim(),
+        nisn: data.nisn.trim(),
+        jenisKelamin: data.jenisKelamin,
+        tempatLahir: data.tempatLahir.trim(),
+        tanggalLahir: new Date(data.tanggalLahir),
+        alamat: data.alamat.trim(),
+        classId: data.classId || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nama: true,
+            email: true,
+          },
+        },
+        class: {
+          select: {
+            id: true,
+            namaKelas: true,
+            program: {
+              select: {
+                id: true,
+                namaPaket: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return createApiResponse(
+      newStudent,
+      "Data siswa berhasil ditambahkan",
+      201
+    );
+  } catch (error) {
+    console.error("Error creating student:", error);
+    return createApiResponse(null, "Gagal menambahkan data siswa", 500);
   }
 }

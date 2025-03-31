@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import api from "@/lib/api/axios";
-import { useAuth } from "@/lib/hooks/useAuth";
+import api from "@/lib/axios";
+// import { useAuth } from "@/lib/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,14 +33,14 @@ import { Separator } from "@/components/ui/separator";
 export default function EditUserPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user: currentUser } = useAuth();
+  // const { user: currentUser } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
   const form = useForm({
     defaultValues: {
-      name: "",
+      nama: "",
       email: "",
       role: "",
       userActivated: "",
@@ -64,13 +64,13 @@ export default function EditUserPage() {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/api/users/${id}`);
+        const response = await api.get(`/users/${id}`);
         const userData = response.data.data;
         setUser(userData);
         
         // Set form values based on user data
         form.reset({
-          name: userData.name,
+          nama: userData.nama,
           email: userData.email,
           role: userData.role,
           userActivated: userData.userActivated || "ACTIVE",
@@ -104,12 +104,12 @@ export default function EditUserPage() {
   }, [id, router, form]);
 
   // Check if user is admin and redirect if not
-  useEffect(() => {
-    if (currentUser && currentUser.role !== 'ADMIN') {
-      toast.error("Akses ditolak: Halaman ini hanya untuk admin");
-      router.push('/dashboard');
-    }
-  }, [currentUser, router]);
+  // useEffect(() => {
+  //   if (currentUser && currentUser.role !== 'ADMIN') {
+  //     toast.error("Akses ditolak: Halaman ini hanya untuk admin");
+  //     router.push('/dashboard');
+  //   }
+  // }, [currentUser, router]);
 
   const onSubmit = async (data) => {
     try {
@@ -123,15 +123,15 @@ export default function EditUserPage() {
       
       // Separate core user data from role-specific data
       const { 
-        name, email, role, userActivated, password,
+        nama, email, role, userActivated, password,
         nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat,
         telepon, bio, pendidikan, pengalaman,
         ...rest
       } = userData;
       
       // Update the core user data
-      await api.patch(`/api/users/${id}`, {
-        name, email, role, userActivated, password
+      await api.patch(`/users/${id}`, {
+        nama, email, role, userActivated, password
       });
       
       // If it's a student, update student-specific data
@@ -140,11 +140,11 @@ export default function EditUserPage() {
         const studentExists = user.student !== null;
         
         if (studentExists) {
-          await api.patch(`/api/students/${user.student.id}`, {
+          await api.patch(`/students/${user.student.id}`, {
             nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat
           });
         } else {
-          await api.post(`/api/students`, {
+          await api.post(`/students`, {
             userId: id,
             nisn, jenisKelamin, tempatLahir, tanggalLahir, alamat
           });
@@ -157,11 +157,11 @@ export default function EditUserPage() {
         const tutorExists = user.tutor !== null;
         
         if (tutorExists) {
-          await api.patch(`/api/tutors/${user.tutor.id}`, {
+          await api.patch(`/tutors/${user.tutor.id}`, {
             telepon, bio, pendidikan, pengalaman
           });
         } else {
-          await api.post(`/api/tutors`, {
+          await api.post(`/tutors`, {
             userId: id,
             telepon, bio, pendidikan, pengalaman
           });
@@ -194,14 +194,14 @@ export default function EditUserPage() {
     );
   }
 
-  if (!user) {
-    return null; // Will be redirected by the useEffect
-  }
+  // if (!user) {
+  //   return null; // Will be redirected by the useEffect
+  // }
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title={`Edit Pengguna: ${user.name}`}
+        title={`Edit Pengguna: ${user.nama}`}
         description="Perbarui informasi pengguna dan pengaturan akun"
         backButton={{
           href: `/admin/users/${id}`,
@@ -219,7 +219,7 @@ export default function EditUserPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="nama"
                   rules={{ required: "Nama wajib diisi" }}
                   render={({ field }) => (
                     <FormItem>

@@ -4,49 +4,82 @@ import prisma from '@/lib/prisma';
 import bcryptjs from 'bcryptjs'; // Changed from bcrypt to bcryptjs
 
 // GET user by ID
+// export async function GET(request, { params }) {
+//   try {
+//     const { id } = params;
+    
+//     // Check authentication
+//     const { user, error, status } = await getAuthUser(request);
+    
+//     if (error) {
+//       return createApiResponse(null, error, status);
+//     }
+    
+//     // Check authorization (admin can see any user, others can only see themselves)
+//     if (user.role !== 'ADMIN' && user.id !== id) {
+//       return createApiResponse(null, 'FORBIDDEN', 403);
+//     }
+    
+//     // Get user data
+//     const userData = await prisma.user.findUnique({
+//       where: { id },
+//       select: {
+//         id: true,
+//         name: true,
+//         email: true,
+//         role: true,
+//         userActivated: true,
+//         createdAt: true,
+//         updatedAt: true,
+//         // Include relations based on role
+//         student: user.role === 'STUDENT' || user.role === 'ADMIN' ? true : undefined,
+//         tutor: user.role === 'TUTOR' || user.role === 'ADMIN' ? true : undefined
+//       }
+//     });
+    
+//     if (!userData) {
+//       return createApiResponse(null, 'User not found', 404);
+//     }
+    
+//     return createApiResponse(userData);
+//   } catch (error) {
+//     console.error('Error fetching user:', error);
+//     return createApiResponse(null, 'Failed to fetch user', 500);
+//   }
+// }
+
+// GET user by ID (no auth for now)
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    
-    // Check authentication
-    const { user, error, status } = await getAuthUser(request);
-    
-    if (error) {
-      return createApiResponse(null, error, status);
-    }
-    
-    // Check authorization (admin can see any user, others can only see themselves)
-    if (user.role !== 'ADMIN' && user.id !== id) {
-      return createApiResponse(null, 'FORBIDDEN', 403);
-    }
-    
-    // Get user data
+
     const userData = await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
-        name: true,
+        nama: true, // ganti dari "name" ke "nama"
         email: true,
         role: true,
-        userActivated: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
-        // Include relations based on role
-        student: user.role === 'STUDENT' || user.role === 'ADMIN' ? true : undefined,
-        tutor: user.role === 'TUTOR' || user.role === 'ADMIN' ? true : undefined
+        lastLoginAt: true,
+        student: true,
+        tutor: true,
       }
     });
-    
+
     if (!userData) {
       return createApiResponse(null, 'User not found', 404);
     }
-    
+
     return createApiResponse(userData);
   } catch (error) {
     console.error('Error fetching user:', error);
     return createApiResponse(null, 'Failed to fetch user', 500);
   }
 }
+
 
 // PATCH - Update user
 export async function PATCH(request, { params }) {

@@ -20,13 +20,22 @@ export async function GET(request) {
 
     // Build dynamic filter
     const filter = {};
-    if (role) filter.role = role;
+
+    if (role) {
+      filter.role = role;
+    
+      if (role === "STUDENT") {
+        filter.student = null; // ❗ hanya tampilkan user STUDENT yang belum punya student
+      }
+    }
+    
     if (search) {
       filter.OR = [
         { nama: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
       ];
     }
+    
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({

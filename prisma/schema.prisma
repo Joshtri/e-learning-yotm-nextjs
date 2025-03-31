@@ -57,7 +57,7 @@ model User {
   nama        String    @db.VarChar(100)
   email       String    @unique @db.VarChar(255)
   password    String
-  role       Role
+  role        Role
   status      Status?   @default(ACTIVE)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -74,8 +74,10 @@ model User {
 }
 
 model Student {
-  id           String    @id @default(uuid())
-  userId       String    @unique
+  id          String @id @default(uuid())
+  userId      String @unique
+  namaLengkap String @db.VarChar(100) // ✅ Tambahan
+
   user         User      @relation(fields: [userId], references: [id])
   nisn         String    @unique @db.VarChar(20)
   jenisKelamin Gender?
@@ -87,8 +89,8 @@ model Student {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  class       Class?       @relation("StudentClass", fields: [classId], references: [id])
   classId     String?
+  class       Class?       @relation("StudentClass", fields: [classId], references: [id])
   submissions Submission[]
 
   // Index
@@ -97,8 +99,10 @@ model Student {
 }
 
 model Tutor {
-  id         String   @id @default(uuid())
-  userId     String   @unique
+  id          String @id @default(uuid())
+  userId      String @unique
+  namaLengkap String @db.VarChar(100) // ✅ Tambahan
+
   user       User     @relation(fields: [userId], references: [id])
   bio        String?  @db.Text
   pendidikan String?  @db.Text

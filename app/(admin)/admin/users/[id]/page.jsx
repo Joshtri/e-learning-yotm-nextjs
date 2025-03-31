@@ -74,7 +74,7 @@ export default function UserDetailPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title={`Detail Pengguna: ${user.name}`}
+        title={`Detail Pengguna: ${user.nama}`}
         description={`Informasi lengkap untuk pengguna dengan role ${user.role.toLowerCase()}`}
         backButton={{
           href: "/admin/users",
@@ -98,9 +98,9 @@ export default function UserDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center gap-4 p-4">
-              <EntityAvatar name={user.name} size="lg" />
+              <EntityAvatar name={user.nama} size="lg" />
               <div className="text-center">
-                <h3 className="text-xl font-semibold">{user.name}</h3>
+                <h3 className="text-xl font-semibold">{user.nama}</h3>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function UserDetailPage() {
                   </div>
                   
                   <div className="text-muted-foreground">Kelas:</div>
-                  <div>{user.student.class?.name || "Belum terdaftar dalam kelas"}</div>
+                  <div>{user.student.class?.nama || "Belum terdaftar dalam kelas"}</div>
                 </div>
                 
                 {user.student.alamat && (
