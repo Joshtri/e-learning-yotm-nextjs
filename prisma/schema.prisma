@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
@@ -13,95 +8,297 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// USER MODEL
-model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userActivated Status?
- 
-  student Student?
-  tutor   Tutor?
-}
-
-model Student {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-
-  // paketId String
-  // paket   Paket  @relation(fields: [paketId], references: [id])
-
-  nisn       String
-  gender     String?
-  birthPlace String?
-  birthDate  DateTime?
-  address    String?
-  photoUrl   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // answers Answer[]
-}
-
-model Tutor {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-
-  bio        String?
-  education  String?
-  experience String?
-  phone      String?
-  photoUrl   String?
-  // bidangKeahilian String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt 
-
-  // subjects Subject[]
-}
-
-
-
-// model Paket {
-//   id       String    @id @default(uuid())
-//   name     String // Paket A, B, C
-//   students Student[]
-//   subjects Subject[]
-// }
-
-// model Subject {
-//   id      String @id @default(uuid())
-//   name    String
-//   paketId String
-//   paket   Paket  @relation(fields: [paketId], references: [id])
-
-//   tutorId String?
-//   tutor   Tutor?  @relation(fields: [tutorId], references: [id])
-// }
-
-// model Answer {
-//   id        String  @id @default(uuid())
-//   studentId String
-//   student   Student @relation(fields: [studentId], references: [id])
-
-//   // tambahkan detail soal ujian nanti
-// }
-
+// ========== ENUMS ==========
 enum Role {
   ADMIN
   TUTOR
   STUDENT
 }
 
-
 enum Status {
   ACTIVE
   INACTIVE
+  PENDING
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AssignmentType {
+  MATERIAL
+  EXERCISE
+  QUIZ
+  MIDTERM
+  FINAL_EXAM
+}
+
+enum SubmissionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  LATE
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+  MATCHING
+}
+
+// ========== MAIN MODELS ==========
+model User {
+  id          String    @id @default(uuid())
+  nama        String    @db.VarChar(100)
+  email       String    @unique @db.VarChar(255)
+  password    String
+  role       Role
+  status      Status?   @default(ACTIVE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Relations
+  student Student?
+  tutor   Tutor?
+
+  // Index
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model Student {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id])
+  nisn         String    @unique @db.VarChar(20)
+  jenisKelamin Gender?
+  tempatLahir  String?   @db.VarChar(50)
+  tanggalLahir DateTime?
+  alamat       String?   @db.Text
+  fotoUrl      String?   @db.VarChar(255)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  class       Class?       @relation("StudentClass", fields: [classId], references: [id])
+  classId     String?
+  submissions Submission[]
+
+  // Index
+  @@index([nisn])
+  @@index([classId])
+}
+
+model Tutor {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  bio        String?  @db.Text
+  pendidikan String?  @db.Text
+  pengalaman String?  @db.Text
+  telepon    String?  @db.VarChar(20)
+  fotoUrl    String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  classSubjectTutors ClassSubjectTutor[]
+
+  // Index
+  @@index([telepon])
+}
+
+// ========== ACADEMIC STRUCTURE ==========
+model AcademicYear {
+  id           String  @id @default(uuid())
+  tahunMulai   Int
+  tahunSelesai Int
+  isActive     Boolean @default(false)
+  classes      Class[]
+
+  // Validation
+  @@unique([tahunMulai, tahunSelesai])
+}
+
+model Program {
+  id        String  @id @default(uuid())
+  namaPaket String  @db.VarChar(50)
+  classes   Class[]
+
+  // Index
+  @@unique([namaPaket])
+}
+
+model Class {
+  id             String @id @default(uuid())
+  namaKelas      String @db.VarChar(50)
+  programId      String
+  academicYearId String
+
+  // Relations
+  program            Program             @relation(fields: [programId], references: [id])
+  academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id])
+  students           Student[]           @relation("StudentClass")
+  classSubjectTutors ClassSubjectTutor[]
+
+  // Index
+  @@unique([namaKelas, programId, academicYearId])
+}
+
+model Subject {
+  id        String  @id @default(uuid())
+  namaMapel String  @db.VarChar(100)
+  kodeMapel String? @db.VarChar(20)
+  deskripsi String? @db.Text
+
+  // Relations
+  classSubjectTutors ClassSubjectTutor[]
+
+  // Index
+  @@unique([namaMapel])
+  @@index([kodeMapel])
+}
+
+// ========== LEARNING SYSTEM ==========
+model ClassSubjectTutor {
+  id        String @id @default(uuid())
+  tutorId   String
+  classId   String
+  subjectId String
+
+  // Relations
+  tutor   Tutor   @relation(fields: [tutorId], references: [id])
+  class   Class   @relation(fields: [classId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  learningMaterials LearningMaterial[]
+  assignments       Assignment[]
+  quizzes           Quiz[]
+
+  @@unique([tutorId, classId, subjectId])
+}
+
+model LearningMaterial {
+  id                  String   @id @default(uuid())
+  judul               String   @db.VarChar(200)
+  konten              String   @db.Text
+  fileUrl             String?  @db.VarChar(255)
+  classSubjectTutorId String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  classSubjectTutor ClassSubjectTutor    @relation(fields: [classSubjectTutorId], references: [id])
+  attachments       MaterialAttachment[]
+}
+
+model MaterialAttachment {
+  id               String           @id @default(uuid())
+  materialId       String
+  namaFile         String           @db.VarChar(150)
+  fileUrl          String           @db.VarChar(255)
+  tipeFile         String           @db.VarChar(50)
+  ukuranFile       Int
+  learningMaterial LearningMaterial @relation(fields: [materialId], references: [id])
+}
+
+model Assignment {
+  id                  String         @id @default(uuid())
+  judul               String         @db.VarChar(200)
+  deskripsi           String?        @db.Text
+  jenis               AssignmentType
+  classSubjectTutorId String
+  tersediaDari        DateTime
+  tersediaHingga      DateTime
+  batasWaktuMenit     Int?
+  nilaiMaksimal       Int?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
+  questions         Question[]
+  submissions       Submission[]
+}
+
+model Quiz {
+  id                  String   @id @default(uuid())
+  judul               String   @db.VarChar(200)
+  deskripsi           String?  @db.Text
+  classSubjectTutorId String
+  waktuMulai          DateTime
+  waktuSelesai        DateTime
+  durasiMenit         Int
+  nilaiMaksimal       Int
+  acakSoal            Boolean  @default(false)
+  acakJawaban         Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
+  questions         Question[]
+  submissions       Submission[]
+}
+
+model Question {
+  id           String         @id @default(uuid())
+  assignmentId String?
+  quizId       String?
+  teks         String         @db.Text
+  jenis        QuestionType
+  poin         Int            @default(1)
+  options      AnswerOption[]
+  jawabanBenar String? // For auto-grading (could be JSON for multiple answers)
+  pembahasan   String?        @db.Text
+
+  assignment Assignment? @relation(fields: [assignmentId], references: [id])
+  quiz       Quiz?       @relation(fields: [quizId], references: [id])
+  answers    Answer[]
+}
+
+model AnswerOption {
+  id          String  @id @default(uuid())
+  questionId  String
+  teks        String  @db.VarChar(500)
+  adalahBenar Boolean @default(false)
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model Submission {
+  id           String           @id @default(uuid())
+  studentId    String
+  assignmentId String?
+  quizId       String?
+  status       SubmissionStatus @default(NOT_STARTED)
+  waktuMulai   DateTime?
+  waktuKumpul  DateTime?
+  nilai        Float?
+  waktuDinilai DateTime?
+  feedback     String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  student    Student     @relation(fields: [studentId], references: [id])
+  assignment Assignment? @relation(fields: [assignmentId], references: [id])
+  quiz       Quiz?       @relation(fields: [quizId], references: [id])
+  answers    Answer[]
+}
+
+model Answer {
+  id           String   @id @default(uuid())
+  submissionId String
+  questionId   String
+  jawaban      String   @db.Text // Could be JSON for complex answers
+  adalahBenar  Boolean?
+  feedback     String?  @db.VarChar(500)
+  nilai        Float?
+
+  submission Submission @relation(fields: [submissionId], references: [id])
+  question   Question   @relation(fields: [questionId], references: [id])
 }

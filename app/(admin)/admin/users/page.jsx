@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
-import useSWR from "swr";
-import axios from "axios";
+import { toast } from "sonner";
+import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,50 +15,92 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EntityActions } from "@/components/ui/entity-actions";
 import { DataExport } from "@/components/ui/data-export";
 import { EntityDialog } from "@/components/ui/entity-dialog";
+// import { useAuth } from "@/lib/useAuth";
 
 export default function UsersPage() {
+  const router = useRouter();
+  // const { user } = useAuth();
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
 
-  const fetchUsers = () =>
-    axios.get("/api/users/list").then((res) => res.data.users);
+  // Check if user is admin and redirect if not
+  // useEffect(() => {
+  //   if (user && user.role !== 'ADMIN') {
+  //     toast.error("Akses ditolak: Halaman ini hanya untuk admin");
+  //     router.push('/dashboard');
+  //   }
+  // }, [user, router]);
 
-  const {
-    data: users = [],
-    isLoading,
-    mutate,
-  } = useSWR("/api/users/list", fetchUsers);
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+      params.append('page', pagination.page);
+      params.append('limit', pagination.limit);
+      
+      if (selectedRole) {
+        params.append('role', selectedRole);
+      }
+      
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      
+      const response = await api.get(`/users?${params.toString()}`);
+      setUsers(response.data.data.users);
+      setPagination(response.data.data.pagination);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast.error("Gagal memuat data pengguna");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Filter users based on search query and selected role
+  // Fetch users when dependencies change
+  useEffect(() => {
+    fetchUsers();
+  }, [pagination.page, pagination.limit, selectedRole, searchQuery]);
+
+  // Filter users based on search query (client-side filtering)
   const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users;
+    
     return users.filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesRole = selectedRole ? user.role === selectedRole : true;
-
-      return matchesSearch && matchesRole;
+      return (
+        user.nama.toLowerCase().includes(searchQuery.toLowerCase()) || // Ubah di sini
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     });
-  }, [users, searchQuery, selectedRole]);
+  }, [users, searchQuery]);
 
   // Define columns for the data table
   const columns = [
     {
       header: "No",
-      cell: (_, index) => index + 1,
+      cell: (_, index) => (pagination.page - 1) * pagination.limit + index + 1,
       className: "w-[50px]",
     },
     {
       header: "Nama",
       cell: (user) => (
         <div className="flex items-center gap-2">
-          <EntityAvatar name={user.name} />
-          <div className="font-medium">{user.name}</div>
+          <EntityAvatar name={user.nama} /> {/* Ubah di sini */}
+          <div className="font-medium">{user.nama}</div>
         </div>
       ),
     },
+    
     {
       header: "Email",
       accessorKey: "email",
@@ -76,6 +119,18 @@ export default function UsersPage() {
       ),
     },
     {
+      header: "Status",
+      cell: (user) => (
+        <StatusBadge
+          status={user.status}
+          variants={{ 
+            ACTIVE: { variant: "success", label: "Aktif" },
+            INACTIVE: { variant: "destructive", label: "Nonaktif" },
+          }}
+        />
+      ),
+    },
+    {
       header: "Tanggal Dibuat",
       cell: (user) => new Date(user.createdAt).toLocaleDateString("id-ID"),
     },
@@ -87,6 +142,7 @@ export default function UsersPage() {
           viewPath={`/admin/users/${user.id}`}
           editPath={`/admin/users/${user.id}/edit`}
           onDelete={() => handleDeleteUser(user.id)}
+          // disableDelete={user.id === (currentUser?.id || "")} // Disable delete for current user
         />
       ),
       className: "text-right",
@@ -96,7 +152,7 @@ export default function UsersPage() {
   // Define form fields for user creation
   const userFormFields = [
     {
-      name: "name",
+      name: "nama",
       label: "Nama Lengkap",
       placeholder: "Masukkan nama lengkap",
       validation: { required: "Nama wajib diisi" },
@@ -119,7 +175,13 @@ export default function UsersPage() {
       label: "Password",
       type: "password",
       placeholder: "••••••••",
-      validation: { required: "Password wajib diisi" },
+      validation: { 
+        required: "Password wajib diisi",
+        minLength: {
+          value: 8,
+          message: "Password minimal 8 karakter"
+        }
+      },
     },
     {
       name: "confirmPassword",
@@ -144,10 +206,22 @@ export default function UsersPage() {
       ],
       validation: { required: "Role wajib dipilih" },
     },
+    {
+      name: "userActivated",
+      label: "Status",
+      type: "select",
+      placeholder: "Pilih status pengguna",
+      options: [
+        { label: "Aktif", value: "ACTIVE" },
+        { label: "Nonaktif", value: "INACTIVE" },
+      ],
+      defaultValue: "ACTIVE",
+    },
   ];
 
   // Define filter options
   const roleFilterOptions = [
+    { label: "Semua", value: null },
     { label: "Admin", value: "ADMIN" },
     { label: "Tutor", value: "TUTOR" },
     { label: "Siswa", value: "STUDENT" },
@@ -155,9 +229,42 @@ export default function UsersPage() {
 
   // Handle user deletion
   const handleDeleteUser = async (userId) => {
-    // Implementation would go here
-    console.log("Delete user:", userId);
+    if (window.confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) {
+      try {
+        await api.delete(`/api/users/${userId}`);
+        toast.success("Pengguna berhasil dihapus");
+        fetchUsers(); // Refresh the list
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        const errorMessage = error.response?.data?.error || "Gagal menghapus pengguna";
+        toast.error(errorMessage);
+      }
+    }
   };
+
+  // Handle pagination change
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  // Create user function that will be used by EntityDialog
+  const createUser = async (userData) => {
+    // Remove confirmPassword as it's not needed in the API
+    const { confirmPassword, ...userDataToSend } = userData;
+    
+    try {
+      const response = await api.post('/api/users', userDataToSend);
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      console.error("Error creating user:", error);
+      const errorMessage = error.response?.data?.error || "Gagal membuat pengguna";
+      throw new Error(errorMessage);
+    }
+  };
+
+  // if (!user) {
+  //   return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  // }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -168,7 +275,7 @@ export default function UsersPage() {
             actions={
               <>
                 <DataExport
-                  data={filteredUsers}
+                  data={users}
                   filename="users.csv"
                   label="Export"
                 />
@@ -183,10 +290,17 @@ export default function UsersPage() {
           <Tabs defaultValue="all" className="space-y-6">
             <DataToolbar
               searchValue={searchQuery}
-              onSearchChange={setSearchQuery}
+              onSearchChange={(value) => {
+                setSearchQuery(value);
+                setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on search
+              }}
               searchPlaceholder="Cari pengguna..."
               filterOptions={roleFilterOptions}
-              onFilterSelect={setSelectedRole}
+              onFilterSelect={(value) => {
+                setSelectedRole(value);
+                setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on filter change
+              }}
+              filterValue={selectedRole}
               filterLabel="Filter Berdasarkan"
             />
 
@@ -198,6 +312,13 @@ export default function UsersPage() {
                 loadingMessage="Memuat data pengguna..."
                 emptyMessage="Tidak ada data pengguna yang ditemukan"
                 keyExtractor={(user) => user.id}
+                pagination={{
+                  currentPage: pagination.page,
+                  totalPages: pagination.pages,
+                  onPageChange: handlePageChange,
+                  totalItems: pagination.total,
+                  itemsPerPage: pagination.limit
+                }}
               />
             </TabsContent>
           </Tabs>
@@ -207,13 +328,18 @@ export default function UsersPage() {
       <EntityDialog
         open={isCreateUserOpen}
         onOpenChange={setIsCreateUserOpen}
+        successMessage="Pengguna berhasil ditambahkan!"
+        apiEndpoint={"/api/users"}
         title="Tambah Pengguna Baru"
         description="Buat akun pengguna baru untuk admin, tutor, atau siswa."
         fields={userFormFields}
-        apiEndpoint="/api/users/create"
-        onSuccess={mutate}
-        successMessage="Pengguna berhasil ditambahkan!"
+        onSubmit={createUser}
+        // onSuccess={() => {
+        //   fetchUsers();
+        //   toast.success("Pengguna berhasil ditambahkan!");
+        // }}
         errorMessage="Gagal menambahkan pengguna."
+        submitLabel="Tambah Pengguna"
       />
     </div>
   );

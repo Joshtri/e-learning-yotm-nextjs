@@ -5,7 +5,7 @@ import axios from "axios"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { EntityForm } from "./entity-form"
+import { EntityForm } from "@/components/ui/entity-form"
 
 export function EntityDialog({
   open,
