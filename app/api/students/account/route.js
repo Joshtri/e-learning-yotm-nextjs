@@ -1,7 +1,5 @@
-import { createApiResponse } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// GET - List akun user dengan role STUDENT yang belum punya profil Student
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
@@ -19,18 +17,22 @@ export async function GET() {
       },
     });
 
-    return createApiResponse({ users }); // JANGAN bungkus lagi di { success, data }
-
-    // return createApiResponse({ 
-    //   success: true,
-    //   data: { users } // Pastikan struktur respons sesuai dengan yang diharapkan di frontend
-    // });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: { users },
+      }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching student accounts:", error);
-    return createApiResponse(
-      { success: false }, 
-      "Failed to fetch student accounts", 
-      500
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Gagal mengambil data akun siswa",
+        error: error.message,
+      }),
+      { status: 500 }
     );
   }
 }

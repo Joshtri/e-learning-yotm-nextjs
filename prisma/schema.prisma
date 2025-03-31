@@ -53,7 +53,7 @@ enum QuestionType {
 
 // ========== MAIN MODELS ==========
 model User {
-  id          String    @id @default(uuid())
+  id          String    @id @default(dbgenerated("concat('usr_', gen_random_uuid())")) @db.VarChar(40)
   nama        String    @db.VarChar(100)
   email       String    @unique @db.VarChar(255)
   password    String
@@ -74,7 +74,7 @@ model User {
 }
 
 model Student {
-  id          String @id @default(uuid())
+  id          String @id @default(dbgenerated("concat('std_', gen_random_uuid())")) @db.VarChar(40)
   userId      String @unique
   namaLengkap String @db.VarChar(100) // ✅ Tambahan
 
@@ -99,7 +99,7 @@ model Student {
 }
 
 model Tutor {
-  id          String @id @default(uuid())
+  id          String @id @default(dbgenerated("concat('ttr_', gen_random_uuid())")) @db.VarChar(40)
   userId      String @unique
   namaLengkap String @db.VarChar(100) // ✅ Tambahan
 
@@ -121,7 +121,7 @@ model Tutor {
 
 // ========== ACADEMIC STRUCTURE ==========
 model AcademicYear {
-  id           String  @id @default(uuid())
+  id           String  @id @default(dbgenerated("concat('acy_', gen_random_uuid())")) @db.VarChar(40)
   tahunMulai   Int
   tahunSelesai Int
   isActive     Boolean @default(false)
@@ -132,16 +132,17 @@ model AcademicYear {
 }
 
 model Program {
-  id        String  @id @default(uuid())
-  namaPaket String  @db.VarChar(50)
-  classes   Class[]
+  id             String           @id @default(dbgenerated("concat('prg_', gen_random_uuid())")) @db.VarChar(40)
+  namaPaket      String           @db.VarChar(50)
+  classes        Class[]
+  ProgramSubject ProgramSubject[]
 
   // Index
   @@unique([namaPaket])
 }
 
 model Class {
-  id             String @id @default(uuid())
+  id             String @id @default(dbgenerated("concat('cls_', gen_random_uuid())")) @db.VarChar(40)
   namaKelas      String @db.VarChar(50)
   programId      String
   academicYearId String
@@ -157,22 +158,40 @@ model Class {
 }
 
 model Subject {
-  id        String  @id @default(uuid())
+  id        String  @id @default(dbgenerated("concat('sub_', gen_random_uuid())")) @db.VarChar(40)
   namaMapel String  @db.VarChar(100)
   kodeMapel String? @db.VarChar(20)
   deskripsi String? @db.Text
 
   // Relations
   classSubjectTutors ClassSubjectTutor[]
+  ProgramSubject     ProgramSubject[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Index
   @@unique([namaMapel])
   @@index([kodeMapel])
 }
 
+model ProgramSubject {
+  id        String @id @default(dbgenerated("concat('psj_', gen_random_uuid())")) @db.VarChar(40)
+  programId String
+  subjectId String
+
+  program Program @relation(fields: [programId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([programId, subjectId])
+}
+
 // ========== LEARNING SYSTEM ==========
 model ClassSubjectTutor {
-  id        String @id @default(uuid())
+  id        String @id @default(dbgenerated("concat('cst_', gen_random_uuid())")) @db.VarChar(40)
   tutorId   String
   classId   String
   subjectId String
@@ -186,11 +205,14 @@ model ClassSubjectTutor {
   assignments       Assignment[]
   quizzes           Quiz[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([tutorId, classId, subjectId])
 }
 
 model LearningMaterial {
-  id                  String   @id @default(uuid())
+  id                  String   @id @default(dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
   judul               String   @db.VarChar(200)
   konten              String   @db.Text
   fileUrl             String?  @db.VarChar(255)
@@ -203,7 +225,7 @@ model LearningMaterial {
 }
 
 model MaterialAttachment {
-  id               String           @id @default(uuid())
+  id               String           @id @default(dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
   materialId       String
   namaFile         String           @db.VarChar(150)
   fileUrl          String           @db.VarChar(255)
@@ -213,7 +235,7 @@ model MaterialAttachment {
 }
 
 model Assignment {
-  id                  String         @id @default(uuid())
+  id                  String         @id @default(dbgenerated("concat('asn_', gen_random_uuid())")) @db.VarChar(40)
   judul               String         @db.VarChar(200)
   deskripsi           String?        @db.Text
   jenis               AssignmentType
@@ -231,7 +253,7 @@ model Assignment {
 }
 
 model Quiz {
-  id                  String   @id @default(uuid())
+  id                  String   @id @default(dbgenerated("concat('qz_', gen_random_uuid())")) @db.VarChar(40)
   judul               String   @db.VarChar(200)
   deskripsi           String?  @db.Text
   classSubjectTutorId String
@@ -250,7 +272,7 @@ model Quiz {
 }
 
 model Question {
-  id           String         @id @default(uuid())
+  id           String         @id @default(dbgenerated("concat('qst_', gen_random_uuid())")) @db.VarChar(40)
   assignmentId String?
   quizId       String?
   teks         String         @db.Text
@@ -266,7 +288,7 @@ model Question {
 }
 
 model AnswerOption {
-  id          String  @id @default(uuid())
+  id          String  @id @default(dbgenerated("concat('opt_', gen_random_uuid())")) @db.VarChar(40)
   questionId  String
   teks        String  @db.VarChar(500)
   adalahBenar Boolean @default(false)
@@ -275,7 +297,7 @@ model AnswerOption {
 }
 
 model Submission {
-  id           String           @id @default(uuid())
+  id           String           @id @default(dbgenerated("concat('sbm_', gen_random_uuid())")) @db.VarChar(40)
   studentId    String
   assignmentId String?
   quizId       String?
@@ -295,7 +317,7 @@ model Submission {
 }
 
 model Answer {
-  id           String   @id @default(uuid())
+  id           String   @id @default(dbgenerated("concat('ans_', gen_random_uuid())")) @db.VarChar(40)
   submissionId String
   questionId   String
   jawaban      String   @db.Text // Could be JSON for complex answers

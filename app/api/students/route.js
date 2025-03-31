@@ -1,7 +1,5 @@
-import { createApiResponse } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// GET all students (with pagination and filtering)
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -13,7 +11,6 @@ export async function GET(request) {
 
     const skip = (page - 1) * limit;
 
-    // Build filter
     const filter = {};
 
     if (search) {
@@ -41,7 +38,6 @@ export async function GET(request) {
       filter.jenisKelamin = gender;
     }
 
-    // Execute query with count
     const [students, total] = await Promise.all([
       prisma.student.findMany({
         where: filter,
@@ -83,24 +79,30 @@ export async function GET(request) {
       prisma.student.count({ where: filter }),
     ]);
 
-    // Return formatted response
-    return createApiResponse({
-      students,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: {
+          students,
+          pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit),
+          },
+        },
+      }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching students:", error);
-    return createApiResponse(null, "Failed to fetch students", 500);
+    return new Response(
+      JSON.stringify({ success: false, message: "Failed to fetch students" }),
+      { status: 500 }
+    );
   }
 }
 
-// POST - Create new student
-// POST - Create new student
 export async function POST(request) {
   try {
     const data = await request.json();
@@ -114,7 +116,10 @@ export async function POST(request) {
       !data.tanggalLahir ||
       !data.alamat?.trim()
     ) {
-      return createApiResponse(null, "Semua field wajib diisi", 400);
+      return new Response(
+        JSON.stringify({ success: false, message: "Semua field wajib diisi" }),
+        { status: 400 }
+      );
     }
 
     const newStudent = await prisma.student.create({
@@ -151,13 +156,40 @@ export async function POST(request) {
       },
     });
 
-    return createApiResponse(
-      newStudent,
-      "Data siswa berhasil ditambahkan",
-      201
+    // Cek apakah userId sudah digunakan
+    const existingStudent = await prisma.student.findUnique({
+      where: {
+        userId: data.userId,
+      },
+    });
+
+    if (existingStudent) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Akun ini sudah memiliki profil siswa",
+        }),
+        { status: 400 }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: newStudent,
+        message: "Data siswa berhasil ditambahkan",
+      }),
+      { status: 201 }
     );
   } catch (error) {
     console.error("Error creating student:", error);
-    return createApiResponse(null, "Gagal menambahkan data siswa", 500);
-  }
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Gagal menambahkan data siswa",
+        error: error.message,
+      }),
+      { status: 500 }
+    );
+}
 }

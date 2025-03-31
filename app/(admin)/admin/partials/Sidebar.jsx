@@ -101,43 +101,107 @@ export function AdminSidebar({ isOpen, onToggleSidebar }) {
             </Link>
           </Button>
 
+          <Button variant="ghost" asChild className="justify-start">
+            <Link href="/admin/classes" className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" />
+              <span
+                className={`transition-opacity ${
+                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                }`}
+              >
+                Kelas
+              </span>
+            </Link>
+          </Button>
+
 
 
           <Button variant="ghost" asChild className="justify-start">
-            <Link href="/admin/teachers" className="flex items-center gap-2">
+            <Link href="/admin/tutors" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span
                 className={`transition-opacity ${
                   isOpen ? "opacity-100" : "opacity-0 md:hidden"
                 }`}
               >
-                Guru
+                Tutor
               </span>
             </Link>
           </Button>
 
           <Button variant="ghost" asChild className="justify-start">
-            <Link href="/admin/courses" className="flex items-center gap-2">
+            <Link href="/admin/academic-years" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span
+                className={`transition-opacity ${
+                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                }`}
+              >
+                Tahun Akademik
+              </span>
+            </Link>
+          </Button>
+
+          <Button variant="ghost" asChild className="justify-start">
+            <Link href="/admin/subject" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span
+                className={`transition-opacity ${
+                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                }`}
+              >
+                Mata Pelajaran
+              </span>
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild className="justify-start">
+            <Link href="/admin/program-subject" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span
+                className={`transition-opacity ${
+                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                }`}
+              >
+                Mata Pelajaran per Paket
+              </span>
+            </Link>
+          </Button>
+
+          <Button variant="ghost" asChild className="justify-start">
+            <Link href="/admin/programs" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span
+                className={`transition-opacity ${
+                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                }`}
+              >
+                Paket
+              </span>
+            </Link>
+          </Button>
+
+          <Button variant="ghost" asChild className="justify-start">
+            <Link href="/admin/class-subject-tutor" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span
                 className={`transition-opacity ${
                   isOpen ? "opacity-100" : "opacity-0 md:hidden"
                 }`}
               >
-                Kursus
+                Penugasan Tutor
               </span>
             </Link>
           </Button>
 
           <Button variant="ghost" asChild className="justify-start">
-            <Link href="/admin/reports" className="flex items-center gap-2">
+            <Link href="/admin/learning-materials" className="flex items-center gap-2">
               <ChartBar className="h-4 w-4" />
               <span
                 className={`transition-opacity ${
                   isOpen ? "opacity-100" : "opacity-0 md:hidden"
                 }`}
               >
-                Laporan
+                Learning Materials
               </span>
             </Link>
           </Button>

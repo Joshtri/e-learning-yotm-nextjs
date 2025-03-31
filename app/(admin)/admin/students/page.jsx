@@ -12,6 +12,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DataExport } from "@/components/ui/data-export";
+import { useRouter } from "next/navigation";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -23,6 +24,8 @@ export default function StudentsPage() {
     total: 0,
     pages: 0,
   });
+
+  const router = useRouter();
 
   const fetchStudents = async () => {
     try {
@@ -112,7 +115,7 @@ export default function StudentsPage() {
             actions={
               <>
                 <DataExport data={students} filename="students.csv" label="Export" />
-                <Button disabled>
+                <Button className={"ml-2"}  onClick={() => router.push("/admin/students/create")}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Tambah Siswa
                 </Button>

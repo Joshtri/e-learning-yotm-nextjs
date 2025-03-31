@@ -1,15 +1,10 @@
-import { NextResponse } from "next/server";
-import { getAuthUser, createApiResponse } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import bcryptjs from "bcryptjs";
+import { NextRequest, NextResponse } from "next/server";
 
-// GET all users (with pagination and filtering)
+// GET - List users with pagination & filtering
 export async function GET(request) {
   try {
-    // Optional: auth check
-    // const { user, error, status } = await getAuthUser(request, ['ADMIN']);
-    // if (error) return createApiResponse(null, error, status);
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -18,24 +13,22 @@ export async function GET(request) {
 
     const skip = (page - 1) * limit;
 
-    // Build dynamic filter
     const filter = {};
 
     if (role) {
       filter.role = role;
-    
+
       if (role === "STUDENT") {
-        filter.student = null; // ❗ hanya tampilkan user STUDENT yang belum punya student
+        filter.student = null;
       }
     }
-    
+
     if (search) {
       filter.OR = [
         { nama: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
       ];
     }
-    
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -59,41 +52,49 @@ export async function GET(request) {
       prisma.user.count({ where: filter }),
     ]);
 
-    return createApiResponse({
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+    return NextResponse.json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
       },
     });
   } catch (error) {
     console.error("Error fetching users:", error);
-    return createApiResponse(null, "Failed to fetch users", 500);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch users", error: error.message },
+      { status: 500 }
+    );
   }
 }
 
-// POST - Create a new user
+// POST - Create new user
 export async function POST(request) {
   try {
-    // const { user, error, status } = await getAuthUser(request, ["ADMIN"]);
-    // if (error) return createApiResponse(null, error, status);
-
     const body = await request.json();
     const { nama, email, password, role } = body;
 
     if (!nama || !email || !password || !role) {
-      return createApiResponse(null, "Missing required fields", 400);
+      return NextResponse.json(
+        { success: false, message: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return createApiResponse(null, "Email already in use", 409);
+      return NextResponse.json(
+        { success: false, message: "Email already in use" },
+        { status: 409 }
+      );
     }
 
-    const salt = await bcryptjs.genSalt(10);
-    const hashedPassword = await bcryptjs.hash(password, salt);
+    const hashedPassword = await bcryptjs.hash(password, 10);
 
     const newUser = await prisma.user.create({
       data: {
@@ -114,9 +115,15 @@ export async function POST(request) {
       },
     });
 
-    return createApiResponse(newUser, null, 201);
+    return NextResponse.json(
+      { success: true, data: newUser, message: "User created successfully" },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating user:", error);
-    return createApiResponse(null, "Failed to create user", 500);
+    return NextResponse.json(
+      { success: false, message: "Failed to create user", error: error.message },
+      { status: 500 }
+    );
   }
 }

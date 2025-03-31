@@ -1,25 +1,9 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'TUTOR', 'STUDENT');
 
-  - You are about to drop the column `address` on the `Student` table. All the data in the column will be lost.
-  - You are about to drop the column `birthDate` on the `Student` table. All the data in the column will be lost.
-  - You are about to drop the column `birthPlace` on the `Student` table. All the data in the column will be lost.
-  - You are about to drop the column `gender` on the `Student` table. All the data in the column will be lost.
-  - You are about to drop the column `photoUrl` on the `Student` table. All the data in the column will be lost.
-  - You are about to alter the column `nisn` on the `Student` table. The data in that column could be lost. The data in that column will be cast from `Text` to `VarChar(20)`.
-  - You are about to drop the column `education` on the `Tutor` table. All the data in the column will be lost.
-  - You are about to drop the column `experience` on the `Tutor` table. All the data in the column will be lost.
-  - You are about to drop the column `phone` on the `Tutor` table. All the data in the column will be lost.
-  - You are about to drop the column `photoUrl` on the `Tutor` table. All the data in the column will be lost.
-  - You are about to drop the column `name` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `role` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `userActivated` on the `User` table. All the data in the column will be lost.
-  - You are about to alter the column `email` on the `User` table. The data in that column could be lost. The data in that column will be cast from `Text` to `VarChar(255)`.
-  - A unique constraint covering the columns `[nisn]` on the table `Student` will be added. If there are existing duplicate values, this will fail.
-  - Added the required column `nama` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `peran` to the `User` table without a default value. This is not possible if the table is not empty.
+-- CreateEnum
+CREATE TYPE "Status" AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING');
 
-*/
 -- CreateEnum
 CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
 
@@ -32,46 +16,58 @@ CREATE TYPE "SubmissionStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'SUBMITTED
 -- CreateEnum
 CREATE TYPE "QuestionType" AS ENUM ('MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER', 'ESSAY', 'MATCHING');
 
--- AlterEnum
-ALTER TYPE "Status" ADD VALUE 'PENDING';
+-- CreateTable
+CREATE TABLE "User" (
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('usr_', gen_random_uuid()),
+    "nama" VARCHAR(100) NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "password" TEXT NOT NULL,
+    "role" "Role" NOT NULL,
+    "status" "Status" DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastLoginAt" TIMESTAMP(3),
 
--- AlterTable
-ALTER TABLE "Student" DROP COLUMN "address",
-DROP COLUMN "birthDate",
-DROP COLUMN "birthPlace",
-DROP COLUMN "gender",
-DROP COLUMN "photoUrl",
-ADD COLUMN     "alamat" TEXT,
-ADD COLUMN     "classId" TEXT,
-ADD COLUMN     "fotoUrl" VARCHAR(255),
-ADD COLUMN     "jenisKelamin" "Gender",
-ADD COLUMN     "tanggalLahir" TIMESTAMP(3),
-ADD COLUMN     "tempatLahir" VARCHAR(50),
-ALTER COLUMN "nisn" SET DATA TYPE VARCHAR(20);
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
--- AlterTable
-ALTER TABLE "Tutor" DROP COLUMN "education",
-DROP COLUMN "experience",
-DROP COLUMN "phone",
-DROP COLUMN "photoUrl",
-ADD COLUMN     "fotoUrl" VARCHAR(255),
-ADD COLUMN     "pendidikan" TEXT,
-ADD COLUMN     "pengalaman" TEXT,
-ADD COLUMN     "telepon" VARCHAR(20);
+-- CreateTable
+CREATE TABLE "Student" (
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('std_', gen_random_uuid()),
+    "userId" TEXT NOT NULL,
+    "namaLengkap" VARCHAR(100) NOT NULL,
+    "nisn" VARCHAR(20) NOT NULL,
+    "jenisKelamin" "Gender",
+    "tempatLahir" VARCHAR(50),
+    "tanggalLahir" TIMESTAMP(3),
+    "alamat" TEXT,
+    "fotoUrl" VARCHAR(255),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "classId" TEXT,
 
--- AlterTable
-ALTER TABLE "User" DROP COLUMN "name",
-DROP COLUMN "role",
-DROP COLUMN "userActivated",
-ADD COLUMN     "lastLoginAt" TIMESTAMP(3),
-ADD COLUMN     "nama" VARCHAR(100) NOT NULL,
-ADD COLUMN     "peran" "Role" NOT NULL,
-ADD COLUMN     "status" "Status" DEFAULT 'ACTIVE',
-ALTER COLUMN "email" SET DATA TYPE VARCHAR(255);
+    CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Tutor" (
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('ttr_', gen_random_uuid()),
+    "userId" TEXT NOT NULL,
+    "namaLengkap" VARCHAR(100) NOT NULL,
+    "bio" TEXT,
+    "pendidikan" TEXT,
+    "pengalaman" TEXT,
+    "telepon" VARCHAR(20),
+    "fotoUrl" VARCHAR(255),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Tutor_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "AcademicYear" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('acy_', gen_random_uuid()),
     "tahunMulai" INTEGER NOT NULL,
     "tahunSelesai" INTEGER NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
@@ -81,7 +77,7 @@ CREATE TABLE "AcademicYear" (
 
 -- CreateTable
 CREATE TABLE "Program" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('prg_', gen_random_uuid()),
     "namaPaket" VARCHAR(50) NOT NULL,
 
     CONSTRAINT "Program_pkey" PRIMARY KEY ("id")
@@ -89,7 +85,7 @@ CREATE TABLE "Program" (
 
 -- CreateTable
 CREATE TABLE "Class" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('cls_', gen_random_uuid()),
     "namaKelas" VARCHAR(50) NOT NULL,
     "programId" TEXT NOT NULL,
     "academicYearId" TEXT NOT NULL,
@@ -99,17 +95,30 @@ CREATE TABLE "Class" (
 
 -- CreateTable
 CREATE TABLE "Subject" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('sub_', gen_random_uuid()),
     "namaMapel" VARCHAR(100) NOT NULL,
     "kodeMapel" VARCHAR(20),
     "deskripsi" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Subject_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
+CREATE TABLE "ProgramSubject" (
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('psj_', gen_random_uuid()),
+    "programId" TEXT NOT NULL,
+    "subjectId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProgramSubject_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ClassSubjectTutor" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('cst_', gen_random_uuid()),
     "tutorId" TEXT NOT NULL,
     "classId" TEXT NOT NULL,
     "subjectId" TEXT NOT NULL,
@@ -119,7 +128,7 @@ CREATE TABLE "ClassSubjectTutor" (
 
 -- CreateTable
 CREATE TABLE "LearningMaterial" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('mat_', gen_random_uuid()),
     "judul" VARCHAR(200) NOT NULL,
     "konten" TEXT NOT NULL,
     "fileUrl" VARCHAR(255),
@@ -132,7 +141,7 @@ CREATE TABLE "LearningMaterial" (
 
 -- CreateTable
 CREATE TABLE "MaterialAttachment" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('att_', gen_random_uuid()),
     "materialId" TEXT NOT NULL,
     "namaFile" VARCHAR(150) NOT NULL,
     "fileUrl" VARCHAR(255) NOT NULL,
@@ -144,7 +153,7 @@ CREATE TABLE "MaterialAttachment" (
 
 -- CreateTable
 CREATE TABLE "Assignment" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('asn_', gen_random_uuid()),
     "judul" VARCHAR(200) NOT NULL,
     "deskripsi" TEXT,
     "jenis" "AssignmentType" NOT NULL,
@@ -161,7 +170,7 @@ CREATE TABLE "Assignment" (
 
 -- CreateTable
 CREATE TABLE "Quiz" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('qz_', gen_random_uuid()),
     "judul" VARCHAR(200) NOT NULL,
     "deskripsi" TEXT,
     "classSubjectTutorId" TEXT NOT NULL,
@@ -179,7 +188,7 @@ CREATE TABLE "Quiz" (
 
 -- CreateTable
 CREATE TABLE "Question" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('qst_', gen_random_uuid()),
     "assignmentId" TEXT,
     "quizId" TEXT,
     "teks" TEXT NOT NULL,
@@ -193,7 +202,7 @@ CREATE TABLE "Question" (
 
 -- CreateTable
 CREATE TABLE "AnswerOption" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('opt_', gen_random_uuid()),
     "questionId" TEXT NOT NULL,
     "teks" VARCHAR(500) NOT NULL,
     "adalahBenar" BOOLEAN NOT NULL DEFAULT false,
@@ -203,7 +212,7 @@ CREATE TABLE "AnswerOption" (
 
 -- CreateTable
 CREATE TABLE "Submission" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('sbm_', gen_random_uuid()),
     "studentId" TEXT NOT NULL,
     "assignmentId" TEXT,
     "quizId" TEXT,
@@ -221,7 +230,7 @@ CREATE TABLE "Submission" (
 
 -- CreateTable
 CREATE TABLE "Answer" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(40) NOT NULL DEFAULT concat('ans_', gen_random_uuid()),
     "submissionId" TEXT NOT NULL,
     "questionId" TEXT NOT NULL,
     "jawaban" TEXT NOT NULL,
@@ -231,6 +240,36 @@ CREATE TABLE "Answer" (
 
     CONSTRAINT "Answer_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
+CREATE INDEX "User_status_idx" ON "User"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_userId_key" ON "Student"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_nisn_key" ON "Student"("nisn");
+
+-- CreateIndex
+CREATE INDEX "Student_nisn_idx" ON "Student"("nisn");
+
+-- CreateIndex
+CREATE INDEX "Student_classId_idx" ON "Student"("classId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Tutor_userId_key" ON "Tutor"("userId");
+
+-- CreateIndex
+CREATE INDEX "Tutor_telepon_idx" ON "Tutor"("telepon");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AcademicYear_tahunMulai_tahunSelesai_key" ON "AcademicYear"("tahunMulai", "tahunSelesai");
@@ -248,37 +287,31 @@ CREATE INDEX "Subject_kodeMapel_idx" ON "Subject"("kodeMapel");
 CREATE UNIQUE INDEX "Subject_namaMapel_key" ON "Subject"("namaMapel");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ProgramSubject_programId_subjectId_key" ON "ProgramSubject"("programId", "subjectId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ClassSubjectTutor_tutorId_classId_subjectId_key" ON "ClassSubjectTutor"("tutorId", "classId", "subjectId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "Student_nisn_key" ON "Student"("nisn");
-
--- CreateIndex
-CREATE INDEX "Student_nisn_idx" ON "Student"("nisn");
-
--- CreateIndex
-CREATE INDEX "Student_classId_idx" ON "Student"("classId");
-
--- CreateIndex
-CREATE INDEX "Tutor_telepon_idx" ON "Tutor"("telepon");
-
--- CreateIndex
-CREATE INDEX "User_email_idx" ON "User"("email");
-
--- CreateIndex
-CREATE INDEX "User_peran_idx" ON "User"("peran");
-
--- CreateIndex
-CREATE INDEX "User_status_idx" ON "User"("status");
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_classId_fkey" FOREIGN KEY ("classId") REFERENCES "Class"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Tutor" ADD CONSTRAINT "Tutor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Class" ADD CONSTRAINT "Class_programId_fkey" FOREIGN KEY ("programId") REFERENCES "Program"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Class" ADD CONSTRAINT "Class_academicYearId_fkey" FOREIGN KEY ("academicYearId") REFERENCES "AcademicYear"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProgramSubject" ADD CONSTRAINT "ProgramSubject_programId_fkey" FOREIGN KEY ("programId") REFERENCES "Program"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProgramSubject" ADD CONSTRAINT "ProgramSubject_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES "Subject"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ClassSubjectTutor" ADD CONSTRAINT "ClassSubjectTutor_tutorId_fkey" FOREIGN KEY ("tutorId") REFERENCES "Tutor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

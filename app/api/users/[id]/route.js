@@ -1,54 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getAuthUser, createApiResponse } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import bcryptjs from 'bcryptjs'; // Changed from bcrypt to bcryptjs
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
+import bcryptjs from "bcryptjs";
 
-// GET user by ID
-// export async function GET(request, { params }) {
-//   try {
-//     const { id } = params;
-    
-//     // Check authentication
-//     const { user, error, status } = await getAuthUser(request);
-    
-//     if (error) {
-//       return createApiResponse(null, error, status);
-//     }
-    
-//     // Check authorization (admin can see any user, others can only see themselves)
-//     if (user.role !== 'ADMIN' && user.id !== id) {
-//       return createApiResponse(null, 'FORBIDDEN', 403);
-//     }
-    
-//     // Get user data
-//     const userData = await prisma.user.findUnique({
-//       where: { id },
-//       select: {
-//         id: true,
-//         name: true,
-//         email: true,
-//         role: true,
-//         userActivated: true,
-//         createdAt: true,
-//         updatedAt: true,
-//         // Include relations based on role
-//         student: user.role === 'STUDENT' || user.role === 'ADMIN' ? true : undefined,
-//         tutor: user.role === 'TUTOR' || user.role === 'ADMIN' ? true : undefined
-//       }
-//     });
-    
-//     if (!userData) {
-//       return createApiResponse(null, 'User not found', 404);
-//     }
-    
-//     return createApiResponse(userData);
-//   } catch (error) {
-//     console.error('Error fetching user:', error);
-//     return createApiResponse(null, 'Failed to fetch user', 500);
-//   }
-// }
-
-// GET user by ID (no auth for now)
+// GET /api/users/[id]
 export async function GET(request, { params }) {
   try {
     const { id } = params;
@@ -57,7 +12,7 @@ export async function GET(request, { params }) {
       where: { id },
       select: {
         id: true,
-        nama: true, // ganti dari "name" ke "nama"
+        nama: true,
         email: true,
         role: true,
         status: true,
@@ -66,127 +21,127 @@ export async function GET(request, { params }) {
         lastLoginAt: true,
         student: true,
         tutor: true,
-      }
+      },
     });
 
     if (!userData) {
-      return createApiResponse(null, 'User not found', 404);
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
     }
 
-    return createApiResponse(userData);
+    return NextResponse.json({ success: true, data: userData });
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return createApiResponse(null, 'Failed to fetch user', 500);
+    console.error("Error fetching user:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch user" },
+      { status: 500 }
+    );
   }
 }
 
-
-// PATCH - Update user
+// PATCH /api/users/[id]
 export async function PATCH(request, { params }) {
   try {
     const { id } = params;
-    
-    // Check authentication
     const { user, error, status } = await getAuthUser(request);
-    
+
     if (error) {
-      return createApiResponse(null, error, status);
+      return NextResponse.json({ success: false, message: error }, { status });
     }
-    
-    // Check authorization (admin can update any user, others can only update themselves)
-    if (user.role !== 'ADMIN' && user.id !== id) {
-      return createApiResponse(null, 'FORBIDDEN', 403);
+
+    if (user.role !== "ADMIN" && user.id !== id) {
+      return NextResponse.json(
+        { success: false, message: "FORBIDDEN" },
+        { status: 403 }
+      );
     }
-    
-    // Parse request body
+
     const body = await request.json();
-    const { name, email, password, role, userActivated } = body;
-    
-    // Build update data
+    const { nama, email, password, role, status: userStatus } = body;
+
     const updateData = {};
-    if (name) updateData.name = name;
+    if (nama) updateData.nama = nama;
     if (email) updateData.email = email;
-    
-    // Hash password if provided, using bcryptjs
+
     if (password) {
       const salt = await bcryptjs.genSalt(10);
       updateData.password = await bcryptjs.hash(password, salt);
     }
-    
-    // Only admin can change role and status
-    if (user.role === 'ADMIN') {
+
+    if (user.role === "ADMIN") {
       if (role) updateData.role = role;
-      if (userActivated) updateData.userActivated = userActivated;
+      if (userStatus) updateData.status = userStatus;
     }
-    
-    // Update user
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: updateData,
       select: {
         id: true,
-        name: true,
+        nama: true,
         email: true,
         role: true,
-        userActivated: true,
+        status: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
-    
-    return createApiResponse(updatedUser);
+
+    return NextResponse.json({ success: true, data: updatedUser });
   } catch (error) {
-    console.error('Error updating user:', error);
-    
-    // Handle unique constraint error
-    if (error.code === 'P2002') {
-      return createApiResponse(null, 'Email already in use', 409);
+    console.error("Error updating user:", error);
+
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { success: false, message: "Email already in use" },
+        { status: 409 }
+      );
     }
-    
-    return createApiResponse(null, 'Failed to update user', 500);
+
+    return NextResponse.json(
+      { success: false, message: "Failed to update user" },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE - Delete user
+// DELETE /api/users/[id]
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
-    
-    // Only admin can delete users
-    const { user, error, status } = await getAuthUser(request, ['ADMIN']);
-    
+    const { user, error, status } = await getAuthUser(request, ["ADMIN"]);
+
     if (error) {
-      return createApiResponse(null, error, status);
+      return NextResponse.json({ success: false, message: error }, { status });
     }
-    
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id }
-    });
-    
+
+    const existingUser = await prisma.user.findUnique({ where: { id } });
     if (!existingUser) {
-      return createApiResponse(null, 'User not found', 404);
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
     }
-    
-    // Delete related records first (considering the relations)
-    if (existingUser.role === 'STUDENT') {
-      await prisma.student.delete({
-        where: { userId: id }
-      });
-    } else if (existingUser.role === 'TUTOR') {
-      await prisma.tutor.delete({
-        where: { userId: id }
-      });
+
+    if (existingUser.role === "STUDENT") {
+      await prisma.student.delete({ where: { userId: id } });
+    } else if (existingUser.role === "TUTOR") {
+      await prisma.tutor.delete({ where: { userId: id } });
     }
-    
-    // Delete user
-    await prisma.user.delete({
-      where: { id }
+
+    await prisma.user.delete({ where: { id } });
+
+    return NextResponse.json({
+      success: true,
+      message: "User deleted successfully",
     });
-    
-    return createApiResponse({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    return createApiResponse(null, 'Failed to delete user', 500);
+    console.error("Error deleting user:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to delete user" },
+      { status: 500 }
+    );
   }
 }

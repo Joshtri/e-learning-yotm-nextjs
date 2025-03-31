@@ -47,7 +47,7 @@ export default function StudentCreatePage() {
         console.error("Error fetching data:", error);
         toast.error("Gagal memuat data yang diperlukan");
       } finally {
-        setLoading(false);
+      setLoading(false);
       }
     };
 
