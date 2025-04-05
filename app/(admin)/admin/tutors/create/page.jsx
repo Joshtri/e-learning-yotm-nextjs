@@ -98,6 +98,11 @@ export default function TutorCreatePage() {
           href: "/admin/tutors",
           label: "Kembali ke daftar tutor",
         }}
+        breadcrumbs={[
+          { title: "Tutor", href: "/admin/tutors" },
+          { title: "Tambah Tutor" },
+        ]}
+        
       />
 
       <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
