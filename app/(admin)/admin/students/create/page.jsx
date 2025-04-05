@@ -114,6 +114,10 @@ export default function StudentCreatePage() {
           href: "/admin/students",
           label: "Kembali ke daftar siswa",
         }}
+        breadcrumbs={[
+          { title: "Siswa", href: "/admin/students" },
+          { title: "Tambah Siswa" },
+        ]}
       />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -232,9 +236,7 @@ export default function StudentCreatePage() {
               placeholder="Pilih kelas siswa (opsional)"
               options={classes.map((kelas) => ({
                 value: kelas.id,
-                label: `${kelas.namaKelas} - ${
-                  kelas.program?.namaPaket || "Tanpa Program"
-                }`,
+                label: `${kelas.namaKelas} - ${kelas.program?.namaPaket || "Tanpa Program"} - ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai}`,
               }))}
             />
           </CardContent>
