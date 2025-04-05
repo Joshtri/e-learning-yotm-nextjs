@@ -13,6 +13,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 import AcademicYearAddModal from "@/components/academic-years/AcademicYearAddModal";
+import { Switch } from "@/components/ui/switch";
 
 export default function AcademicYearPage() {
   const [academicYears, setAcademicYears] = useState([]);
@@ -80,6 +81,42 @@ export default function AcademicYearPage() {
           <span className="text-muted-foreground">Tidak Aktif</span>
         ),
     },
+
+    {
+      header: "Status",
+      cell: (item) => (
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={item.isActive}
+            onCheckedChange={async (checked) => {
+              if (checked) {
+                try {
+                  await api.patch(`/academic-years/${item.id}/activate`);
+                  toast.success("Tahun ajaran diaktifkan");
+                  fetchAcademicYears(); // refresh
+                } catch (error) {
+                  console.error("Gagal aktifkan tahun ajaran:", error);
+                  toast.error("Gagal mengaktifkan tahun ajaran");
+                }
+              } else {
+                toast.info(
+                  "Tidak bisa menonaktifkan manual. Pilih tahun lain."
+                );
+              }
+            }}
+          />
+          <span
+            className={
+              item.isActive
+                ? "text-green-600 font-semibold"
+                : "text-muted-foreground"
+            }
+          >
+            {item.isActive ? "Aktif" : "Tidak Aktif"}
+          </span>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -87,6 +124,10 @@ export default function AcademicYearPage() {
       <div className="flex-1">
         <main className="p-6">
           <PageHeader
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Tahun Ajaran" },
+            ]} // Add breadcrumbs here
             title="Manajemen Tahun Ajaran"
             actions={
               <>
