@@ -8,10 +8,61 @@ export async function GET(request) {
     const search = searchParams.get("search");
     const classId = searchParams.get("classId");
     const gender = searchParams.get("jenisKelamin");
+    const academicYearId = searchParams.get("academicYearId");
 
     const skip = (page - 1) * limit;
 
-    const filter = {};
+    const filter = {
+      ...(classId && { classId }),
+      ...(gender && { jenisKelamin: gender }),
+      ...(search && {
+        OR: [
+          { namaLengkap: { contains: search, mode: "insensitive" } },
+          { nisn: { contains: search, mode: "insensitive" } },
+          { alamat: { contains: search, mode: "insensitive" } },
+          { tempatLahir: { contains: search, mode: "insensitive" } },
+          {
+            user: {
+              OR: [
+                { nama: { contains: search, mode: "insensitive" } },
+                { email: { contains: search, mode: "insensitive" } },
+              ],
+            },
+          },
+        ],
+      }),
+    };
+
+    // ⛳️ Tambahkan filter ini HANYA jika academicYearId disediakan
+    if (academicYearId) {
+      filter.OR = [
+        {
+          class: {
+            is: {
+              academicYearId,
+            },
+          },
+        },
+        {
+          classId: null, // tampilkan juga student yang belum punya kelas
+        },
+      ];
+    }
+
+    // Relasi ke class.academicYearId
+    // if (academicYearId) {
+    //   filter.class = {
+    //     academicYearId: academicYearId,
+    //   };
+    // }
+
+    if (classId) {
+      filter.classId = classId;
+    }
+
+    if (gender) {
+      filter.jenisKelamin = gender;
+    }
 
     if (search) {
       filter.OR = [
@@ -28,14 +79,6 @@ export async function GET(request) {
           },
         },
       ];
-    }
-
-    if (classId) {
-      filter.classId = classId;
-    }
-
-    if (gender) {
-      filter.jenisKelamin = gender;
     }
 
     const [students, total] = await Promise.all([
@@ -63,6 +106,14 @@ export async function GET(request) {
             select: {
               id: true,
               namaKelas: true,
+              academicYear: {
+                select: {
+                  id: true,
+                  tahunMulai: true,
+                  tahunSelesai: true,
+                  isActive: true,
+                },
+              },
               program: {
                 select: {
                   id: true,
@@ -107,14 +158,26 @@ export async function POST(request) {
   try {
     const data = await request.json();
 
+    const {
+      userId,
+      namaLengkap,
+      nisn,
+      jenisKelamin,
+      tempatLahir,
+      tanggalLahir,
+      alamat,
+      classId,
+    } = data;
+
+    // Validasi awal
     if (
-      !data.userId ||
-      !data.namaLengkap?.trim() ||
-      !data.nisn?.trim() ||
-      !data.jenisKelamin ||
-      !data.tempatLahir?.trim() ||
-      !data.tanggalLahir ||
-      !data.alamat?.trim()
+      !userId ||
+      !namaLengkap?.trim() ||
+      !nisn?.trim() ||
+      !jenisKelamin ||
+      !tempatLahir?.trim() ||
+      !tanggalLahir ||
+      !alamat?.trim()
     ) {
       return new Response(
         JSON.stringify({ success: false, message: "Semua field wajib diisi" }),
@@ -122,16 +185,32 @@ export async function POST(request) {
       );
     }
 
+    // Cek apakah user sudah punya profil siswa
+    const existingStudent = await prisma.student.findUnique({
+      where: { userId },
+    });
+
+    if (existingStudent) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Akun ini sudah memiliki profil siswa",
+        }),
+        { status: 409 }
+      );
+    }
+
+    // Buat data siswa
     const newStudent = await prisma.student.create({
       data: {
-        userId: data.userId,
-        namaLengkap: data.namaLengkap.trim(),
-        nisn: data.nisn.trim(),
-        jenisKelamin: data.jenisKelamin,
-        tempatLahir: data.tempatLahir.trim(),
-        tanggalLahir: new Date(data.tanggalLahir),
-        alamat: data.alamat.trim(),
-        classId: data.classId || null,
+        userId,
+        namaLengkap: namaLengkap.trim(),
+        nisn: nisn.trim(),
+        jenisKelamin,
+        tempatLahir: tempatLahir.trim(),
+        tanggalLahir: new Date(tanggalLahir),
+        alamat: alamat.trim(),
+        classId: classId || null,
       },
       include: {
         user: {
@@ -156,28 +235,11 @@ export async function POST(request) {
       },
     });
 
-    // Cek apakah userId sudah digunakan
-    const existingStudent = await prisma.student.findUnique({
-      where: {
-        userId: data.userId,
-      },
-    });
-
-    if (existingStudent) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Akun ini sudah memiliki profil siswa",
-        }),
-        { status: 400 }
-      );
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
-        data: newStudent,
         message: "Data siswa berhasil ditambahkan",
+        data: newStudent,
       }),
       { status: 201 }
     );
@@ -191,5 +253,5 @@ export async function POST(request) {
       }),
       { status: 500 }
     );
-}
+  }
 }
