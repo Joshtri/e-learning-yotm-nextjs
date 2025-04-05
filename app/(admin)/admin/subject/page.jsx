@@ -101,6 +101,11 @@ export default function SubjectPage() {
                 </Button>
               </>
             }
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Mata Pelajaran" },
+            ]}
+            description="Mengelola mata pelajaran yang tersedia di sistem."
           />
 
           <Tabs defaultValue="all" className="space-y-6">
