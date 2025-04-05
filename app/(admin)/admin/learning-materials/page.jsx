@@ -113,6 +113,10 @@ export default function LearningMaterialPage() {
             actions={
               <DataExport data={data} filename="materi.csv" label="Export" />
             }
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Materi Pembelajaran" },
+            ]}
           />
 
           <Tabs defaultValue="all" className="space-y-6">
