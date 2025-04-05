@@ -87,6 +87,11 @@ export default function ProgramSubjectPage() {
                 </Button>
               </>
             }
+            description="Mengelola mata pelajaran berdasarkan program yang ada."
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Program Mapel" },
+            ]} // Add breadcrumbs here
           />
 
           <Tabs defaultValue="all" className="space-y-6">
