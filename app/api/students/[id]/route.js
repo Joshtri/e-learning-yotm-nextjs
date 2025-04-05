@@ -1,40 +1,48 @@
-import { getAuthUser } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import prisma from "@/lib/prisma";
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    // Autentikasi user
-    const { user, error, status } = await getAuthUser(request);
-
-    if (error) {
-      return new Response(
-        JSON.stringify({ success: false, message: error }),
-        { status }
-      );
-    }
-
-    // Cari student
     const student = await prisma.student.findUnique({
       where: { id },
       include: {
         user: {
-          select: { id: true },
+          select: {
+            id: true,
+            nama: true,
+            email: true,
+          },
         },
         class: {
           include: {
-            program: true,
-            classSubjects: {
+            program: {
+              select: {
+                id: true,
+                namaPaket: true,
+              },
+            },
+            academicYear: {
+              select: {
+                tahunMulai: true,
+                tahunSelesai: true,
+                isActive: true,
+              },
+            },
+            classSubjectTutors: {
               include: {
-                subject: true,
-                classSubjectTutors: {
+                subject: {
+                  select: {
+                    id: true,
+                    namaMapel: true,
+                    deskripsi: true,
+                  },
+                },
+                tutor: {
                   include: {
-                    tutor: {
-                      include: {
-                        user: {
-                          select: { name: true },
-                        },
+                    user: {
+                      select: {
+                        nama: true,
                       },
                     },
                   },
@@ -53,35 +61,20 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Cek otorisasi
-    const isAdmin = user.role === 'ADMIN';
-    const isStudent = user.id === student.user.id;
-    const isTutor = user.role === 'TUTOR';
-
-    if (!isAdmin && !isStudent && !isTutor) {
-      return new Response(
-        JSON.stringify({ success: false, message: "FORBIDDEN" }),
-        { status: 403 }
-      );
-    }
-
-    // Format response
     const classData = student.class
       ? {
           id: student.class.id,
-          name: student.class.name,
-          program: {
-            id: student.class.program.id,
-            name: student.class.program.namaPaket,
-          },
-          subjects: student.class.classSubjects.map((cs) => ({
-            id: cs.id,
-            name: cs.subject.name,
-            description: cs.subject.description,
-            tutors: cs.classSubjectTutors.map((cst) => ({
+          namaKelas: student.class.namaKelas,
+          program: student.class.program,
+          academicYear: student.class.academicYear,
+          subjects: student.class.classSubjectTutors.map((cst) => ({
+            id: cst.subject.id,
+            namaMapel: cst.subject.namaMapel,
+            deskripsi: cst.subject.deskripsi,
+            tutor: {
               id: cst.tutor.id,
-              name: cst.tutor.user.name,
-            })),
+              nama: cst.tutor.user.nama,
+            },
           })),
         }
       : null;
@@ -92,7 +85,16 @@ export async function GET(request, { params }) {
         data: {
           student: {
             id: student.id,
-            userId: student.user.id,
+            namaLengkap: student.namaLengkap,
+            nisn: student.nisn,
+            jenisKelamin: student.jenisKelamin,
+            tempatLahir: student.tempatLahir,
+            tanggalLahir: student.tanggalLahir,
+            alamat: student.alamat,
+            fotoUrl: student.fotoUrl,
+            user: student.user,  
+            classId: student.classId, // ⬅️ ini penting!
+
           },
           class: classData,
         },
@@ -100,13 +102,52 @@ export async function GET(request, { params }) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching student classes:", error);
+    console.error("Error fetching student detail:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        message: "Failed to fetch student class details",
+        message: "Failed to fetch student detail",
         error: error.message,
       }),
+      { status: 500 }
+    );
+  }
+}
+
+
+
+// app/api/students/[id]/route.ts
+
+export async function PATCH(req, { params }) {
+  try {
+    const { id } = params;
+    const data = await req.json();
+
+    // Validasi dan prepare payload
+    const updatePayload = {
+      namaLengkap: data.namaLengkap,
+      nisn: data.nisn,
+      jenisKelamin: data.jenisKelamin,
+      tempatLahir: data.tempatLahir,
+      tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : null,
+      alamat: data.alamat,
+    };
+
+    // Tambahkan classId jika ada dan tidak kosong
+    if (data.classId) {
+      updatePayload.classId = data.classId;
+    }
+
+    const updated = await prisma.student.update({
+      where: { id },
+      data: updatePayload,
+    });
+
+    return Response.json({ success: true, data: updated });
+  } catch (error) {
+    console.error("Gagal update siswa:", error);
+    return new Response(
+      JSON.stringify({ success: false, message: "Gagal update siswa", error: error.message }),
       { status: 500 }
     );
   }
