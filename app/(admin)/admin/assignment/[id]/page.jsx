@@ -41,8 +41,8 @@ export default async function AssignmentDetailPage({ params }) {
       <div className="space-y-2">
         <h2 className="font-semibold mt-6">Rentang Tersedia:</h2>
         <p className="text-sm">
-          {new Date(assignment.tersediaDari).toLocaleDateString('id-ID')} -{' '}
-          {new Date(assignment.tersediaHingga).toLocaleDateString('id-ID')}
+          {new Date(assignment.waktuMulai).toLocaleDateString('id-ID')} -{' '}
+          {new Date(assignment.waktuSelesai).toLocaleDateString('id-ID')}
         </p>
 
         {assignment.batasWaktuMenit && (
