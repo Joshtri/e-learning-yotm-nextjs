@@ -94,6 +94,11 @@ export default function ClassesPage() {
                 </Button>
               </>
             }
+
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Kelas" },
+            ]}
           />
 
           <Tabs defaultValue="all" className="space-y-6">
