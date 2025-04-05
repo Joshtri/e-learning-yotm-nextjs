@@ -86,6 +86,12 @@ export default function UserDetailPage() {
             Edit Pengguna
           </Button>
         }
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "Pengguna", href: "/admin/users" },
+          { label: user.nama },
+        ]}
+        
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
