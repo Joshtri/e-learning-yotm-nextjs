@@ -90,6 +90,11 @@ export default function ProgramPage() {
                 </Button>
               </>
             }
+            description={"Kelola program yang tersedia di sistem. Anda dapat menambah, mengedit, atau menghapus program sesuai kebutuhan."}
+            breadcrumbs={[
+              { title: "Dashboard", href: "/admin" },
+              { title: "Program", href: "/admin/programs" },
+            ]}
           />
 
           <Tabs defaultValue="all" className="space-y-6">
