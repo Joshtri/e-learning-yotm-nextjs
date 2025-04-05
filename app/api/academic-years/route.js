@@ -30,14 +30,14 @@ export async function GET(request) {
     const [academicYears, total] = await Promise.all([
       prisma.academicYear.findMany({
         where,
+        orderBy: { tahunMulai: "desc" },
         skip,
         take: limit,
-        orderBy: { tahunMulai: "desc" },
       }),
       prisma.academicYear.count({ where }),
     ]);
 
-    return NextResponse.json({
+    return Response.json({
       success: true,
       data: {
         academicYears,
@@ -51,7 +51,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Error fetching academic years:", error);
-    return NextResponse.json(
+    return Response.json(
       {
         success: false,
         message: "Gagal mengambil data tahun ajaran",
@@ -61,6 +61,7 @@ export async function GET(request) {
     );
   }
 }
+
 
 // POST - Tambah tahun ajaran baru
 export async function POST(request) {
