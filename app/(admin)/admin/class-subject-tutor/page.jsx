@@ -11,30 +11,57 @@ import { DataExport } from "@/components/ui/data-export";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import ClassSubjectTutorAddModal from "@/components/class-subject-tutor/ClassSubjectTutorAddModal";
+import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 
 export default function ClassSubjectTutorPage() {
   const [data, setData] = useState([]);
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [tutors, setTutors] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch Academic Years
+  const fetchAcademicYears = async () => {
+    try {
+      const res = await api.get("/academic-years");
+      const years = res.data.data.academicYears || [];
+
+      setAcademicYears(years);
+
+      const activeYear = years.find((y) => y.isActive);
+      if (activeYear) {
+        setSelectedAcademicYear(activeYear.id);
+      } else if (years.length > 0) {
+        setSelectedAcademicYear(years[0].id); // fallback
+      }
+    } catch (err) {
+      toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      const params = new URLSearchParams();
+      if (selectedAcademicYear) {
+        params.append("academicYearId", selectedAcademicYear);
+      }
+
       const [res, clsRes, subRes, tutRes] = await Promise.all([
-        api.get("/class-subject-tutors"),
+        api.get(`/class-subject-tutors?${params.toString()}`),
         api.get("/classes"),
         api.get("/subjects"),
         api.get("/tutors"),
       ]);
 
       setData(res.data.data);
-      setClasses(clsRes.data.data.classes || []); // kalau dibungkus di "classes"
-      setSubjects(subRes.data.data.subjects || []); // kalau dibungkus di "subjects"
-      setTutors(tutRes.data.data.tutors || []); // kalau dibungkus di "tutors"
+      setClasses(clsRes.data.data.classes || []);
+      setSubjects(subRes.data.data.subjects || []);
+      setTutors(tutRes.data.data.tutors || []);
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data jadwal belajar");
@@ -44,8 +71,12 @@ export default function ClassSubjectTutorPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchAcademicYears();
   }, []);
+
+  useEffect(() => {
+    if (selectedAcademicYear) fetchData();
+  }, [selectedAcademicYear]);
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
@@ -101,6 +132,10 @@ export default function ClassSubjectTutorPage() {
                 </Button>
               </>
             }
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Pembagian Jadwal Belajar" },
+            ]} // Add breadcrumbs here
           />
 
           <Tabs defaultValue="all" className="space-y-6">
@@ -108,7 +143,18 @@ export default function ClassSubjectTutorPage() {
               searchValue={searchQuery}
               onSearchChange={(value) => setSearchQuery(value)}
               searchPlaceholder="Cari berdasarkan kelas, mapel, atau tutor..."
-              filterOptions={[]}
+              filterOptions={[
+                {
+                  label: "Tahun Ajaran",
+                  content: (
+                    <AcademicYearFilter
+                      academicYears={academicYears}
+                      selectedId={selectedAcademicYear}
+                      onChange={(val) => setSelectedAcademicYear(val)}
+                    />
+                  ),
+                },
+              ]}
             />
 
             <TabsContent value="all" className="space-y-4">
