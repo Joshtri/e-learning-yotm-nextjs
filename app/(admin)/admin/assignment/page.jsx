@@ -72,8 +72,8 @@ export default function AssignmentPage() {
     {
       header: 'Aktif',
       cell: (row) =>
-        `${new Date(row.tersediaDari).toLocaleDateString('id-ID')} - ${new Date(
-          row.tersediaHingga
+        `${new Date(row.waktuMulai).toLocaleDateString('id-ID')} - ${new Date(
+          row.waktuSelesai
         ).toLocaleDateString('id-ID')}`,
     },
     {
