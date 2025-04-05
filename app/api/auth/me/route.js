@@ -1,40 +1,21 @@
-import { NextResponse } from 'next/server';
-import { getAuthUser, createApiResponse } from '@/lib/auth';
-import prisma from '@/lib/db';
+// /app/api/auth/me/route.js
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
 
-export async function GET(request) {
+export async function GET() {
   try {
-    // Check authentication
-    const { user, error, status } = await getAuthUser(request);
-    
-    if (error) {
-      return createApiResponse(null, error, status);
+    const token = cookies().get("auth_token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    
-    // Get fresh user data from database
-    const userData = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        userActivated: true,
-        createdAt: true,
-        updatedAt: true,
-        // Include role-specific data
-        student: user.role === 'STUDENT' ? true : undefined,
-        tutor: user.role === 'TUTOR' ? true : undefined
-      }
-    });
-    
-    if (!userData) {
-      return createApiResponse(null, 'User not found', 404);
-    }
-    
-    return createApiResponse(userData);
+
+    const user = jwt.verify(token, process.env.JWT_SECRET);
+
+    return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error fetching current user:', error);
-    return createApiResponse(null, 'Failed to fetch user data', 500);
+    console.error("Auth error:", error);
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }
