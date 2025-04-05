@@ -207,6 +207,10 @@ export default function EditUserPage() {
           href: `/admin/users/${id}`,
           label: "Kembali ke detail pengguna",
         }}
+        breadcrumbs={[
+          { title: "Pengguna", href: "/admin/users" },
+          { title: "Edit Pengguna" },
+        ]}
       />
 
       <Form {...form}>
