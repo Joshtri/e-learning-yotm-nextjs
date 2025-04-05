@@ -1,13 +1,54 @@
 // /app/api/class-subject-tutors/route.ts
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const academicYearId = searchParams.get("academicYearId");
+
+    const where = academicYearId
+      ? {
+          class: {
+            academicYearId,
+          },
+        }
+      : undefined;
+
     const data = await prisma.classSubjectTutor.findMany({
+      where,
       include: {
-        class: { select: { id: true, namaKelas: true } },
-        subject: { select: { id: true, namaMapel: true } },
-        tutor: { select: { id: true, namaLengkap: true } },
+        class: {
+          select: {
+            id: true,
+            namaKelas: true,
+            academicYear: {
+              select: {
+                id: true,
+                tahunMulai: true,
+                tahunSelesai: true,
+              },
+            },
+            program: {
+              select: {
+                id: true,
+                namaPaket: true,
+              },
+            },
+          },
+        },
+        subject: {
+          select: {
+            id: true,
+            namaMapel: true,
+          },
+        },
+        tutor: {
+          select: {
+            id: true,
+            namaLengkap: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -21,6 +62,7 @@ export async function GET() {
     );
   }
 }
+
 
 export async function POST(request) {
   try {
