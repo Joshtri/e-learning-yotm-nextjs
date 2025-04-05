@@ -89,6 +89,10 @@ export default function ClassCreatePage() {
         title="Tambah Kelas Baru"
         description="Isi informasi kelas yang ingin ditambahkan"
         backButton={{ href: "/admin/classes", label: "Kembali ke daftar kelas" }}
+        breadcrumbs={[
+          { title: "Kelas", href: "/admin/classes" },
+          { title: "Tambah Kelas" },
+        ]}
       />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
