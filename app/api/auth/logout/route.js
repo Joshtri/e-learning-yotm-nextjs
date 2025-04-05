@@ -1,16 +1,19 @@
-import { NextResponse } from 'next/server';
-import { createApiResponse } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
 
 export async function POST() {
-  try {
-    // Clear auth cookie
-    const cookieStore = cookies();
-    cookieStore.delete('auth_token');
-    
-    return createApiResponse({ message: 'Logged out successfully' });
-  } catch (error) {
-    console.error('Error during logout:', error);
-    return createApiResponse(null, 'Logout failed', 500);
-  }
+  // Hapus token dari cookie (misal bernama 'token')
+  const response = NextResponse.json(
+    { success: true, message: "Logged out successfully" },
+    { status: 200 }
+  );
+
+  // Clear cookie 'token'
+  response.cookies.set("token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    expires: new Date(0), // langsung expired
+    path: "/",
+  });
+
+  return response;
 }
