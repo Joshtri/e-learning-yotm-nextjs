@@ -13,7 +13,7 @@ export async function GET() {
           },
         },
       },
-      orderBy: { tersediaDari: "desc" },
+      orderBy: { waktuMulai: "desc" },
     });
 
     return new Response(JSON.stringify({ success: true, data: assignments }), {
