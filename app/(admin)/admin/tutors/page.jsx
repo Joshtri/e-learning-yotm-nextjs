@@ -109,6 +109,11 @@ export default function TutorPage() {
                 </Button>
               </>
             }
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Tutor" },
+            ]}
+            
           />
 
           <Tabs defaultValue="all" className="space-y-6">
