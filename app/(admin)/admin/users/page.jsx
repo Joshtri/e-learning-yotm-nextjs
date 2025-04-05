@@ -92,7 +92,7 @@ export default function UsersPage() {
       className: "w-[50px]",
     },
     {
-      header: "Nama",
+      header: "Username account",
       cell: (user) => (
         <div className="flex items-center gap-2">
           <EntityAvatar name={user.nama} /> {/* Ubah di sini */}
@@ -153,9 +153,9 @@ export default function UsersPage() {
   const userFormFields = [
     {
       name: "nama",
-      label: "Nama Lengkap",
-      placeholder: "Masukkan nama lengkap",
-      validation: { required: "Nama wajib diisi" },
+      label: "Username",
+      placeholder: "Masukkan username",
+      validation: { required: "username wajib diisi" },
     },
     {
       name: "email",
@@ -285,6 +285,11 @@ export default function UsersPage() {
                 </Button>
               </>
             }
+            breadcrumbs={[
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Pengguna" },
+            ]} // Add breadcrumbs here
+            
           />
 
           <Tabs defaultValue="all" className="space-y-6">
