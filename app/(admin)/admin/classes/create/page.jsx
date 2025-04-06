@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { Save, Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-import api from "@/lib/axios"
-import FormField from "@/components/ui/form-field"
-import { Button } from "@/components/ui/button"
-import { PageHeader } from "@/components/ui/page-header"
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
+import api from "@/lib/axios";
+import FormField from "@/components/ui/form-field";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 
 export default function ClassCreatePage() {
-  const router = useRouter()
-  const [programs, setPrograms] = useState([])
-  const [academicYears, setAcademicYears] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const router = useRouter();
+  const [programs, setPrograms] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -25,54 +25,54 @@ export default function ClassCreatePage() {
       programId: "",
       academicYearId: "",
     },
-  })
+  });
 
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const [programRes, yearRes] = await Promise.all([
           api.get("/programs"),
           api.get("/academic-years"),
-        ])
-        setPrograms(programRes.data?.data?.programs || [])
-        setAcademicYears(yearRes.data?.data?.academicYears || [])
+        ]);
+        setPrograms(programRes.data?.data?.programs || []);
+        setAcademicYears(yearRes.data?.data?.academicYears || []);
       } catch (err) {
-        console.error("Gagal memuat data:", err)
-        toast.error("Gagal memuat data program/tahun ajaran")
+        console.error("Gagal memuat data:", err);
+        toast.error("Gagal memuat data program/tahun ajaran");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOptions()
-  }, [])
+    fetchOptions();
+  }, []);
 
   const onSubmit = async (data) => {
     try {
-      setSubmitting(true)
+      setSubmitting(true);
 
       const payload = {
         namaKelas: data.namaKelas.trim(),
         programId: data.programId,
         academicYearId: data.academicYearId,
-      }
+      };
 
-      const res = await api.post("/classes", payload)
+      const res = await api.post("/classes", payload);
 
       if (res.data.success) {
-        toast.success("Kelas berhasil ditambahkan")
-        router.push("/admin/classes")
+        toast.success("Kelas berhasil ditambahkan");
+        router.push("/admin/classes");
       } else {
-        throw new Error(res.data.message || "Gagal menambahkan kelas")
+        throw new Error(res.data.message || "Gagal menambahkan kelas");
       }
     } catch (err) {
-      console.error("Submit error:", err)
-      toast.error(err.response?.data?.message || err.message)
+      console.error("Submit error:", err);
+      toast.error(err.response?.data?.message || err.message);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -80,7 +80,7 @@ export default function ClassCreatePage() {
         <Loader2 className="w-6 h-6 animate-spin" />
         <p>Memuat data program dan tahun ajaran...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -88,7 +88,10 @@ export default function ClassCreatePage() {
       <PageHeader
         title="Tambah Kelas Baru"
         description="Isi informasi kelas yang ingin ditambahkan"
-        backButton={{ href: "/admin/classes", label: "Kembali ke daftar kelas" }}
+        backButton={{
+          href: "/admin/classes",
+          label: "Kembali ke daftar kelas",
+        }}
         breadcrumbs={[
           { title: "Kelas", href: "/admin/classes" },
           { title: "Tambah Kelas" },
@@ -105,9 +108,20 @@ export default function ClassCreatePage() {
               control={form.control}
               name="namaKelas"
               label="Nama Kelas"
-              placeholder="Contoh: Kelas 10 IPA A"
+              type="select"
+              placeholder="Pilih nama kelas"
               required
-              rules={{ required: "Nama kelas wajib diisi" }}
+              rules={{ required: "Nama kelas wajib dipilih" }}
+              options={[
+                { value: "Kelas 5", label: "Kelas 5" },
+                { value: "Kelas 6", label: "Kelas 6" },
+                { value: "Kelas 7", label: "Kelas 7" },
+                { value: "Kelas 8", label: "Kelas 8" },
+                { value: "Kelas 9", label: "Kelas 9" },
+                { value: "Kelas 10", label: "Kelas 10" },
+                { value: "Kelas 11", label: "Kelas 11" },
+                { value: "Kelas 12", label: "Kelas 12" },
+              ]}
             />
 
             <FormField
@@ -165,5 +179,5 @@ export default function ClassCreatePage() {
         </div>
       </form>
     </div>
-  )
+  );
 }
