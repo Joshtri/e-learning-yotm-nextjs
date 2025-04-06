@@ -12,7 +12,7 @@ import { ArrowLeft, MessageSquare, Plus } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
-import DiscussionRoomModal from "@/components/tutors/discussions/DiscussionRoomModal";
+// import DiscussionRoomModal from "@/components/tutors/discussions/DiscussionRoomModal";
 
 export default function ClassDiscussionsPage() {
   const [data, setData] = useState([]);
@@ -157,7 +157,7 @@ export default function ClassDiscussionsPage() {
         </TabsContent>
       </Tabs>
 
-      {classInfo && (
+      {/* {classInfo && (
         <DiscussionRoomModal
           open={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -166,7 +166,7 @@ export default function ClassDiscussionsPage() {
           className={classInfo?.class?.namaKelas}
           subject={classInfo?.subject?.namaMapel}
         />
-      )}
+      )} */}
     </div>
   );
 }
