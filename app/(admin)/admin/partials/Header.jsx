@@ -100,8 +100,8 @@ export default function AdminHeader({ onMenuClick }) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/admin/settings" className="w-full cursor-pointer">
-                Pengaturan
+              <Link href="/admin/log-activity" className="w-full cursor-pointer">
+                Log Activity
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

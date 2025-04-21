@@ -13,6 +13,7 @@ import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { DataExport } from "@/components/ui/data-export";
+import { EntityActions } from "@/components/ui/entity-actions";
 
 export default function TutorPage() {
   const [tutors, setTutors] = useState([]);
@@ -92,6 +93,19 @@ export default function TutorPage() {
       header: "Pengalaman",
       accessorKey: "pengalaman",
     },
+    {
+      header: "Aksi",
+      cell: (user) => (
+        <EntityActions
+          entityId={user.id}
+          viewPath={`/admin/tutors/${user.id}`}
+          editPath={`/admin/users/${user.id}/edit`}
+          // onDelete={() => handleDeleteUser(user.id)}
+          // disableDelete={user.id === (currentUser?.id || "")} // Disable delete for current user
+        />
+      ),
+      className: "text-right",
+    },
   ];
 
   return (
@@ -102,8 +116,15 @@ export default function TutorPage() {
             title="Manajemen Tutor"
             actions={
               <>
-                <DataExport data={tutors} filename="tutors.csv" label="Export" />
-                <Button className="ml-2" onClick={() => router.push("/admin/tutors/create")}>
+                <DataExport
+                  data={tutors}
+                  filename="tutors.csv"
+                  label="Export"
+                />
+                <Button
+                  className="ml-2"
+                  onClick={() => router.push("/admin/tutors/create")}
+                >
                   <UserPlus className="mr-2 h-4 w-4" />
                   Tambah Tutor
                 </Button>
@@ -113,7 +134,6 @@ export default function TutorPage() {
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Tutor" },
             ]}
-            
           />
 
           <Tabs defaultValue="all" className="space-y-6">

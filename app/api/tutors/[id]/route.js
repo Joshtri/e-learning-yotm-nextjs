@@ -1,20 +1,19 @@
-import { NextResponse } from 'next/server';
-import { getAuthUser, createApiResponse } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 // GET tutor by ID
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    
-    // Check authentication
+
+    // 🔐 Auth check
     const { user, error, status } = await getAuthUser(request);
-    
     if (error) {
-      return createApiResponse(null, error, status);
+      return NextResponse.json({ success: false, message: error }, { status });
     }
-    
-    // Find the tutor
+
+    // 🔎 Fetch tutor with relational data
     const tutor = await prisma.tutor.findUnique({
       where: { id },
       include: {
@@ -24,8 +23,8 @@ export async function GET(request, { params }) {
             name: true,
             email: true,
             role: true,
-            userActivated: true
-          }
+            userActivated: true,
+          },
         },
         classSubjectTutors: {
           select: {
@@ -40,59 +39,62 @@ export async function GET(request, { params }) {
                     program: {
                       select: {
                         id: true,
-                        namaPaket: true
-                      }
-                    }
-                  }
+                        namaPaket: true,
+                      },
+                    },
+                  },
                 },
                 subject: {
                   select: {
                     id: true,
                     name: true,
-                    description: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    description: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
-    
+
     if (!tutor) {
-      return createApiResponse(null, 'Tutor not found', 404);
+      return NextResponse.json(
+        { success: false, message: "Tutor not found" },
+        { status: 404 }
+      );
     }
-    
-    // Check authorization - all authenticated users can see tutor details
-    // but detailed information is only for admin and the tutor themselves
-    const isSelfOrAdmin = user.role === 'ADMIN' || user.id === tutor.user.id;
-    
-    // Format tutor assignments
-    const assignments = tutor.classSubjectTutors.map(cst => ({
+
+    // 🔒 Authorization check: ADMIN or the tutor themself
+    const isSelfOrAdmin = user.role === "ADMIN" || user.id === tutor.user.id;
+
+    // 🧩 Format assignments
+    const assignments = tutor.classSubjectTutors.map((cst) => ({
       id: cst.id,
       class: cst.classSubject.class,
-      subject: cst.classSubject.subject
+      subject: cst.classSubject.subject,
     }));
-    
-    // Format the response based on authorization
+
+    // 📦 Final response payload
     const formattedTutor = {
       id: tutor.id,
       user: tutor.user,
       bio: tutor.bio,
       fotoUrl: tutor.fotoUrl,
-      assignments: assignments,
-      // Only include private details for self or admin
+      assignments,
       pendidikan: isSelfOrAdmin ? tutor.pendidikan : undefined,
       pengalaman: isSelfOrAdmin ? tutor.pengalaman : undefined,
       telepon: isSelfOrAdmin ? tutor.telepon : undefined,
       createdAt: tutor.createdAt,
-      updatedAt: tutor.updatedAt
+      updatedAt: tutor.updatedAt,
     };
-    
-    // Return tutor data
-    return createApiResponse(formattedTutor);
+
+    return NextResponse.json({ success: true, data: formattedTutor });
   } catch (error) {
-    console.error('Error fetching tutor:', error);
-    return createApiResponse(null, 'Failed to fetch tutor details', 500);
+    console.error("Error fetching tutor:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to fetch tutor details" },
+      { status: 500 }
+    );
   }
 }

@@ -29,7 +29,7 @@ export default function UsersPage() {
     page: 1,
     limit: 10,
     total: 0,
-    pages: 0
+    pages: 0,
   });
 
   // Check if user is admin and redirect if not
@@ -45,17 +45,17 @@ export default function UsersPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      params.append('page', pagination.page);
-      params.append('limit', pagination.limit);
-      
+      params.append("page", pagination.page);
+      params.append("limit", pagination.limit);
+
       if (selectedRole) {
-        params.append('role', selectedRole);
+        params.append("role", selectedRole);
       }
-      
+
       if (searchQuery) {
-        params.append('search', searchQuery);
+        params.append("search", searchQuery);
       }
-      
+
       const response = await api.get(`/users?${params.toString()}`);
       setUsers(response.data.data.users);
       setPagination(response.data.data.pagination);
@@ -75,7 +75,7 @@ export default function UsersPage() {
   // Filter users based on search query (client-side filtering)
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
-    
+
     return users.filter((user) => {
       return (
         user.nama.toLowerCase().includes(searchQuery.toLowerCase()) || // Ubah di sini
@@ -100,19 +100,21 @@ export default function UsersPage() {
         </div>
       ),
     },
-    
+
     {
       header: "Email",
       accessorKey: "email",
     },
     {
       header: "Role",
+      accessorKey: "role",
+
       cell: (user) => (
         <StatusBadge
           status={user.role}
           variants={{
             ADMIN: { variant: "default", label: "Admin" },
-            TUTOR: { variant: "secondary", label: "Tutor" },
+            TUTOR: { variant: "info", label: "Tutor" },
             STUDENT: { variant: "outline", label: "Siswa" },
           }}
         />
@@ -123,7 +125,7 @@ export default function UsersPage() {
       cell: (user) => (
         <StatusBadge
           status={user.status}
-          variants={{ 
+          variants={{
             ACTIVE: { variant: "success", label: "Aktif" },
             INACTIVE: { variant: "destructive", label: "Nonaktif" },
           }}
@@ -175,12 +177,12 @@ export default function UsersPage() {
       label: "Password",
       type: "password",
       placeholder: "••••••••",
-      validation: { 
+      validation: {
         required: "Password wajib diisi",
         minLength: {
           value: 8,
-          message: "Password minimal 8 karakter"
-        }
+          message: "Password minimal 8 karakter",
+        },
       },
     },
     {
@@ -231,12 +233,13 @@ export default function UsersPage() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) {
       try {
-        await api.delete(`/api/users/${userId}`);
+        await api.delete(`/users/${userId}`);
         toast.success("Pengguna berhasil dihapus");
         fetchUsers(); // Refresh the list
       } catch (error) {
         console.error("Failed to delete user:", error);
-        const errorMessage = error.response?.data?.error || "Gagal menghapus pengguna";
+        const errorMessage =
+        error.response?.data?.message || error.message || "Gagal menghapus pengguna";
         toast.error(errorMessage);
       }
     }
@@ -244,20 +247,21 @@ export default function UsersPage() {
 
   // Handle pagination change
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   // Create user function that will be used by EntityDialog
   const createUser = async (userData) => {
     // Remove confirmPassword as it's not needed in the API
     const { confirmPassword, ...userDataToSend } = userData;
-    
+
     try {
-      const response = await api.post('/api/users', userDataToSend);
+      const response = await api.post("/api/users", userDataToSend);
       return { success: true, data: response.data.data };
     } catch (error) {
       console.error("Error creating user:", error);
-      const errorMessage = error.response?.data?.error || "Gagal membuat pengguna";
+      const errorMessage =
+        error.response?.data?.error || "Gagal membuat pengguna";
       throw new Error(errorMessage);
     }
   };
@@ -274,11 +278,7 @@ export default function UsersPage() {
             title="Manajemen Pengguna"
             actions={
               <>
-                <DataExport
-                  data={users}
-                  filename="users.csv"
-                  label="Export"
-                />
+                <DataExport data={users} filename="users.csv" label="Export" />
                 <Button onClick={() => setIsCreateUserOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Tambah Pengguna
@@ -289,7 +289,6 @@ export default function UsersPage() {
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Pengguna" },
             ]} // Add breadcrumbs here
-            
           />
 
           <Tabs defaultValue="all" className="space-y-6">
@@ -297,13 +296,13 @@ export default function UsersPage() {
               searchValue={searchQuery}
               onSearchChange={(value) => {
                 setSearchQuery(value);
-                setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on search
+                setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
               }}
               searchPlaceholder="Cari pengguna..."
               filterOptions={roleFilterOptions}
               onFilterSelect={(value) => {
                 setSelectedRole(value);
-                setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on filter change
+                setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on filter change
               }}
               filterValue={selectedRole}
               filterLabel="Filter Berdasarkan"
@@ -322,7 +321,7 @@ export default function UsersPage() {
                   totalPages: pagination.pages,
                   onPageChange: handlePageChange,
                   totalItems: pagination.total,
-                  itemsPerPage: pagination.limit
+                  itemsPerPage: pagination.limit,
                 }}
               />
             </TabsContent>
@@ -338,6 +337,10 @@ export default function UsersPage() {
         title="Tambah Pengguna Baru"
         description="Buat akun pengguna baru untuk admin, tutor, atau siswa."
         fields={userFormFields}
+        onSuccess={() => {
+          fetchUsers();
+          setIsCreateUserOpen(false); // Close dialog after success
+        }}
         onSubmit={createUser}
         // onSuccess={() => {
         //   fetchUsers();

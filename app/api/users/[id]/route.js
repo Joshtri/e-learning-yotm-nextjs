@@ -107,16 +107,17 @@ export async function PATCH(request, { params }) {
   }
 }
 
-// DELETE /api/users/[id]
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
-    const { user, error, status } = await getAuthUser(request, ["ADMIN"]);
 
+    // 🔐 Auth: hanya ADMIN yang bisa hapus
+    const { user, error, status } = await getAuthUser(request, ["ADMIN"]);
     if (error) {
       return NextResponse.json({ success: false, message: error }, { status });
     }
 
+    // 🔎 Pastikan user ada
     const existingUser = await prisma.user.findUnique({ where: { id } });
     if (!existingUser) {
       return NextResponse.json(
@@ -125,12 +126,24 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    // 🧹 Hapus entitas relasional jika ada
     if (existingUser.role === "STUDENT") {
-      await prisma.student.delete({ where: { userId: id } });
+      const student = await prisma.student.findUnique({
+        where: { userId: id },
+      });
+      if (student) {
+        await prisma.student.delete({ where: { userId: id } });
+      }
     } else if (existingUser.role === "TUTOR") {
-      await prisma.tutor.delete({ where: { userId: id } });
+      const tutor = await prisma.tutor.findUnique({
+        where: { userId: id },
+      });
+      if (tutor) {
+        await prisma.tutor.delete({ where: { userId: id } });
+      }
     }
 
+    // 🧨 Hapus user utama
     await prisma.user.delete({ where: { id } });
 
     return NextResponse.json({
@@ -140,7 +153,13 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error("Error deleting user:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to delete user" },
+      {
+        success: false,
+        message:
+          error?.code === "P2025"
+            ? "Data sudah tidak tersedia"
+            : error.message || "Gagal menghapus pengguna",
+      },
       { status: 500 }
     );
   }

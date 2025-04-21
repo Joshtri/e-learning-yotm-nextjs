@@ -17,18 +17,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { toast } from "sonner";
-// import logoYotm from "@/public/logo-yotm.png";
-// import logoYotm from "/logo-yotm.png";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    setIsLoading(true);
+    setEmailError("");
+    setPasswordError("");
 
     try {
       const res = await axios.post("/api/auth/login", {
@@ -54,10 +60,22 @@ export default function LoginPage() {
       if (axios.isAxiosError(error)) {
         const errorMessage =
           error.response?.data?.message || "Terjadi kesalahan saat login";
+
         toast.error(errorMessage);
+
+        // Simple error mapping
+        if (errorMessage.toLowerCase().includes("email")) {
+          setEmailError(errorMessage);
+        } else if (errorMessage.toLowerCase().includes("password")) {
+          setPasswordError(errorMessage);
+        } else {
+          setEmailError(errorMessage);
+        }
       } else {
         toast.error("Terjadi kesalahan saat login");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,7 +89,7 @@ export default function LoginPage() {
               alt="Yayasan Obor Timor Logo"
               width={80}
               height={80}
-              className="rounded-full  "
+              className="rounded-full"
             />
           </div>
           <CardTitle className="text-2xl font-bold text-primary">
@@ -93,6 +111,9 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+              {emailError && (
+                <p className="text-sm text-red-600 mt-1">{emailError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -118,12 +139,21 @@ export default function LoginPage() {
                   </span>
                 </Button>
               </div>
+              {passwordError && (
+                <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button type="submit" className="w-full mt-7">
-              <LogIn className="mr-2 h-4 w-4" />
-              Masuk
+            <Button type="submit" className="w-full mt-7" disabled={isLoading}>
+              {isLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Masuk
+                </>
+              )}
             </Button>
             <p className="mt-4 text-sm text-center text-muted-foreground">
               Lupa password? Hubungi administrator

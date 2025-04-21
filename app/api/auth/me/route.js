@@ -8,14 +8,14 @@ export async function GET() {
     const token = cookies().get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ user: null }, { status: 200 });
     }
 
     const user = jwt.verify(token, process.env.JWT_SECRET);
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Auth error:", error);
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    console.error("JWT verify error:", error);
+    return NextResponse.json({ user: null }, { status: 200 });
   }
 }

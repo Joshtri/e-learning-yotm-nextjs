@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 // Navigation groups
 const navigationGroups = [
@@ -151,6 +152,7 @@ const navigationGroups = [
 ];
 
 const NavGroupComponent = ({ group, isOpen, expandedGroups, toggleGroup }) => {
+  const pathname = usePathname();
   const isGroupExpanded = expandedGroups[group.title];
 
   return (
@@ -181,36 +183,41 @@ const NavGroupComponent = ({ group, isOpen, expandedGroups, toggleGroup }) => {
             : "block"
         )}
       >
-        {group.items.map((item) => (
-          <Button
-            key={item.href}
-            variant="ghost"
-            asChild
-            className="justify-start w-full"
-          >
-            <Link href={item.href} className="flex items-center gap-2">
-              {item.icon}
-              <span
-                className={cn(
-                  "transition-opacity",
-                  isOpen ? "opacity-100" : "opacity-0 md:hidden"
-                )}
-              >
-                {item.title}
-              </span>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                  {item.badge}
-                </span>
+        {group.items.map((item) => {
+          const isActive = pathname.startsWith(item.href);
+          return (
+            <Button
+              key={item.href}
+              variant="ghost"
+              asChild
+              className={cn(
+                "justify-start w-full",
+                isActive && "bg-muted text-primary font-semibold"
               )}
-            </Link>
-          </Button>
-        ))}
+            >
+              <Link href={item.href} className="flex items-center gap-2 w-full">
+                {item.icon}
+                <span
+                  className={cn(
+                    "transition-opacity",
+                    isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                  )}
+                >
+                  {item.title}
+                </span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          );
+        })}
       </div>
     </div>
   );
 };
-
 export function AdminSidebar({ isOpen, onToggleSidebar, isMobile, onClose }) {
   const [expandedGroups, setExpandedGroups] = React.useState({
     Dashboard: true,

@@ -55,6 +55,19 @@ export async function POST(request) {
       data: { lastLoginAt: new Date() },
     });
 
+    // 🟩 Buat log aktivitas
+    await prisma.log.create({
+      data: {
+        userId: user.id,
+        action: "LOGIN",
+        metadata: {
+          email: user.email,
+          userAgent: request.headers.get("user-agent") || "unknown",
+          ip: request.headers.get("x-forwarded-for") || "unknown",
+        },
+      },
+    });
+
     // Set secure cookie
     const cookieStore = cookies();
     cookieStore.set("auth_token", token, {

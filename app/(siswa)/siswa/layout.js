@@ -1,19 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "../../globals.css";
 import { StudentSidebar } from "./partials/Sidebar";
 import StudentHeader from "./partials/Header";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "@/providers/themes-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -23,19 +20,12 @@ export default function StudentLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Handle responsive sidebar state
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
+      setIsSidebarOpen(window.innerWidth >= 768);
     };
 
-    // Set initial state
     handleResize();
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -60,7 +50,7 @@ export default function StudentLayout({ children }) {
               />
             </div>
 
-            {/* Mobile Sidebar with Overlay */}
+            {/* Mobile Sidebar Overlay */}
             {isMobileSidebarOpen && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -83,12 +73,7 @@ export default function StudentLayout({ children }) {
               <StudentHeader
                 onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               />
-
-              {/* Main Content Area */}
-              <div className="flex-1">
-                <Toaster richColors position="top-right" />
-                <main className="p-6">{children}</main>
-              </div>
+              <main className="flex-1 p-6">{children}</main>
             </div>
           </div>
         </ThemeProvider>

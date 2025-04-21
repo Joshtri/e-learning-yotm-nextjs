@@ -84,6 +84,7 @@ model User {
   tutor             Tutor?
   DiscussionRoom    DiscussionRoom[]
   DiscussionMessage DiscussionMessage[]
+  Log               Log[]
 
   // Index
   @@index([email])
@@ -389,4 +390,13 @@ model StudentClassHistory {
   nilaiAkhir Float? // total rata-rata nilai
 
   createdAt DateTime @default(now())
+}
+
+model Log {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  timestamp DateTime @default(now())
+  metadata  Json?
+  user      User     @relation(fields: [userId], references: [id])
 }

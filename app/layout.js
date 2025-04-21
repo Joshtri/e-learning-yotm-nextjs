@@ -1,5 +1,8 @@
+// app/layout.tsx
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner"; // ✅ tambahkan di sini
+import { ThemeProvider } from "@/providers/themes-provider"; // jika pakai ThemeProvider global
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +25,15 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Toaster richColors position="top-right" /> {/* ✅ Di sini saja */}
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
