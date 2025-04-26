@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading/loading-spinner";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -40,41 +41,58 @@ export default function TutorDashboardPage() {
   useEffect(() => {
     const fetchUserAndDashboard = async () => {
       try {
-        // Ambil data user
-        const userRes = await fetch("/api/auth/me");
-        if (!userRes.ok) throw new Error("Unauthorized");
-
-        const userData = await userRes.json();
-        const user = userData.user;
-        setCurrentUser(user);
-
-        // Cek role
-        if (user.role !== "TUTOR") {
-          router.replace("/auth/login");
+        setLoading(true);
+        
+        // 1. First check if user is authenticated
+        const userRes = await fetch("/api/auth/me", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        
+        if (!userRes.ok) {
+          router.replace("/");
           return;
         }
 
-        // Cek apakah sudah punya profil
-        const res = await fetch(
-          `/api/users/check-profile?userId=${user.id}&role=${user.role}`
-        );
-        const data = await res.json();
+        const userData = await userRes.json();
+        const user = userData.user;
+        
+        if (!user) {
+          router.replace("/");
+          return;
+        }
 
-        // Kalau belum punya profil, redirect ke halaman onboarding
-        if (!data.hasProfile) {
+        setCurrentUser(user);
+
+        // 2. Check if user has tutor role
+        if (user.role !== "TUTOR") {
+          router.replace("/");
+          return;
+        }
+
+        // 3. Check if tutor profile exists
+        const profileRes = await fetch(`/api/users/check-profile?userId=${user.id}&role=${user.role}`);
+        const profileData = await profileRes.json();
+        
+        if (!profileData.hasProfile) {
           router.replace("/onboarding/tutor");
           return;
         }
 
-        // Ambil data dashboard
+        // 4. Only if all checks pass, fetch dashboard data
         const dashboardRes = await fetch("/api/tutor/dashboard");
-        if (!dashboardRes.ok) throw new Error("Gagal ambil data dashboard");
+        if (!dashboardRes.ok) throw new Error("Failed to fetch dashboard data");
 
         const dashboard = await dashboardRes.json();
         setDashboardData(dashboard);
       } catch (err) {
         console.error("Error:", err);
         setError(err.message);
+        
+        // If it's a profile check error, redirect to onboarding
+        if (err.message.includes("tutor profile")) {
+          router.replace("/onboarding/tutor");
+        }
       } finally {
         setLoading(false);
       }
@@ -84,11 +102,7 @@ export default function TutorDashboardPage() {
   }, [router]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingSpinner/>
   }
 
   if (error) {
@@ -446,7 +460,7 @@ export default function TutorDashboardPage() {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => router.push("/tutor/materials/create")}
+                  onClick={() => router.push("/tutor/materials")}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Materi
                 </Button>
@@ -482,7 +496,7 @@ export default function TutorDashboardPage() {
                   <Button
                     variant="outline"
                     className="h-20 flex flex-col"
-                    onClick={() => router.push("/tutor/materials/create")}
+                    onClick={() => router.push("/tutor/materials")}
                   >
                     <BookOpen className="h-5 w-5 mb-1" />
                     <span>Buat Materi</span>
