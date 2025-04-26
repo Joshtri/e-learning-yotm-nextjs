@@ -60,7 +60,7 @@ export async function GET(req, { params }) {
       const s = submissionsMap.get(student.id);
       return {
         id: s?.id || `pending_${student.id}`,
-        nama: student.user?.nama || "-",
+        nama: student.namaLengkap || student.user?.nama || "-",
         status: s?.status || "NOT_STARTED",
         nilai: s?.nilai ?? null,
         waktuKumpul: s?.waktuKumpul ?? null,
