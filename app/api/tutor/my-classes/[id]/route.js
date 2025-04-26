@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getUserFromCookie } from "@/utils/auth"; // pastikan sudah dibuat
+import { getUserFromCookie } from "@/utils/auth";
 
-export async function GET(request, context) {
+export async function GET(request, { params }) {
   try {
     const user = getUserFromCookie();
 
@@ -18,12 +18,12 @@ export async function GET(request, context) {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
 
-    const classSubjectTutorId = context.params.id;
+    const classSubjectTutorId = params.id;
 
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
         id: classSubjectTutorId,
-        tutorId: tutor.id, // Validasi hanya yang miliknya
+        tutorId: tutor.id,
       },
       include: {
         class: {
