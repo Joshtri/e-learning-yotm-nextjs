@@ -2,15 +2,14 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import api from "@/lib/axios";
-import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FilterDropdown } from "@/components/ui/filter-dropdown";
+import { PageHeader } from "@/components/ui/page-header";
+import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function StudentSubjectsPage() {
   const [subjects, setSubjects] = useState([]);
@@ -76,8 +75,8 @@ export default function StudentSubjectsPage() {
   return (
     <div className="p-6">
       <PageHeader
-        title="Mata Pelajaran Anda"
-        description="Daftar mata pelajaran, materi, kuis, dan tugas"
+        title="Tugas Anda"
+        description="Daftar tugas yang sudah dikerjakan dan belum dikerjakan"
         actions={
           <div className="flex gap-2">
             <AcademicYearFilter
@@ -92,10 +91,7 @@ export default function StudentSubjectsPage() {
             />
           </div>
         }
-        breadcrumbs={[
-          { title: "Mata Pelajaran", href: "/siswa/subjects" },
-          { title: "Daftar Mata Pelajaran" },
-        ]}
+        breadcrumbs={[{ label: "Tugas" }]}
       />
 
       <div className="grid gap-4 mt-6">
@@ -161,7 +157,7 @@ export default function StudentSubjectsPage() {
                     {item.tugasAktif.map((tugas) => (
                       <div
                         key={tugas.id}
-                        className="flex justify-between items-center"
+                        className="flex justify-between items-center gap-4 py-2 border-b last:border-none"
                       >
                         <div>
                           <p className="font-semibold">{tugas.judul}</p>
@@ -173,15 +169,42 @@ export default function StudentSubjectsPage() {
                             )}
                           </p>
                         </div>
-                        <Badge
-                          variant={
-                            tugas.status === "SUDAH_MENGERJAKAN"
-                              ? "success"
-                              : "secondary"
-                          }
-                        >
-                          {tugas.status.replace("_", " ")}
-                        </Badge>
+
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              tugas.status === "SUDAH_MENGERJAKAN"
+                                ? "success"
+                                : "secondary"
+                            }
+                          >
+                            {tugas.status.replace("_", " ")}
+                          </Badge>
+
+                          {tugas.status === "BELUM_MENGERJAKAN" ? (
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/siswa/assignments/${tugas.id}/start`
+                                )
+                              }
+                              className="text-sm font-medium text-blue-600 hover:underline"
+                            >
+                              Kerjakan
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/siswa/assignments/${tugas.id}/preview`
+                                )
+                              }
+                              className="text-sm font-medium text-gray-600 hover:underline"
+                            >
+                              Lihat Jawaban Anda
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
