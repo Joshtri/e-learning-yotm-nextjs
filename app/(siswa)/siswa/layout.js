@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../../globals.css";
-import { StudentSidebar } from "./partials/Sidebar";
-import StudentHeader from "./partials/Header";
+import AppHeader from "@/components/partials/AppHeader";
+import { AppSidebar } from "@/components/partials/AppSidebar";
 import { ThemeProvider } from "@/providers/themes-provider";
 
 const geistSans = Geist({
@@ -17,21 +17,25 @@ const geistMono = Geist_Mono({
 });
 
 export default function StudentLayout({ children }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsSidebarOpen(window.innerWidth >= 768);
+    const checkIfMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsSidebarOpen(!mobile);
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -42,38 +46,17 @@ export default function StudentLayout({ children }) {
           disableTransitionOnChange
         >
           <div className="flex min-h-screen bg-background">
-            {/* Desktop Sidebar */}
-            <div className="hidden md:block">
-              <StudentSidebar
-                isOpen={isSidebarOpen}
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-              />
-            </div>
+            <AppSidebar
+              role="student"
+              isOpen={isSidebarOpen}
+              isMobile={isMobile}
+              onToggleSidebar={toggleSidebar}
+              onClose={() => setIsSidebarOpen(false)}
+            />
 
-            {/* Mobile Sidebar Overlay */}
-            {isMobileSidebarOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                onClick={() => setIsMobileSidebarOpen(false)}
-              />
-            )}
-
-            {/* Mobile Sidebar */}
-            <div className="md:hidden">
-              <StudentSidebar
-                isOpen={isMobileSidebarOpen}
-                onToggleSidebar={() =>
-                  setIsMobileSidebarOpen(!isMobileSidebarOpen)
-                }
-              />
-            </div>
-
-            {/* Main Content */}
-            <div className="flex flex-1 flex-col">
-              <StudentHeader
-                onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              />
-              <main className="flex-1 p-6">{children}</main>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <AppHeader role="student" onMenuClick={toggleSidebar} />
+              <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
             </div>
           </div>
         </ThemeProvider>
