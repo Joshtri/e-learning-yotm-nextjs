@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function ModalForm({
   isOpen,
@@ -11,63 +11,66 @@ export default function ModalForm({
   title,
   children,
   onSubmit,
-  submitText = 'Simpan',
-  size = 'md', // sm, md, lg, xl
+  submitText = "Simpan",
+  size = "md", // sm, md, lg, xl
 }) {
-  const [isClosing, setIsClosing] = useState(false)
+  const [isClosing, setIsClosing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle escape key press
   useEffect(() => {
-    const handleEscape = e => {
-      if (e.key === 'Escape') handleClose()
-    }
+    const handleEscape = (e) => {
+      if (e.key === "Escape") handleClose();
+    };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      // Prevent scrolling when modal is open
-      document.body.style.overflow = 'hidden'
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'auto'
-    }
-  }, [isOpen])
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
 
   const handleClose = () => {
-    setIsClosing(true)
+    if (isSubmitting) return; // ⛔ jangan tutup saat sedang submit
+    setIsClosing(true);
     setTimeout(() => {
-      setIsClosing(false)
-      onClose()
-    }, 200)
-  }
+      setIsClosing(false);
+      onClose();
+    }, 200);
+  };
 
-  const handleSubmit = e => {
-    e.preventDefault()
-    onSubmit(e)
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await onSubmit(e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // Determine modal width based on size prop
   const getModalWidth = () => {
     switch (size) {
-      case 'sm':
-        return 'max-w-md'
-      case 'md':
-        return 'max-w-lg'
-      case 'lg':
-        return 'max-w-2xl'
-      case 'xl':
-        return 'max-w-4xl'
+      case "sm":
+        return "max-w-md";
+      case "md":
+        return "max-w-lg";
+      case "lg":
+        return "max-w-2xl";
+      case "xl":
+        return "max-w-4xl";
       default:
-        return 'max-w-lg'
+        return "max-w-lg";
     }
-  }
+  };
 
-  if (!isOpen && !isClosing) return null
+  if (!isOpen && !isClosing) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay - separate from content */}
       <motion.div
         className="fixed inset-0 bg-black/50"
         initial={{ opacity: 0 }}
@@ -76,7 +79,6 @@ export default function ModalForm({
         onClick={handleClose}
       />
 
-      {/* Modal content */}
       <AnimatePresence>
         {(isOpen || isClosing) && (
           <motion.div
@@ -84,7 +86,7 @@ export default function ModalForm({
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
           >
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-semibold">{title}</h2>
@@ -97,14 +99,26 @@ export default function ModalForm({
               </button>
             </div>
 
-            <form onSubmit={onSubmit}>
+            <form onSubmit={handleSubmit}>
               <div className="p-4 max-h-[70vh] overflow-y-auto">{children}</div>
 
               <div className="flex justify-end gap-2 p-4 border-t bg-gray-50">
-                <Button type="button" variant="outline" onClick={handleClose}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                >
                   Batal
                 </Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {isSubmitting && (
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  )}
                   {submitText}
                 </Button>
               </div>
@@ -113,5 +127,5 @@ export default function ModalForm({
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }
