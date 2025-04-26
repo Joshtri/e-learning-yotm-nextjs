@@ -71,8 +71,8 @@ export default function AssignmentStartPage() {
           assignment?.classSubjectTutor?.class?.namaKelas || "-"
         } - ${assignment?.classSubjectTutor?.subject?.namaMapel || "-"}`}
         breadcrumbs={[
-          { title: "Tugas", href: "/siswa/assignments/list" },
-          { title: "Pengerjaan Tugas" },
+          { label: "Tugas", href: "/siswa/assignments/list" },
+          { label: "Pengerjaan Tugas" },
         ]}
       />
 
