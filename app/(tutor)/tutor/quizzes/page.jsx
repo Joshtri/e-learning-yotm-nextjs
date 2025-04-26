@@ -128,13 +128,12 @@ export default function TutorQuizPage() {
     {
       header: "Aksi",
       cell: (row) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             size="sm"
             variant="outline"
             onClick={() => router.push(`/tutor/quizzes/${row.id}/questions`)}
           >
-            <Eye className="h-4 w-4 mr-1" />
             Soal
           </Button>
           <Button
@@ -142,17 +141,21 @@ export default function TutorQuizPage() {
             variant="default"
             onClick={() => router.push(`/tutor/quizzes/${row.id}/questions`)}
           >
-            <FileText className="h-4 w-4 mr-1" />
             Jawaban
           </Button>
-
           <Button
             size="sm"
             variant="default"
             onClick={() => router.push(`/tutor/quizzes/${row.id}/students`)}
           >
-            <FileText className="h-4 w-4 mr-1" />
             Jawaban Siswa
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/tutor/quizzes/${row.id}`)}
+          >
+            Detail
           </Button>
         </div>
       ),
