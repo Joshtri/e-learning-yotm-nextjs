@@ -12,6 +12,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import ClassSubjectTutorAddModal from "@/components/class-subject-tutor/ClassSubjectTutorAddModal";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useRouter } from "next/navigation";
 
 export default function ClassSubjectTutorPage() {
   const [data, setData] = useState([]);
@@ -23,6 +24,8 @@ export default function ClassSubjectTutorPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const router = useRouter();
 
   // Fetch Academic Years
   const fetchAcademicYears = async () => {
@@ -110,6 +113,22 @@ export default function ClassSubjectTutorPage() {
       header: "Tutor",
       cell: (row) => row.tutor?.namaLengkap || "-",
     },
+
+    {
+      header: "Aksi",
+      className: "w-[120px]",
+      cell: (row) => (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            router.push(`/admin/class-subject-tutor/${row.id}/edit`)
+          }
+        >
+          Edit
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -157,15 +176,27 @@ export default function ClassSubjectTutorPage() {
               ]}
             />
 
-            <TabsContent value="all" className="space-y-4">
-              <DataTable
-                data={filteredData}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data..."
-                emptyMessage="Tidak ada data ditemukan"
-                keyExtractor={(item) => item.id}
-              />
+            <TabsContent value="all" className="space-y-6">
+              {Object.entries(
+                filteredData.reduce((acc, item) => {
+                  const kelas = item.class?.namaKelas || "Tanpa Kelas";
+                  if (!acc[kelas]) acc[kelas] = [];
+                  acc[kelas].push(item);
+                  return acc;
+                }, {})
+              ).map(([kelas, items]) => (
+                <div key={kelas} className="space-y-2">
+                  <h2 className="text-lg font-semibold">{kelas}</h2>
+                  <DataTable
+                    data={items}
+                    columns={columns}
+                    isLoading={isLoading}
+                    loadingMessage={`Memuat data untuk ${kelas}...`}
+                    emptyMessage={`Tidak ada data ditemukan untuk ${kelas}`}
+                    keyExtractor={(item) => item.id}
+                  />
+                </div>
+              ))}
             </TabsContent>
           </Tabs>
         </main>
