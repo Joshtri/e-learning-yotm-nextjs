@@ -115,7 +115,12 @@ export async function GET() {
             })),
         }));
 
-        return NextResponse.json({ success: true, data: mappedSubjects });
+        const filteredSubjectsWithTasks = mappedSubjects.filter(
+            (subject) => subject.tugasAktif.length > 0
+          );
+          
+          return NextResponse.json({ success: true, data: filteredSubjectsWithTasks });
+        // return NextResponse.json({ success: true, data: mappedSubjects });
     } catch (error) {
         console.error("Gagal mengambil data mata pelajaran siswa:", error);
         return NextResponse.json(
