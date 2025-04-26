@@ -142,8 +142,10 @@ export default function StudentsPage() {
       header: "Nama",
       cell: (student) => (
         <div className="flex items-center gap-2">
-          <EntityAvatar name={student.user?.nama || "-"} />
-          <div className="font-medium">{student.user?.nama || "-"}</div>
+          {/* <EntityAvatar name={student.user?.nama || "-"} />
+          <div className="font-medium">{student.user?.nama || "-"}</div> */}
+          <EntityAvatar name={student.namaLengkap || "-"} />
+          <div className="font-medium">{student.namaLengkap|| "-"}</div>
         </div>
       ),
     },
