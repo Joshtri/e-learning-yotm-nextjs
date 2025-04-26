@@ -1,8 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth"; // Import fungsi untuk mendapatkan user dari cookie
 import { NextResponse } from "next/server";
- 
- 
 
 // GET – Ambil data ujian milik tutor yang sedang login
 export async function GET() {
@@ -46,6 +44,7 @@ export async function GET() {
   }
 }
 
+// POST – Tambah ujian baru (hanya jika classSubjectTutorId milik tutor ini)
 // POST – Tambah ujian baru (hanya jika classSubjectTutorId milik tutor ini)
 export async function POST(req) {
   try {
@@ -99,6 +98,27 @@ export async function POST(req) {
         { message: "Anda tidak memiliki akses ke kelas ini" },
         { status: 403 }
       );
+    }
+
+    // ✅ Cek apakah sudah ada lebih dari 2 ujian untuk MIDTERM atau FINAL_EXAM
+    if (jenis === "MIDTERM" || jenis === "FINAL_EXAM") {
+      const existingCount = await prisma.assignment.count({
+        where: {
+          classSubjectTutorId,
+          jenis,
+        },
+      });
+
+      if (existingCount >= 2) {
+        return NextResponse.json(
+          {
+            message: `Ujian ${
+              jenis === "MIDTERM" ? "UTS" : "UAS"
+            } tidak boleh dibuat lebih dari 2 kali untuk kelas dan mapel ini.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const newExam = await prisma.assignment.create({
