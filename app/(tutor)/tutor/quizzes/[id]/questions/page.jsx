@@ -36,9 +36,9 @@ export default function QuizQuestionsPage() {
         title={`Daftar Soal Kuis`}
         description={`Judul: ${quizTitle}`}
         breadcrumbs={[
-          { title: "Kuis", href: "/tutor/quizzes" },
-          { title: "Detail Kuis", href: `/tutor/quizzes/${id}` },
-          { title: "Soal" },
+          { label: "Kuis", href: "/tutor/quizzes" },
+          // { label: "Detail Kuis", href: `/tutor/quizzes/${id}` },
+          { label: "Soal" },
         ]}
       />
 
