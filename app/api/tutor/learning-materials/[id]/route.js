@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { deleteFileFromFirebase, uploadFileToFirebase } from "@/lib/firebase";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
-
+ 
 export async function GET(_, { params }) {
   const user = getUserFromCookie();
 
@@ -154,6 +154,7 @@ export async function DELETE(_, { params }) {
       );
     }
 
+    // 🔥 Hapus file dari Firebase Storage
     if (existing.fileUrl) {
       await deleteFileFromFirebase(existing.fileUrl);
     }
