@@ -1234,10 +1234,10 @@ export default function AdminDashboard() {
                   <Button
                     variant="outline"
                     className="h-20 flex flex-col"
-                    onClick={() => router.push("/admin/academic/assignments")}
+                    onClick={() => router.push("/admin/assignments")}
                   >
                     <FileText className="h-5 w-5 mb-1" />
-                    <span>Tugas & Kuis</span>
+                    <span>Tugas</span>
                   </Button>
                 </div>
               </CardContent>
