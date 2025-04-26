@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { LoadingSpinner } from "@/components/ui/loading/loading-spinner";
 
 export default function MyClassesPage() {
   const [data, setData] = useState([]);
@@ -242,11 +243,12 @@ export default function MyClassesPage() {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <EmptyState
-              title="Belum ada kelas"
-              description="Anda belum memiliki kelas yang diajar pada tahun ajaran ini."
-              icon={<Users className="h-6 w-6 text-muted-foreground" />}
-            />
+            <LoadingSpinner/>
+            // <EmptyState
+            //   title="Belum ada kelas"
+            //   description="Anda belum memiliki kelas yang diajar pada tahun ajaran ini."
+            //   icon={<Users className="h-6 w-6 text-muted-foreground" />}
+            // />
           )}
         </TabsContent>
 
