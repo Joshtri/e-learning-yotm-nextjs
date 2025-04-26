@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
-import "../../globals.css";
-import AdminHeader from "./partials/Header";
-import { AdminSidebar } from "./partials/Sidebar";
+import AppHeader from "@/components/partials/AppHeader";
 import { ThemeProvider } from "@/providers/themes-provider";
+import { Geist, Geist_Mono } from "next/font/google";
+import { useEffect, useState } from "react";
+import "../../globals.css";
+import { AdminSidebar } from "./partials/Sidebar";
+import { AppSidebar } from "@/components/partials/AppSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,15 +46,17 @@ export default function AdminLayout({ children }) {
           disableTransitionOnChange
         >
           <div className="flex min-h-screen bg-background">
-            <AdminSidebar
+            {/* <AdminSidebar
               isOpen={isSidebarOpen}
               onToggleSidebar={toggleSidebar}
               isMobile={isMobile}
               onClose={() => setIsSidebarOpen(false)}
-            />
+            /> */}
+            <AppSidebar role="admin" isOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} isMobile={isMobile} onClose={() => setIsSidebarOpen(false)} />
+            
             <div className="flex-1 flex flex-col overflow-hidden">
-              <AdminHeader onMenuClick={toggleSidebar} />
-              <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
+            <AppHeader role="admin" onMenuClick={toggleSidebar} />
+            <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
             </div>
           </div>
         </ThemeProvider>
