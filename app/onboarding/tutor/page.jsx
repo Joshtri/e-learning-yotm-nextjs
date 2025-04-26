@@ -13,19 +13,40 @@ export default function OnboardingTutorPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/auth/me");
-        if (!res.ok) throw new Error("Unauthorized");
-
-        const data = await res.json();
-        if (data?.user?.role !== "TUTOR") {
-          router.replace("/auth/login");
+        setLoading(true);
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+          cache: "no-store"
+        });
+        
+        // Handle 401 responses by redirecting to login
+        if (res.status === 401) {
+          router.replace("/");
           return;
         }
 
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        
+        // If no user data, redirect to login
+        if (!data.user) {
+          router.replace("/");
+          return;
+        }
+        
+        // If user is not a tutor, redirect to appropriate dashboard
+        if (data.user.role !== "TUTOR") {
+          router.replace(`/${data.user.role.toLowerCase()}/dashboard`);
+          return;
+        }
+        
         setUser(data.user);
       } catch (error) {
-        console.error("Gagal mengambil data user:", error);
-        router.replace("/auth/login");
+        console.error("Failed to fetch user:", error);
+        router.replace("/");
       } finally {
         setLoading(false);
       }
