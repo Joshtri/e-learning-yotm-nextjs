@@ -1,19 +1,53 @@
-// /app/api/class-subject-tutors/route.ts
 import prisma from "@/lib/prisma";
-
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const academicYearId = searchParams.get("academicYearId");
 
-    const where = academicYearId
-      ? {
-          class: {
-            academicYearId,
-          },
+    const cookieStore = cookies();
+    const token = cookieStore.get("auth_token")?.value;
+
+    let role = null;
+    let userId = null;
+    let tutorId = null;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        role = decoded.role;
+        userId = decoded.id;
+
+        if (role === "TUTOR") {
+          const tutor = await prisma.tutor.findUnique({
+            where: { userId },
+            select: { id: true },
+          });
+
+          if (!tutor) {
+            return new Response(
+              JSON.stringify({ success: false, message: "Tutor not found" }),
+              { status: 404 }
+            );
+          }
+
+          tutorId = tutor.id;
         }
-      : undefined;
+      } catch (err) {
+        console.error("JWT verification failed", err);
+        return new Response(
+          JSON.stringify({ success: false, message: "Invalid token" }),
+          { status: 401 }
+        );
+      }
+    }
+
+    const where = {
+      ...(tutorId && { tutorId }), // filter hanya kalau TUTOR
+      ...(academicYearId && { class: { academicYearId } }),
+    };
 
     const data = await prisma.classSubjectTutor.findMany({
       where,
@@ -62,7 +96,6 @@ export async function GET(request) {
     );
   }
 }
-
 
 export async function POST(request) {
   try {
