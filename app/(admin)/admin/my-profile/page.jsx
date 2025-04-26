@@ -1,20 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import ProfileCard from "@/components/Profile/ProfileCard";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) setUser(data.user);
-      })
-      .catch(() => {
-        console.log("Error fetching user data");
-      });
+    const getUser = async () => {
+      try {
+        const res = await axios.get("/api/auth/me", {
+          withCredentials: true, // penting buat ambil cookie
+        });
+
+        if (res.data.user) {
+          setUser(res.data.user);
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+
+    getUser();
   }, []);
 
   const handleEdit = () => {
@@ -22,8 +30,10 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    // delete cookie logic here
-    window.location.href = "/login";
+    // simple logout logic
+    document.cookie =
+      "auth_token=; Max-Age=0; path=/; SameSite=Strict; secure;";
+    window.location.href = "/";
   };
 
   return <ProfileCard user={user} onEdit={handleEdit} onLogout={handleLogout} />;
