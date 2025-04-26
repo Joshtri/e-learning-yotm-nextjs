@@ -1,7 +1,9 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import FormField from "@/components/ui/form-field";
 
 export default function StudentForm({
@@ -9,17 +11,32 @@ export default function StudentForm({
   onSubmit,
   classOptions = [],
 }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     control,
     handleSubmit,
-    register,
     formState: { errors },
   } = useForm({
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      tanggalLahir: defaultValues.tanggalLahir
+        ? new Date(defaultValues.tanggalLahir).toISOString()
+        : "",
+    },
   });
 
+  const handleFormSubmit = async (values) => {
+    try {
+      setIsSubmitting(true);
+      await onSubmit(values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <FormField
         label="Nama Lengkap"
         name="namaLengkap"
@@ -27,7 +44,10 @@ export default function StudentForm({
         required
         placeholder="Nama lengkap siswa"
         error={errors.namaLengkap?.message}
-        {...register("namaLengkap", { required: "Nama wajib diisi" })}
+        rules={{
+          required: "Nama wajib diisi",
+          minLength: { value: 3, message: "Nama minimal 3 karakter" },
+        }}
       />
 
       <FormField
@@ -35,9 +55,21 @@ export default function StudentForm({
         name="nisn"
         control={control}
         required
-        placeholder="NISN siswa"
+        placeholder="10 digit NISN"
         error={errors.nisn?.message}
-        {...register("nisn", { required: "NISN wajib diisi" })}
+        maxLength={10}
+        onKeyDown={(e) => {
+          if (!/[0-9]|Backspace|Delete|Tab|ArrowLeft|ArrowRight/.test(e.key)) {
+            e.preventDefault();
+          }
+        }}
+        rules={{
+          required: "NISN wajib diisi",
+          pattern: {
+            value: /^[0-9]{10}$/,
+            message: "NISN harus 10 digit angka",
+          },
+        }}
       />
 
       <FormField
@@ -45,12 +77,14 @@ export default function StudentForm({
         name="jenisKelamin"
         control={control}
         type="select"
+        required
         options={[
           { label: "Laki-laki", value: "MALE" },
           { label: "Perempuan", value: "FEMALE" },
           { label: "Lainnya", value: "OTHER" },
         ]}
-        {...register("jenisKelamin")}
+        rules={{ required: "Jenis kelamin wajib dipilih" }}
+        error={errors.jenisKelamin?.message}
       />
 
       <FormField
@@ -58,15 +92,31 @@ export default function StudentForm({
         name="tempatLahir"
         control={control}
         placeholder="Contoh: Kupang"
-        {...register("tempatLahir")}
+        rules={{
+          required: "Tempat lahir wajib diisi",
+          minLength: { value: 3, message: "Minimal 3 karakter" },
+        }}
+        error={errors.tempatLahir?.message}
       />
 
       <FormField
         label="Tanggal Lahir"
         name="tanggalLahir"
         control={control}
-        type="date"
-        {...register("tanggalLahir")}
+        type="datetime"
+        required
+        placeholder="Pilih tanggal lahir"
+        rules={{
+          required: "Tanggal lahir wajib diisi",
+          validate: (value) => {
+            if (!value) return "Tanggal lahir wajib diisi";
+            const birthDate = new Date(value);
+            const today = new Date();
+            if (birthDate > today) return "Tanggal lahir tidak valid";
+            return true;
+          },
+        }}
+        error={errors.tanggalLahir?.message}
       />
 
       <FormField
@@ -74,27 +124,40 @@ export default function StudentForm({
         name="alamat"
         control={control}
         type="textarea"
-        {...register("alamat")}
+        rows={4}
+        rules={{
+          required: "Alamat wajib diisi",
+          minLength: { value: 10, message: "Alamat minimal 10 karakter" },
+        }}
+        error={errors.alamat?.message}
       />
 
-      {/* 👇 Tambahkan Select Class */}
       <FormField
         label="Kelas"
         name="classId"
         control={control}
         type="select"
         options={classOptions
-          .filter((cls) => cls.academicYear?.isActive) // 🔍 hanya tahun ajar aktif
+          .filter((cls) => cls.academicYear?.isActive)
           .map((cls) => ({
             label: `${cls.namaKelas} (${cls.program?.namaPaket}) - ${cls.academicYear?.tahunMulai}/${cls.academicYear?.tahunSelesai}`,
             value: cls.id,
           }))}
         placeholder="Pilih kelas"
-        {...register("classId")}
+        error={errors.classId?.message}
       />
 
       <div className="pt-4">
-        <Button type="submit">Simpan Perubahan</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Menyimpan...
+            </>
+          ) : (
+            "Simpan Perubahan"
+          )}
+        </Button>
       </div>
     </form>
   );
