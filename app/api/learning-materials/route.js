@@ -7,7 +7,7 @@ export async function GET() {
       include: {
         classSubjectTutor: {
           include: {
-            class: { select: { namaKelas: true } },
+            class: { select: { id: true, namaKelas: true } }, // <= perbaikan disini
             subject: { select: { namaMapel: true } },
             tutor: { select: { namaLengkap: true } },
           },
