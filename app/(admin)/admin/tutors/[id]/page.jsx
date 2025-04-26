@@ -57,7 +57,7 @@ export default function TutorDetailPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title={`Detail Tutor: ${tutor.user.name}`}
+        title={`Detail Tutor: ${tutor.user.nama}`}
         description="Informasi lengkap terkait tutor"
         backButton={{
           href: "/admin/tutors",
@@ -72,11 +72,12 @@ export default function TutorDetailPage() {
         breadcrumbs={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Tutor", href: "/admin/tutors" },
-          { label: tutor.user.name },
+          { label: tutor.user.nama },
         ]}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Informasi Dasar */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -86,9 +87,9 @@ export default function TutorDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center gap-4 p-4">
-              <EntityAvatar name={tutor.user.name} size="lg" />
+              <EntityAvatar name={tutor.user.nama} size="lg" />
               <div className="text-center">
-                <h3 className="text-xl font-semibold">{tutor.user.name}</h3>
+                <h3 className="text-xl font-semibold">{tutor.user.nama}</h3>
                 <p className="text-sm text-muted-foreground">
                   {tutor.user.email}
                 </p>
@@ -112,10 +113,11 @@ export default function TutorDetailPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
                 <StatusBadge
-                  status={tutor.user.userActivated}
+                  status={tutor.user.status}
                   variants={{
                     ACTIVE: { variant: "success", label: "Aktif" },
                     INACTIVE: { variant: "destructive", label: "Nonaktif" },
+                    PENDING: { variant: "secondary", label: "Menunggu" },
                   }}
                 />
               </div>
@@ -137,6 +139,7 @@ export default function TutorDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Informasi Tutor */}
         <Card>
           <CardHeader>
             <CardTitle>Informasi Tutor</CardTitle>
