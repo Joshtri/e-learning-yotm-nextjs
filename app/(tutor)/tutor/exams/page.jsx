@@ -29,6 +29,7 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { Trash2 } from "lucide-react";
 
 export default function TutorExamsPage() {
   const [data, setData] = useState([]);
@@ -112,6 +113,22 @@ export default function TutorExamsPage() {
     }
   };
 
+  const handleDelete = async (id) => {
+    const confirmDelete = confirm(
+      "Apakah Anda yakin ingin menghapus ujian ini?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/tutor/exams/${id}`);
+      toast.success("Ujian berhasil dihapus");
+      fetchData(); // refresh data
+    } catch (error) {
+      console.error("Gagal menghapus ujian:", error);
+      toast.error("Gagal menghapus ujian");
+    }
+  };
+
   const columns = [
     {
       header: "No",
@@ -190,6 +207,15 @@ export default function TutorExamsPage() {
               <FileText className="h-4 w-4 mr-1" />
               Jawaban
             </Link>
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => handleDelete(row.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Hapus
           </Button>
         </div>
       ),
