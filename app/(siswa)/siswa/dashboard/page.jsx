@@ -36,42 +36,51 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     const fetchUserAndDashboard = async () => {
       try {
-        // Ambil data user
-        const userRes = await fetch("/api/auth/me");
+        // Ambil data user dari /api/auth/me
+        const userRes = await fetch("/api/auth/me", {
+          cache: "no-store",
+          credentials: "include", // penting untuk pastikan cookie dikirim
+        });
+
         if (!userRes.ok) throw new Error("Unauthorized");
 
-        const userData = await userRes.json();
-        const user = userData.user;
-
-        // Validasi role
-        if (user.role !== "STUDENT") {
+        const { user } = await userRes.json();
+        if (!user || user.role !== "STUDENT") {
           router.replace("/auth/login");
           return;
         }
 
         // Cek profil student
         const profileRes = await fetch(
-          `/api/users/check-profile?userId=${user.id}&role=${user.role}`
+          `/api/users/check-profile?userId=${user.id}&role=STUDENT`,
+          { cache: "no-store" }
         );
-        const profileData = await profileRes.json();
 
-        if (!profileData.hasProfile) {
+        if (!profileRes.ok) {
+          throw new Error("Gagal memverifikasi profil student");
+        }
+
+        const { hasProfile } = await profileRes.json();
+        if (!hasProfile) {
           router.replace("/onboarding/siswa");
           return;
         }
 
-        // Fetch dashboard data (tanpa headers)
-        const dashboardRes = await fetch("/api/student/dashboard");
+        // Ambil data dashboard student
+        const dashboardRes = await fetch("/api/student/dashboard", {
+          cache: "no-store",
+          credentials: "include",
+        });
 
         if (!dashboardRes.ok) {
-          const errData = await dashboardRes.json();
-          throw new Error(errData.message || "Gagal memuat dashboard");
+          const { message } = await dashboardRes.json();
+          throw new Error(message || "Gagal memuat dashboard");
         }
 
         const dashboard = await dashboardRes.json();
         setDashboardData(dashboard);
       } catch (err) {
-        console.error("Error:", err);
+        console.error("Student Dashboard Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
