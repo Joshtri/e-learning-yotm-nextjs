@@ -77,6 +77,22 @@ export default function ClassesPage() {
           ? `${row.academicYear.tahunMulai}/${row.academicYear.tahunSelesai}`
           : "-",
     },
+
+    {
+      header: "Aksi",
+      className: "w-[120px]",
+      cell: (row) => (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/admin/classes/${row.id}`)}
+          >
+            Detail
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -87,14 +103,20 @@ export default function ClassesPage() {
             title="Manajemen Kelas"
             actions={
               <>
-                <DataExport data={classes} filename="classes.csv" label="Export" />
-                <Button className="ml-2" onClick={() => router.push("/admin/classes/create")}>
+                <DataExport
+                  data={classes}
+                  filename="classes.csv"
+                  label="Export"
+                />
+                <Button
+                  className="ml-2"
+                  onClick={() => router.push("/admin/classes/create")}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Tambah Kelas
                 </Button>
               </>
             }
-
             breadcrumbs={[
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Kelas" },
@@ -113,22 +135,26 @@ export default function ClassesPage() {
             />
 
             <TabsContent value="all" className="space-y-4">
-              <DataTable
-                data={filteredClasses}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data kelas..."
-                emptyMessage="Tidak ada data kelas yang ditemukan"
-                keyExtractor={(cls) => cls.id}
-                pagination={{
-                  currentPage: pagination.page,
-                  totalPages: pagination.pages,
-                  onPageChange: (newPage) =>
-                    setPagination((prev) => ({ ...prev, page: newPage })),
-                  totalItems: pagination.total,
-                  itemsPerPage: pagination.limit,
-                }}
-              />
+              {Object.entries(
+                filteredClasses.reduce((acc, cls) => {
+                  const program = cls.program?.namaPaket || "Tanpa Program";
+                  if (!acc[program]) acc[program] = [];
+                  acc[program].push(cls);
+                  return acc;
+                }, {})
+              ).map(([programName, groupItems]) => (
+                <div key={programName} className="space-y-2">
+                  <h2 className="text-lg font-semibold">{programName}</h2>
+                  <DataTable
+                    data={groupItems}
+                    columns={columns}
+                    isLoading={isLoading}
+                    loadingMessage={`Memuat data untuk ${programName}...`}
+                    emptyMessage={`Tidak ada kelas pada program ${programName}`}
+                    keyExtractor={(item) => item.id}
+                  />
+                </div>
+              ))}
             </TabsContent>
           </Tabs>
         </main>
