@@ -35,9 +35,9 @@ export default function LearningMaterialAddModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [classSubjectOptions, setClassSubjectOptions] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
-    // Set the default class subject tutor ID when it changes
     if (defaultClassSubjectTutorId) {
       setValue("classSubjectTutorId", defaultClassSubjectTutorId);
     }
@@ -45,12 +45,8 @@ export default function LearningMaterialAddModal({
 
   useEffect(() => {
     const fetchClassSubjects = async () => {
-      if (!open) return; // hanya fetch saat modal dibuka
-
-      // Skip fetching options if we already have a default value
-      if (defaultClassSubjectTutorId) {
-        return;
-      }
+      if (!open) return;
+      if (defaultClassSubjectTutorId) return;
 
       setLoadingOptions(true);
       try {
@@ -76,10 +72,28 @@ export default function LearningMaterialAddModal({
     try {
       let fileUrl = null;
 
-      if (data.file && data.file[0]) {
-        const file = data.file[0];
-        const storageRef = ref(storage, `materials/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
+      if (selectedFile) {
+        const isPDF =
+          selectedFile.type === "application/pdf" ||
+          selectedFile.name?.toLowerCase().endsWith(".pdf");
+
+        if (!isPDF) {
+          toast.error("Hanya file PDF yang diperbolehkan");
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (selectedFile.size > 3 * 1024 * 1024) {
+          toast.error("Ukuran file maksimal 3MB");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const storageRef = ref(
+          storage,
+          `materials/${Date.now()}_${selectedFile.name}`
+        );
+        await uploadBytes(storageRef, selectedFile);
         fileUrl = await getDownloadURL(storageRef);
       }
 
@@ -95,6 +109,7 @@ export default function LearningMaterialAddModal({
 
       toast.success("Materi berhasil ditambahkan");
       reset();
+      setSelectedFile(null);
       onClose();
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -113,6 +128,7 @@ export default function LearningMaterialAddModal({
       description="Silakan isi data materi yang ingin diunggah."
       onSubmit={handleSubmit(onSubmit)}
       isSubmitting={isSubmitting}
+      
     >
       <FormField
         label="Judul"
@@ -149,14 +165,17 @@ export default function LearningMaterialAddModal({
         />
       )}
 
-      <FormField
-        label="Upload File (Opsional)"
-        name="file"
-        control={control}
-        type="file"
-        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        {...register("file")}
-      />
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Upload File (PDF, max 3MB)
+        </label>
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
+        />
+      </div>
     </ModalForm>
   );
 }
