@@ -47,7 +47,7 @@ export default function StudentCreatePage() {
         console.error("Error fetching data:", error);
         toast.error("Gagal memuat data yang diperlukan");
       } finally {
-      setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -168,13 +168,14 @@ export default function StudentCreatePage() {
                 required
                 rules={{
                   required: "NISN wajib diisi",
-                  pattern: {
-                    value: /^[0-9]{10}$/,
-                    message: "NISN harus 10 digit angka",
+                  validate: {
+                    exactLength: (value) =>
+                      value.length === 10 || "NISN harus tepat 10 digit",
+                    onlyNumbers: (value) =>
+                      /^[0-9]+$/.test(value) || "NISN hanya boleh berisi angka",
                   },
                 }}
               />
-
               <FormField
                 control={form.control}
                 name="jenisKelamin"
@@ -202,11 +203,20 @@ export default function StudentCreatePage() {
                 rules={{ required: "Tempat lahir wajib diisi" }}
               />
 
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="tanggalLahir"
                 label="Tanggal Lahir"
                 type="date"
+                required
+                rules={{ required: "Tanggal lahir wajib diisi" }}
+              /> */}
+
+              <FormField
+                control={form.control}
+                name="tanggalLahir"
+                label="Tanggal Lahir"
+                type="birthdate" // type khusus untuk tanggal lahir
                 required
                 rules={{ required: "Tanggal lahir wajib diisi" }}
               />
@@ -236,7 +246,11 @@ export default function StudentCreatePage() {
               placeholder="Pilih kelas siswa (opsional)"
               options={classes.map((kelas) => ({
                 value: kelas.id,
-                label: `${kelas.namaKelas} - ${kelas.program?.namaPaket || "Tanpa Program"} - ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai}`,
+                label: `${kelas.namaKelas} - ${
+                  kelas.program?.namaPaket || "Tanpa Program"
+                } - ${kelas.academicYear?.tahunMulai}/${
+                  kelas.academicYear?.tahunSelesai
+                }`,
               }))}
             />
           </CardContent>
@@ -251,7 +265,11 @@ export default function StudentCreatePage() {
           >
             Batal
           </Button>
-          <Button type="submit" onClick={form.handleSubmit(onSubmit, onError)} disabled={submitting || loading}>
+          <Button
+            type="submit"
+            onClick={form.handleSubmit(onSubmit, onError)}
+            disabled={submitting || loading}
+          >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
