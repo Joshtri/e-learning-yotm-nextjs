@@ -28,8 +28,8 @@ export default function StudentQuizListPage() {
         title="Kuis Aktif"
         description="Berikut daftar kuis yang sedang tersedia untuk kamu"
         breadcrumbs={[
-          { title: "Kuis", href: "/siswa/quizzes" },
-          { title: "Aktif", href: "/siswa/quizzes/active" },
+          { label: "Kuis", href: "/siswa/quizzes" },
+          { label: "Aktif" },
         ]}
       />
 
