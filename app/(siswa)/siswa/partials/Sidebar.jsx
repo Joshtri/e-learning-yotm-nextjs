@@ -34,7 +34,7 @@ const navigationGroups = [
     title: "Pembelajaran",
     items: [
       {
-        title: "Subject Saya",
+        title: "Mata Pelajaran Saya",
         href: "/siswa/my-subject",
         icon: <FileText className="h-4 w-4" />,
       },
