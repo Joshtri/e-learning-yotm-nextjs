@@ -79,29 +79,40 @@ export default function TutorPage() {
     },
     {
       header: "Email",
-      accessorKey: "user.email",
+      cell: (tutor) => tutor.user?.email || "-",
     },
     {
       header: "Telepon",
-      accessorKey: "telepon",
+      cell: (tutor) => tutor.telepon || "-",
     },
     {
       header: "Pendidikan",
-      accessorKey: "pendidikan",
+      cell: (tutor) => tutor.pendidikan || "-",
     },
     {
       header: "Pengalaman",
-      accessorKey: "pengalaman",
+      cell: (tutor) => tutor.pengalaman || "-",
+    },
+    {
+      header: "Status",
+      cell: (tutor) => (
+        <span className="text-sm font-medium">
+          {tutor.status === "ACTIVE"
+            ? "Aktif"
+            : tutor.status === "INACTIVE"
+            ? "Nonaktif"
+            : "Menunggu"}
+        </span>
+      ),
     },
     {
       header: "Aksi",
-      cell: (user) => (
+      cell: (tutor) => (
         <EntityActions
-          entityId={user.id}
-          viewPath={`/admin/tutors/${user.id}`}
-          editPath={`/admin/users/${user.id}/edit`}
-          // onDelete={() => handleDeleteUser(user.id)}
-          // disableDelete={user.id === (currentUser?.id || "")} // Disable delete for current user
+          entityId={tutor.id}
+          viewPath={`/admin/tutors/${tutor.id}`}
+          editPath={`/admin/tutors/${tutor.id}/edit`}
+          // onDelete={() => handleDeleteUser(tutor.id)}
         />
       ),
       className: "text-right",
