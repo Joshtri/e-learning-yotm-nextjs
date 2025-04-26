@@ -23,6 +23,12 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Controller } from "react-hook-form";
+import { cn } from "@/lib/utils";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
 
 const FormField = forwardRef(
   (
@@ -114,6 +120,82 @@ const FormField = forwardRef(
           rules={rules}
           render={({ field }) => {
             switch (type) {
+              case "birthdate":
+                return (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        type="button"
+                        className={cn(
+                          "w-full justify-start text-left rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition focus-visible:ring-2 focus-visible:ring-primary/50",
+                          !field.value && "text-muted-foreground",
+                          className
+                        )}
+                        disabled={disabled}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>
+                          {field.value
+                            ? format(new Date(field.value), "dd MMMM yyyy", {
+                                locale: id,
+                              })
+                            : placeholder || "Pilih tanggal lahir"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0 border rounded-md shadow-md bg-white dark:bg-zinc-900"
+                      side="bottom"
+                      align="start"
+                    >
+                      <div className="flex">
+                        <div className="border-r p-2 max-h-[300px] overflow-y-auto">
+                          <h3 className="font-medium text-sm mb-2 px-2">
+                            Tahun
+                          </h3>
+                          {years.map((year) => (
+                            <div
+                              key={year}
+                              className={`px-3 py-1 text-sm rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                                field.value &&
+                                new Date(field.value).getFullYear() === year
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : ""
+                              }`}
+                              onClick={() => {
+                                const currentDate = field.value
+                                  ? new Date(field.value)
+                                  : new Date();
+                                const newDate = new Date(
+                                  currentDate.setFullYear(year)
+                                );
+                                field.onChange(newDate.toISOString());
+                              }}
+                            >
+                              {year}
+                            </div>
+                          ))}
+                        </div>
+                        <DayPicker
+                          mode="single"
+                          selected={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                          onSelect={(date) =>
+                            field.onChange(date?.toISOString())
+                          }
+                          locale={id}
+                          captionLayout="dropdown"
+                          fromYear={currentYear - 100}
+                          toYear={currentYear}
+                          initialFocus
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+
               case "date":
                 return (
                   <Popover>
