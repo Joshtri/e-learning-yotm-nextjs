@@ -13,6 +13,7 @@ enum Role {
   ADMIN
   TUTOR
   STUDENT
+  HOMEROOM_TEACHER
 }
 
 enum Status {
@@ -31,6 +32,10 @@ enum AssignmentType {
   MATERIAL
   EXERCISE
   QUIZ
+
+  DAILY_TEST // Ujian Harian
+  START_SEMESTER_TEST // Ujian Awal Semester
+
   MIDTERM
   FINAL_EXAM
 }
@@ -65,6 +70,13 @@ enum TutorStatus {
   RETIRED // Pensiun
   DECEASED // Meninggal dunia
   ON_LEAVE // Cuti panjang
+}
+
+enum AttendanceStatus {
+  PRESENT
+  SICK
+  EXCUSED
+  ABSENT
 }
 
 // ========== MAIN MODELS ==========
@@ -113,6 +125,9 @@ model Student {
   class               Class?                @relation("StudentClass", fields: [classId], references: [id])
   submissions         Submission[]
   StudentClassHistory StudentClassHistory[]
+  Attendance          Attendance[]
+  SkillScore          SkillScore[]
+  BehaviorScore       BehaviorScore[]
 
   // Index
   @@index([nisn])
@@ -136,6 +151,7 @@ model Tutor {
 
   // Relations
   classSubjectTutors ClassSubjectTutor[]
+  AttendanceSession  AttendanceSession[]
 
   // Index
   @@index([telepon])
@@ -149,6 +165,9 @@ model AcademicYear {
   isActive            Boolean               @default(false)
   classes             Class[]
   StudentClassHistory StudentClassHistory[]
+  Attendance          Attendance[]
+  AttendanceSession   AttendanceSession[]
+  BehaviorScore       BehaviorScore[]
 
   // Validation
   @@unique([tahunMulai, tahunSelesai])
@@ -176,6 +195,8 @@ model Class {
   students            Student[]             @relation("StudentClass")
   classSubjectTutors  ClassSubjectTutor[]
   StudentClassHistory StudentClassHistory[]
+  Attendance          Attendance[]
+  AttendanceSession   AttendanceSession[]
 
   // Index
   @@unique([namaKelas, programId, academicYearId])
@@ -191,8 +212,9 @@ model Subject {
   classSubjectTutors ClassSubjectTutor[]
   ProgramSubject     ProgramSubject[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  SkillScore SkillScore[]
 
   // Index
   @@unique([namaMapel])
@@ -374,6 +396,73 @@ model DiscussionMessage {
 
   @@index([roomId])
   @@index([senderId])
+}
+
+model Attendance {
+  id             String           @id @default(dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
+  studentId      String
+  classId        String
+  academicYearId String
+  date           DateTime
+  status         AttendanceStatus
+  createdAt      DateTime         @default(now())
+
+  student             Student            @relation(fields: [studentId], references: [id])
+  class               Class              @relation(fields: [classId], references: [id])
+  academicYear        AcademicYear       @relation(fields: [academicYearId], references: [id])
+  AttendanceSession   AttendanceSession? @relation(fields: [attendanceSessionId], references: [id])
+  attendanceSessionId String?            @db.VarChar(40)
+
+  @@index([studentId])
+  @@index([classId])
+}
+
+model AttendanceSession {
+  id             String   @id @default(dbgenerated("concat('ats_', gen_random_uuid())")) @db.VarChar(40)
+  tutorId        String
+  classId        String
+  academicYearId String // ❗ Terkait Tahun Ajaran
+  tanggal        DateTime
+  keterangan     String?  @db.VarChar(255)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tutor        Tutor        @relation(fields: [tutorId], references: [id])
+  class        Class        @relation(fields: [classId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  attendances  Attendance[]
+
+  @@index([academicYearId])
+}
+
+model SkillScore {
+  id         String   @id @default(dbgenerated("concat('skl_', gen_random_uuid())")) @db.VarChar(40)
+  studentId  String
+  subjectId  String
+  nilai      Float
+  keterangan String? // contoh: "Praktik Membuat Puisi", "Praktik Percobaan Kimia", dll
+  createdAt  DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([studentId, subjectId]) // ❗ 1 mapel, 1 nilai praktek per siswa
+}
+
+model BehaviorScore {
+  id             String   @id @default(dbgenerated("concat('bhs_', gen_random_uuid())")) @db.VarChar(40)
+  studentId      String
+  academicYearId String
+  spiritual      Float
+  sosial         Float
+  kehadiran      Float // presentase atau skor berdasarkan absensi
+  catatan        String? // opsional, misal "Sikap sangat baik", "Perlu perbaikan kehadiran"
+  createdAt      DateTime @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  @@unique([studentId, academicYearId]) // ❗ 1 tahun ajaran, 1 nilai behavior
 }
 
 model StudentClassHistory {
