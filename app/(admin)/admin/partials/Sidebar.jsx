@@ -62,6 +62,11 @@ const navigationGroups = [
     title: "Akademik",
     items: [
       {
+        title: "Paket",
+        href: "/admin/programs",
+        icon: <ClipboardList className="h-4 w-4" />,
+      },
+      {
         title: "Kelas",
         href: "/admin/classes",
         icon: <GraduationCap className="h-4 w-4" />,
@@ -81,11 +86,7 @@ const navigationGroups = [
         href: "/admin/program-subject",
         icon: <BookOpen className="h-4 w-4" />,
       },
-      {
-        title: "Paket",
-        href: "/admin/programs",
-        icon: <ClipboardList className="h-4 w-4" />,
-      },
+
       {
         title: "Penugasan Tutor",
         href: "/admin/class-subject-tutor",
