@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
+import { LoadingSpinner } from "@/components/ui/loading/loading-spinner";
 
 export default function ClassDetailPage() {
   const { id } = useParams();
@@ -26,7 +27,7 @@ export default function ClassDetailPage() {
     fetchClassDetail();
   }, [id]);
 
-  if (!data) return <div className="p-6">Memuat...</div>;
+  if (!data) return <LoadingSpinner/>
 
   return (
     <div className="p-6">
