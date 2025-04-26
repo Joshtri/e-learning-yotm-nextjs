@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function AssignmentSubmissionsPage() {
   const { id } = useParams(); // assignmentId
@@ -71,19 +72,42 @@ export default function AssignmentSubmissionsPage() {
     },
     {
       header: "Aksi",
-      cell: (row) =>
-        row.status === "NOT_STARTED" ? (
-          <span className="text-sm text-muted-foreground italic">
-            Belum mengerjakan
-          </span>
-        ) : (
-          <button
-            onClick={() => router.push(`/tutor/submissions/${row.id}/review`)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Review
-          </button>
-        ),
+      cell: (row) => {
+        if (row.status === "NOT_STARTED") {
+          return (
+            <span className="text-sm text-muted-foreground italic">
+              Belum mengerjakan
+            </span>
+          );
+        }
+
+        if (row.nilai != null) {
+          return (
+            <span className="text-sm text-green-600 font-medium">
+              Sudah dinilai
+            </span>
+          );
+        }
+
+        return (
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/tutor/submissions/${row.id}/review`)}
+            >
+              Review
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/tutor/submissions/${row.id}/review`)}
+            >
+              Beri Nilai
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -101,26 +125,17 @@ export default function AssignmentSubmissionsPage() {
           { label: "Tugas", href: "/tutor/assignments" },
           {
             label: "Jawaban Siswa",
-            href: `/tutor/assignments/${assignment.id}/submissions`,
           },
-          { label: "Review" }, // aktif (tanpa href)
         ]}
       />
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Daftar Jawaban</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            data={submissions}
-            columns={columns}
-            loadingMessage="Memuat jawaban..."
-            emptyMessage="Belum ada siswa yang mengerjakan"
-            keyExtractor={(item) => item.id}
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        data={submissions}
+        columns={columns}
+        loadingMessage="Memuat jawaban..."
+        emptyMessage="Belum ada siswa yang mengerjakan"
+        keyExtractor={(item) => item.id}
+      />
     </div>
   );
 }
