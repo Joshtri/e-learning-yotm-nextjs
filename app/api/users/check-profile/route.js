@@ -1,21 +1,35 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// Support both GET and POST methods
 export async function GET(req) {
-  const url = new URL(req.url);
-  const userId = url.searchParams.get("userId");
-  const role = url.searchParams.get("role");
+  try {
+    const url = new URL(req.url);
+    const userId = url.searchParams.get("userId");
+    const role = url.searchParams.get("role");
 
-  return checkProfile(userId, role);
+    return await checkProfile(userId, role);
+  } catch (error) {
+    console.error("Error in GET /check-profile:", error);
+    return NextResponse.json(
+      { hasProfile: false, error: "Unexpected error in GET" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req) {
-  const { userId, role } = await req.json();
-  return checkProfile(userId, role);
+  try {
+    const { userId, role } = await req.json();
+    return await checkProfile(userId, role);
+  } catch (error) {
+    console.error("Error in POST /check-profile:", error);
+    return NextResponse.json(
+      { hasProfile: false, error: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
 }
 
-// Helper function to check profile
 async function checkProfile(userId, role) {
   try {
     console.log("API CHECK PROFILE HIT:", { userId, role });
@@ -29,15 +43,15 @@ async function checkProfile(userId, role) {
 
     if (role === "TUTOR") {
       const tutor = await prisma.tutor.findUnique({ where: { userId } });
-      return NextResponse.json({ hasProfile: !!tutor });
+      return NextResponse.json({ hasProfile: Boolean(tutor) });
     }
 
     if (role === "STUDENT") {
       const student = await prisma.student.findUnique({ where: { userId } });
-      return NextResponse.json({ hasProfile: !!student });
+      return NextResponse.json({ hasProfile: Boolean(student) });
     }
 
-    // Admin always OK
+    // Admin or unknown roles assumed always OK
     return NextResponse.json({ hasProfile: true });
   } catch (error) {
     console.error("Error checking profile:", error);
