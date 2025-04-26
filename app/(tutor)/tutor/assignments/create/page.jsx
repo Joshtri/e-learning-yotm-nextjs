@@ -65,8 +65,8 @@ export default function AssignmentCreatePage() {
         title="Tambah Tugas"
         description="Buat tugas baru untuk siswa."
         breadcrumbs={[
-          { title: "Tugas", href: "/tutor/assignments" },
-          { title: "Tambah Tugas", href: "/tutor/assignments/create" },
+          { label: "Tugas", href: "/tutor/assignments" },
+          { label: "Tambah Tugas",  },
         ]}
       />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
