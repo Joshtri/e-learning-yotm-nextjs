@@ -16,7 +16,6 @@ function getUserFromCookie() {
 
 export async function GET(_, { params }) {
   const { id } = params;
-
   try {
     const user = getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -31,41 +30,66 @@ export async function GET(_, { params }) {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
 
-    // Ambil kuis berdasarkan ID dan pastikan milik tutor login
     const quiz = await prisma.quiz.findFirst({
       where: {
         id,
-        classSubjectTutor: {
-          tutorId: tutor.id,
-        },
+        classSubjectTutor: { tutorId: tutor.id },
       },
       include: {
+        classSubjectTutor: {
+          include: {
+            class: {
+              include: { academicYear: true, program: true },
+            },
+            subject: true,
+            tutor: { include: { user: true } },
+          },
+        },
         questions: {
           include: { options: true },
+        },
+        submissions: {
+          include: {
+            student: {
+              include: {
+                user: true,
+                class: {
+                  include: { academicYear: true, program: true },
+                },
+              },
+            },
+            answers: {
+              include: {
+                question: true,
+              },
+            },
+          },
         },
       },
     });
 
     if (!quiz) {
       return NextResponse.json(
-        { success: false, message: "Kuis tidak ditemukan atau Anda tidak memiliki akses" },
+        {
+          success: false,
+          message: "Kuis tidak ditemukan atau Anda tidak memiliki akses",
+        },
         { status: 404 }
       );
     }
 
-    // Sort manual berdasarkan createdAt (jika perlu)
     quiz.questions = quiz.questions.sort(
       (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
     );
 
-    return NextResponse.json({
-      success: true,
-      data: quiz,
-    });
+    return NextResponse.json({ success: true, data: quiz });
   } catch (error) {
     console.error("Gagal ambil detail kuis:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal memuat detail kuis" },
+      {
+        success: false,
+        message: "Gagal memuat detail kuis",
+      },
       { status: 500 }
     );
   }
