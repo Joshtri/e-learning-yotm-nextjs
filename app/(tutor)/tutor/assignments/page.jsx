@@ -199,7 +199,7 @@ export default function TutorAssignmentPage() {
             }
           >
             <FileText className="h-4 w-4 mr-1" />
-            Jawaban
+            Periksa Jawaban
           </Button>
         </div>
       ),
