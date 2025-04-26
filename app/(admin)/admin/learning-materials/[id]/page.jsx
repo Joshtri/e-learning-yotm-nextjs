@@ -1,74 +1,92 @@
-import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import api from "@/lib/axios";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
-export default async function LearningMaterialDetailPage({ params }) {
-  const { id } = params;
+export default function LearningMaterialDetailPage() {
+  const { id } = useParams();
+  const [material, setMaterial] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  let material = null;
+  const fetchMaterial = async () => {
+    try {
+      setIsLoading(true);
+      const res = await api.get(`/learning-materials/${id}`);
+      setMaterial(res.data.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal memuat data materi");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  try {
-    const res = await api.get(`/learning-materials/${id}`);
-    material = res.data.data;
-  } catch (error) {
-    console.error("Gagal fetch detail materi:", error);
-    return notFound();
-  }
+  useEffect(() => {
+    if (id) fetchMaterial();
+  }, [id]);
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-1">{material.judul}</h1>
-        <p className="text-sm text-muted-foreground">
-          Dibuat: {new Date(material.createdAt).toLocaleDateString("id-ID")}
-        </p>
-      </div>
+    <main className="p-6 space-y-6">
+      <PageHeader
+        title={material?.judul || "Detail Materi"}
+        description="Informasi lengkap tentang materi pembelajaran"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "Materi", href: "/admin/learning-materials" },
+          { label: material?.judul || "..." },
+        ]}
+      />
 
-      <div className="flex flex-wrap gap-2 text-sm">
-        <Badge>Kelas: {material.classSubjectTutor?.class?.namaKelas}</Badge>
-        <Badge>Mapel: {material.classSubjectTutor?.subject?.namaMapel}</Badge>
-        <Badge>Tutor: {material.classSubjectTutor?.tutor?.namaLengkap}</Badge>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Informasi Umum</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          <p>
+            <b>Kelas:</b> {material?.classSubjectTutor?.class?.namaKelas}
+          </p>
+          <p>
+            <b>Mapel:</b> {material?.classSubjectTutor?.subject?.namaMapel}
+          </p>
+          <p>
+            <b>Tutor:</b> {material?.classSubjectTutor?.tutor?.namaLengkap}
+          </p>
+          <p>
+            <b>Dibuat:</b>{" "}
+            {new Date(material?.createdAt).toLocaleString("id-ID")}
+          </p>
+          <p>
+            <b>Terakhir Diperbarui:</b>{" "}
+            {new Date(material?.updatedAt).toLocaleString("id-ID")}
+          </p>
+          {material?.fileUrl && (
+            <p>
+              <b>File:</b>{" "}
+              <a
+                href={material.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                Lihat File
+              </a>
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="space-y-2">
-        <h2 className="font-semibold text-lg">Konten Materi:</h2>
-        <div
-          className="prose max-w-none"
-          dangerouslySetInnerHTML={{ __html: material.konten }}
-        />
-      </div>
-
-      {material.fileUrl && (
-        <div>
-          <h2 className="font-semibold text-lg mt-6">File Utama:</h2>
-          <a
-            href={material.fileUrl}
-            target="_blank"
-            className="text-blue-600 underline"
-          >
-            Lihat File
-          </a>
-        </div>
-      )}
-
-      {material.attachments.length > 0 && (
-        <div>
-          <h2 className="font-semibold text-lg mt-6">Lampiran Tambahan:</h2>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
-            {material.attachments.map((att) => (
-              <li key={att.id}>
-                <a
-                  href={att.fileUrl}
-                  target="_blank"
-                  className="text-blue-600 underline"
-                >
-                  {att.namaFile} ({Math.round(att.ukuranFile / 1024)} KB)
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Konten Materi</CardTitle>
+        </CardHeader>
+        <CardContent className="prose max-w-none">
+          <div dangerouslySetInnerHTML={{ __html: material?.konten || "" }} />
+        </CardContent>
+      </Card>
+    </main>
   );
 }
