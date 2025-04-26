@@ -64,8 +64,8 @@ export default function AssignmentQuestionsPage() {
         title={`Input Soal: ${assignment.judul}`}
         description={`${assignment.classSubjectTutor.class.namaKelas} - ${assignment.classSubjectTutor.subject.namaMapel}`}
         breadcrumbs={[
-          { title: "Tugas", href: "/tutor/assignments" },
-          { title: "Input Soal", href: `/tutor/assignments/${id}/questions` },
+          { label: "Tugas", href: "/tutor/assignments" },
+          { label: "Input Soal", href: `/tutor/assignments/${id}/questions` },
         ]}
       />
 
