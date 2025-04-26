@@ -1,4 +1,3 @@
-// /app/api/assignments/route.js
 import prisma from "@/lib/prisma";
 
 export async function GET() {
@@ -7,25 +6,47 @@ export async function GET() {
       include: {
         classSubjectTutor: {
           include: {
-            class: { select: { namaKelas: true } },
-            subject: { select: { namaMapel: true } },
-            tutor: { select: { namaLengkap: true } },
+            class: {
+              select: {
+                id: true, // <== tambahkan ini
+                namaKelas: true,
+              },
+            },
+            subject: {
+              select: {
+                id: true, // <== bisa juga ambil id mapel
+                namaMapel: true,
+              },
+            },
+            tutor: {
+              select: {
+                id: true, // <== bisa juga ambil id tutor
+                namaLengkap: true,
+              },
+            },
           },
         },
       },
-      orderBy: { waktuMulai: "desc" },
+      orderBy: {
+        waktuMulai: "desc",
+      },
     });
 
-    return new Response(JSON.stringify({ success: true, data: assignments }), {
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: assignments,
+      }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Gagal GET assignments:", error);
     return new Response(
-      JSON.stringify({ success: false, message: "Gagal memuat tugas" }),
-      {
-        status: 500,
-      }
+      JSON.stringify({
+        success: false,
+        message: "Gagal memuat tugas",
+      }),
+      { status: 500 }
     );
   }
 }
