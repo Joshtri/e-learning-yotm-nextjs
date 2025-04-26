@@ -4,16 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 import { DataTable } from "@/components/ui/data-table";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function LearningMaterialPage() {
   const [data, setData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [activeClass, setActiveClass] = useState("all");
 
   const fetchData = async () => {
     try {
@@ -32,22 +34,31 @@ export default function LearningMaterialPage() {
     fetchData();
   }, []);
 
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    return data.filter(
-      (item) =>
-        item.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.classSubjectTutor.class.namaKelas
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        item.classSubjectTutor.subject.namaMapel
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        item.classSubjectTutor.tutor.namaLengkap
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
+  const classOptions = useMemo(() => {
+    const unique = new Map();
+    data.forEach((item) => {
+      const cls = item.classSubjectTutor?.class;
+      if (cls && !unique.has(cls.id)) {
+        unique.set(cls.id, cls.namaKelas);
+      }
+    });
+    return Array.from(unique.entries()); // [ [id, namaKelas], ... ]
+  }, [data]);
+
+  const filterBySearch = (list) => {
+    if (!searchQuery) return list;
+    return list.filter((item) =>
+      [
+        item.judul,
+        item.classSubjectTutor?.class?.namaKelas,
+        item.classSubjectTutor?.subject?.namaMapel,
+        item.classSubjectTutor?.tutor?.namaLengkap,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
     );
-  }, [data, searchQuery]);
+  };
 
   const columns = [
     {
@@ -58,10 +69,6 @@ export default function LearningMaterialPage() {
     {
       header: "Judul",
       cell: (row) => row.judul,
-    },
-    {
-      header: "Kelas",
-      cell: (row) => row.classSubjectTutor?.class?.namaKelas || "-",
     },
     {
       header: "Mapel",
@@ -90,7 +97,6 @@ export default function LearningMaterialPage() {
       header: "Dibuat",
       cell: (row) => new Date(row.createdAt).toLocaleDateString("id-ID"),
     },
-
     {
       header: "Aksi",
       cell: (row) => (
@@ -111,7 +117,11 @@ export default function LearningMaterialPage() {
             title="Materi Pembelajaran"
             description="Daftar semua materi yang dibuat oleh tutor"
             actions={
-              <DataExport data={data} filename="materi.csv" label="Export" />
+              <DataExport
+                data={filterBySearch(data)}
+                filename="materi.csv"
+                label="Export"
+              />
             }
             breadcrumbs={[
               { label: "Dashboard", href: "/admin/dashboard" },
@@ -119,24 +129,53 @@ export default function LearningMaterialPage() {
             ]}
           />
 
-          <Tabs defaultValue="all" className="space-y-6">
-            <DataToolbar
-              searchValue={searchQuery}
-              onSearchChange={(value) => setSearchQuery(value)}
-              searchPlaceholder="Cari judul, kelas, mapel, atau tutor..."
-              filterOptions={[]}
-            />
+          <Tabs value={activeClass} onValueChange={setActiveClass}>
+            <TabsList>
+              <TabsTrigger value="all">Semua Kelas</TabsTrigger>
+              {classOptions.map(([id, name]) => (
+                <TabsTrigger key={id} value={id}>
+                  {name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-            <TabsContent value="all" className="space-y-4">
-              <DataTable
-                data={filteredData}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data materi..."
-                emptyMessage="Tidak ada materi ditemukan"
-                keyExtractor={(item) => item.id}
+            <div className="mt-4 space-y-4">
+              <DataToolbar
+                searchValue={searchQuery}
+                onSearchChange={(value) => setSearchQuery(value)}
+                searchPlaceholder="Cari judul, mapel, atau tutor..."
+                filterOptions={[]}
               />
-            </TabsContent>
+
+              <TabsContent value="all">
+                <DataTable
+                  data={filterBySearch(data)}
+                  columns={columns}
+                  isLoading={isLoading}
+                  loadingMessage="Memuat data materi..."
+                  emptyMessage="Tidak ada materi ditemukan"
+                  keyExtractor={(item) => item.id}
+                />
+              </TabsContent>
+
+              {classOptions.map(([id, _]) => {
+                const classFiltered = data.filter(
+                  (item) => item.classSubjectTutor?.class?.id === id
+                );
+                return (
+                  <TabsContent key={id} value={id}>
+                    <DataTable
+                      data={filterBySearch(classFiltered)}
+                      columns={columns}
+                      isLoading={isLoading}
+                      loadingMessage="Memuat data materi..."
+                      emptyMessage="Tidak ada materi ditemukan untuk kelas ini"
+                      keyExtractor={(item) => item.id}
+                    />
+                  </TabsContent>
+                );
+              })}
+            </div>
           </Tabs>
         </main>
       </div>
