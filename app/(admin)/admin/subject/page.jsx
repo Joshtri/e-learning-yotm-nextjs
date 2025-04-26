@@ -68,14 +68,16 @@ export default function SubjectPage() {
       header: "Nama Mapel",
       accessorKey: "namaMapel",
     },
-    {
-      header: "Kode Mapel",
-      cell: (item) =>
-        item.kodeMapel || <span className="text-muted-foreground">-</span>,
-    },
+    // {
+    //   header: "Kode Mapel",
+    //   cell: (item) =>
+    //     item.kodeMapel || <span className="text-muted-foreground">-</span>,
+    // },
     {
       header: "Deskripsi",
       accessorKey: "deskripsi",
+      cell: (item) =>
+        item.deskripsi || <span className="text-muted-foreground">-</span>,
     },
   ];
 
