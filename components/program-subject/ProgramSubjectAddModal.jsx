@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import ModalForm from "@/components/ui/modal-form";
@@ -12,6 +13,7 @@ export default function ProgramSubjectAddModal({
   onSuccess,
   programs = [],
   subjects = [],
+  editData,
 }) {
   const {
     register,
@@ -19,22 +21,39 @@ export default function ProgramSubjectAddModal({
     reset,
     control,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      programId: "",
-      subjectId: "",
-    },
-  });
+  } = useForm({});
+
+  useEffect(() => {
+    if (open) {
+      if (editData) {
+        reset({
+          programId: editData.program?.id || "",
+          subjectId: editData.subject?.id || "",
+        });
+      } else {
+        reset({ 
+          programId: "",
+          subjectId: "",
+        });
+      }
+    }
+  }, [editData, open, reset]);
 
   const onSubmit = async (data) => {
     try {
-      await api.post("/program-subjects", data);
-      toast.success("Berhasil menambahkan mata pelajaran ke program");
+      if (editData) {
+        await api.put(`/program-subjects/${editData.id}`, data);
+        toast.success("Berhasil memperbarui data");
+      } else {
+        await api.post("/program-subjects", data);
+        toast.success("Berhasil menambahkan data");
+      }
+
       reset();
       onClose();
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.error("Gagal menambahkan program-subject:", err);
+      console.error("Gagal menyimpan data:", err);
       toast.error(err?.response?.data?.message || "Gagal menyimpan data");
     }
   };
@@ -43,8 +62,12 @@ export default function ProgramSubjectAddModal({
     <ModalForm
       isOpen={open}
       onClose={onClose}
-      title="Tambah Mapel ke Program"
-      description="Pilih program dan mata pelajaran yang ingin ditambahkan"
+      title={editData ? "Edit Mapel Program" : "Tambah Mapel ke Program"}
+      description={
+        editData
+          ? "Perbarui informasi program dan mata pelajaran"
+          : "Pilih program dan mata pelajaran yang ingin ditambahkan"
+      }
       onSubmit={handleSubmit(onSubmit)}
     >
       <FormField
@@ -67,7 +90,9 @@ export default function ProgramSubjectAddModal({
         type="select"
         control={control}
         placeholder="Pilih mata pelajaran"
-        {...register("subjectId", { required: "Mata pelajaran wajib dipilih" })}
+        {...register("subjectId", {
+          required: "Mata pelajaran wajib dipilih",
+        })}
         options={subjects.map((s) => ({
           value: s.id,
           label: s.namaMapel,
