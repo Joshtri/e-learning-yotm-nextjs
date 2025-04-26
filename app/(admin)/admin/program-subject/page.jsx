@@ -21,6 +21,20 @@ export default function ProgramSubjectPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+  const handleDelete = async (id) => {
+    if (!confirm("Yakin ingin menghapus data ini?")) return;
+
+    try {
+      await api.delete(`/program-subjects/${id}`);
+      toast.success("Berhasil menghapus data");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal menghapus data");
+    }
+  };
 
   const router = useRouter();
 
@@ -50,9 +64,12 @@ export default function ProgramSubjectPage() {
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
-    return data.filter((item) =>
-      item.program.namaPaket.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.subject.namaMapel.toLowerCase().includes(searchQuery.toLowerCase())
+    return data.filter(
+      (item) =>
+        item.program.namaPaket
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        item.subject.namaMapel.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [data, searchQuery]);
 
@@ -70,6 +87,32 @@ export default function ProgramSubjectPage() {
       header: "Mata Pelajaran",
       cell: (row) => row.subject?.namaMapel || "-",
     },
+
+    {
+      header: "Aksi",
+      className: "w-[120px]",
+      cell: (row) => (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditData(row);
+              setIsModalOpen(true);
+            }}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDelete(row.id)}
+          >
+            Hapus
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -80,7 +123,11 @@ export default function ProgramSubjectPage() {
             title="Manajemen Mapel per Program"
             actions={
               <>
-                <DataExport data={data} filename="program-subject.csv" label="Export" />
+                <DataExport
+                  data={data}
+                  filename="program-subject.csv"
+                  label="Export"
+                />
                 <Button className="ml-2" onClick={() => setIsModalOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Tambah Mapel Program
@@ -102,15 +149,27 @@ export default function ProgramSubjectPage() {
               filterOptions={[]}
             />
 
-            <TabsContent value="all" className="space-y-4">
-              <DataTable
-                data={filteredData}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data..."
-                emptyMessage="Tidak ada data ditemukan"
-                keyExtractor={(item) => item.id}
-              />
+            <TabsContent value="all" className="space-y-6">
+              {Object.entries(
+                filteredData.reduce((acc, item) => {
+                  const paket = item.program?.namaPaket || "Tanpa Program";
+                  if (!acc[paket]) acc[paket] = [];
+                  acc[paket].push(item);
+                  return acc;
+                }, {})
+              ).map(([paket, items]) => (
+                <div key={paket} className="space-y-2">
+                  <h2 className="text-lg font-semibold">{paket}</h2>
+                  <DataTable
+                    data={items}
+                    columns={columns}
+                    isLoading={isLoading}
+                    loadingMessage={`Memuat data untuk ${paket}...`}
+                    emptyMessage={`Tidak ada mata pelajaran untuk ${paket}`}
+                    keyExtractor={(item) => item.id}
+                  />
+                </div>
+              ))}
             </TabsContent>
           </Tabs>
         </main>
@@ -119,9 +178,13 @@ export default function ProgramSubjectPage() {
       <ProgramSubjectAddModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={() => {
+          fetchData();
+          setEditData(null);
+        }}
         programs={programs}
         subjects={subjects}
+        editData={editData}
       />
     </div>
   );
