@@ -69,19 +69,21 @@ export async function POST(request) {
     });
 
     // Set secure cookie
-    const cookieStore = cookies();
-    cookieStore.set("auth_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 86400, // 1 day
-      path: "/",
-    });
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: userData,
       token,
     });
+    
+    response.cookies.set("auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 86400,
+      path: "/",
+    });
+    
+    return response;
+    
   } catch (error) {
     console.error("Error during login:", error);
     return NextResponse.json(
