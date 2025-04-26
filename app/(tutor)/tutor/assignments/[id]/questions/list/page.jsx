@@ -37,7 +37,7 @@ export default function AssignmentQuestionsViewPage() {
         description={`${assignment.classSubjectTutor.class.namaKelas} - ${assignment.classSubjectTutor.subject.namaMapel}`}
         breadcrumbs={[
           { label: "Tugas", href: "/tutor/assignments" },
-          { label: assignment.judul, href: `/tutor/assignments/${id}` },
+          // { label: assignment.judul, href: `/tutor/assignments/${id}` },
           { label: "Daftar Soal" },
         ]}
       />
