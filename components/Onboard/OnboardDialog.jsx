@@ -3,8 +3,9 @@
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { FormStudent } from "./FormStudent";
-import { FormTutor } from "./FormTutor";
+import StudentForm from "@/components/Onboard/FormStudent";
+import { FormTutor } from "@/components/Onboard/FormTutor";
+
 import {
   Dialog,
   DialogContent,
@@ -70,7 +71,7 @@ export function OnboardingDialog({ user }) {
         </DialogHeader>
 
         {user?.role === "STUDENT" && (
-          <FormStudent userId={user.id} onSuccess={() => setOpen(false)} />
+          <StudentForm userId={user.id} onSuccess={() => setOpen(false)} />
         )}
         {user?.role === "TUTOR" && (
           <FormTutor userId={user.id} onSuccess={() => setOpen(false)} />
