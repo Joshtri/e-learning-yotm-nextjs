@@ -137,7 +137,7 @@ model Student {
 model Tutor {
   id          String @id @default(dbgenerated("concat('ttr_', gen_random_uuid())")) @db.VarChar(40)
   userId      String @unique
-  namaLengkap String @db.VarChar(100) // ✅ Tambahan
+  namaLengkap String @db.VarChar(100)
 
   user       User        @relation(fields: [userId], references: [id])
   bio        String?     @db.Text
@@ -145,15 +145,19 @@ model Tutor {
   pengalaman String?     @db.Text
   telepon    String?     @db.VarChar(20)
   fotoUrl    String?     @db.VarChar(255)
+  status     TutorStatus @default(ACTIVE)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-  status     TutorStatus @default(ACTIVE)
 
-  // Relations
+  // Relasi mengajar biasa
   classSubjectTutors ClassSubjectTutor[]
-  AttendanceSession  AttendanceSession[]
 
-  // Index
+  // Relasi absensi sesi
+  AttendanceSession AttendanceSession[]
+
+  // Relasi sebagai wali kelas
+  homeroomClasses Class[] @relation("HomeroomRelation")
+
   @@index([telepon])
 }
 
@@ -189,7 +193,11 @@ model Class {
   programId      String
   academicYearId String
 
-  // Relations
+  // 🔥 Tambahan untuk wali kelas
+  homeroomTeacherId String?
+  homeroomTeacher   Tutor?  @relation("HomeroomRelation", fields: [homeroomTeacherId], references: [id])
+
+  // Normal Relations
   program             Program               @relation(fields: [programId], references: [id])
   academicYear        AcademicYear          @relation(fields: [academicYearId], references: [id])
   students            Student[]             @relation("StudentClass")
@@ -198,7 +206,6 @@ model Class {
   Attendance          Attendance[]
   AttendanceSession   AttendanceSession[]
 
-  // Index
   @@unique([namaKelas, programId, academicYearId])
 }
 

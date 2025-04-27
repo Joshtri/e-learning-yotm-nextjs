@@ -12,7 +12,6 @@ export async function GET() {
       );
     }
 
-    // 🔥 Cari tutor.id berdasarkan user.id
     const tutor = await prisma.tutor.findUnique({
       where: { userId: user.id },
     });
@@ -24,18 +23,44 @@ export async function GET() {
       );
     }
 
+    // 🔥 Ambil semua kelas yang dia ajar (dari ClassSubjectTutor)
+    const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+      where: {
+        tutorId: tutor.id,
+      },
+      select: {
+        classId: true,
+      },
+    });
+
+    const classIds = classSubjectTutors.map((cst) => cst.classId);
+
+    if (classIds.length === 0) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    // 🔥 Setup tanggal hari ini
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    // 🔥 Cari attendance session untuk hari ini dan kelas yang dia ajar
     const attendances = await prisma.attendanceSession.findMany({
       where: {
-        tutorId: tutor.id, // ✅ pakai tutor.id
+        classId: { in: classIds },
+        tanggal: {
+          gte: today, // dari jam 00:00 hari ini
+          lt: tomorrow, // sebelum jam 00:00 besok
+        },
       },
       include: {
-        class: { select: { namaKelas: true } },
+        class: { select: { id: true, namaKelas: true } },
         academicYear: { select: { tahunMulai: true, tahunSelesai: true } },
         attendances: {
           include: {
-            student: {
-              select: { namaLengkap: true },
-            },
+            student: { select: { namaLengkap: true } },
           },
         },
       },
@@ -44,14 +69,13 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: attendances });
   } catch (error) {
-    console.error("Gagal memuat daftar presensi:", error);
+    console.error("Gagal memuat daftar presensi hari ini:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal memuat daftar presensi" },
+      { success: false, message: "Gagal memuat daftar presensi hari ini" },
       { status: 500 }
     );
   }
 }
-
 
 export async function POST(request) {
   try {

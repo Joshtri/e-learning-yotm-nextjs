@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 
- 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -25,6 +24,13 @@ export async function GET(request) {
         include: {
           program: true,
           academicYear: true,
+          homeroomTeacher: {
+            include: {
+              user: {
+                select: { nama: true },
+              },
+            },
+          },
         },
         orderBy: {
           namaKelas: "asc",
@@ -63,9 +69,6 @@ export async function GET(request) {
   }
 }
 
-
-
- 
 export async function POST(request) {
   try {
     const body = await request.json();

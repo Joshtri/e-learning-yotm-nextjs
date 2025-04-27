@@ -34,12 +34,13 @@ export default function AttendanceDetailPage() {
   const fetchStudents = async () => {
     try {
       const res = await api.get(`/tutor/attendances/${id}`);
-      const siswa = res.data.data.students || [];
+      const siswa = res.data.data.daftarHadir || [];
 
       setStudents(siswa);
+
       const initialStatus = {};
       siswa.forEach((student) => {
-        initialStatus[student.id] = "PRESENT"; // default HADIR
+        initialStatus[student.studentId] = student.status; // 🔥 pakai status dari API
       });
       setAttendanceStatus(initialStatus);
     } catch (err) {
@@ -112,27 +113,37 @@ export default function AttendanceDetailPage() {
       <div className="space-y-4">
         {students.map((student) => (
           <div
-            key={student.id}
+            key={student.studentId}
             className="flex items-center justify-between border p-4 rounded-lg"
           >
             <div>
               <p className="font-semibold">{student.namaLengkap}</p>
-              <p className="text-sm text-muted-foreground">
-                {student.user.email}
-              </p>
+              <p className="text-sm text-muted-foreground">{student.email}</p>
             </div>
 
             <Select
-              value={attendanceStatus[student.id]}
+              value={attendanceStatus[student.studentId] ?? ""}
               onValueChange={(value) =>
                 setAttendanceStatus((prev) => ({
                   ...prev,
-                  [student.id]: value,
+                  [student.studentId]: value,
                 }))
               }
             >
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue
+                  placeholder="Belum diisi"
+                  defaultValue=""
+                  // kalau ada value tampilkan labelnya, kalau tidak "Belum diisi"
+                  children={
+                    attendanceStatus[student.studentId]
+                      ? ATTENDANCE_OPTIONS.find(
+                          (opt) =>
+                            opt.value === attendanceStatus[student.studentId]
+                        )?.label
+                      : "Belum diisi"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {ATTENDANCE_OPTIONS.map((opt) => (

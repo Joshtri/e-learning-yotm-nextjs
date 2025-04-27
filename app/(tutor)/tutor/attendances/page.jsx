@@ -7,14 +7,12 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatsCard } from "@/components/ui/stats-card";
 
 import { Plus, Users, Calendar, Clock, ClipboardList, Eye } from "lucide-react";
-
 import Link from "next/link";
 
 export default function TutorAttendancesPage() {
@@ -22,6 +20,7 @@ export default function TutorAttendancesPage() {
   const [data, setData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedClassId, setSelectedClassId] = useState("");
 
   const fetchData = async () => {
     try {
@@ -36,16 +35,35 @@ export default function TutorAttendancesPage() {
     }
   };
 
+  const classOptions = useMemo(() => {
+    const uniqueClasses = new Map();
+    data.forEach((d) => {
+      if (d.class) {
+        uniqueClasses.set(d.class.id, d.class.namaKelas);
+      }
+    });
+    return Array.from(uniqueClasses, ([id, namaKelas]) => ({ id, namaKelas }));
+  }, [data]);
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    return data.filter((item) =>
-      item.class?.namaKelas?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [data, searchQuery]);
+    let filtered = data;
+
+    if (selectedClassId) {
+      filtered = filtered.filter((item) => item.class?.id === selectedClassId);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter((item) =>
+        item.class?.namaKelas?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [data, searchQuery, selectedClassId]);
 
   const columns = [
     {
@@ -148,19 +166,38 @@ export default function TutorAttendancesPage() {
         />
       </div>
 
-      {/* Tabs dan Table */}
+      {/* Filter dan Table */}
       <Tabs defaultValue="all" className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <TabsList>
             <TabsTrigger value="all">Semua</TabsTrigger>
           </TabsList>
 
-          <DataToolbar
-            searchValue={searchQuery}
-            onSearchChange={(value) => setSearchQuery(value)}
-            searchPlaceholder="Cari kelas..."
-            filterOptions={[]} // Kosong dulu
-          />
+          {/* Dropdown Select Kelas */}
+          {classOptions.length > 1 && (
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="border rounded-md p-2 text-sm"
+              >
+                <option value="">Semua Kelas</option>
+                {classOptions.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.namaKelas}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                placeholder="Cari kelas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border rounded-md p-2 text-sm"
+              />
+            </div>
+          )}
         </div>
 
         <TabsContent value="all" className="space-y-4">

@@ -1,5 +1,3 @@
-// app/api/student/attendance/sessions/route.js
-
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
@@ -32,7 +30,7 @@ export async function GET() {
     const sessions = await prisma.attendanceSession.findMany({
       where: {
         classId: student.classId,
-        // tanggal: today,
+        tanggal: today,
       },
       include: {
         class: { select: { namaKelas: true } },
@@ -40,7 +38,24 @@ export async function GET() {
       orderBy: { tanggal: "asc" },
     });
 
-    return NextResponse.json({ success: true, data: sessions });
+    // Untuk setiap session, cek apakah sudah ada Attendance siswa ini
+    const sessionWithStatus = await Promise.all(
+      sessions.map(async (session) => {
+        const attendance = await prisma.attendance.findFirst({
+          where: {
+            attendanceSessionId: session.id,
+            studentId: student.id,
+          },
+        });
+
+        return {
+          ...session,
+          attendanceStatus: attendance?.status || null, // bisa "PRESENT", "SICK", "EXCUSED", atau null kalau belum absen
+        };
+      })
+    );
+
+    return NextResponse.json({ success: true, data: sessionWithStatus });
   } catch (error) {
     console.error("Gagal fetch sesi presensi:", error);
     return NextResponse.json(

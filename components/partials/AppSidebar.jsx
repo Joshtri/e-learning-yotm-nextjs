@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronRight,
-  LogOut,
-  Settings,
-  X
-} from "lucide-react";
+import { ChevronDown, ChevronRight, LogOut, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -15,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { navByRole } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-
 
 const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup }) => {
   const pathname = usePathname();
@@ -124,7 +117,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "hidden md:flex md:flex-col md:border-r bg-background transition-all",
+        "sticky top-0 hidden md:flex md:flex-col md:border-r bg-background transition-all h-screen",
         isOpen ? "md:w-64" : "md:w-16"
       )}
     >
@@ -184,8 +177,8 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
 
 function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
   return (
-    <ScrollArea className="flex-1 px-3 py-2">
-      <nav className="flex flex-col">
+    <div className="flex-1 overflow-auto">
+      <nav className="flex flex-col px-3 py-2">
         {groups.map((group) => (
           <NavGroup
             key={group.title}
@@ -196,9 +189,10 @@ function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
           />
         ))}
       </nav>
-    </ScrollArea>
+    </div>
   );
 }
+
 
 function SidebarFooter({ role, isOpen }) {
   const base =

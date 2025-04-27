@@ -13,6 +13,7 @@ import {
   MessagesSquare,
   CalendarCheck,
   FileSearch,
+  BarChart3,
 } from "lucide-react";
 
 export const navByRole = {
@@ -60,6 +61,11 @@ export const navByRole = {
           title: "Kelas",
           href: "/admin/classes",
           icon: <GraduationCap className="h-4 w-4" />,
+        },
+        {
+          title: "Manajemen Wali Kelas", // 🔥 Tambahan baru
+          href: "/admin/homeroom-management",
+          icon: <Users className="h-4 w-4" />,
         },
         {
           title: "Tahun Akademik",
@@ -127,6 +133,16 @@ export const navByRole = {
           title: "Rekapitulasi Nilai Siswa",
           href: "/admin/students-scores-recap",
           icon: <ChartBar className="h-4 w-4" />,
+        },
+        {
+          title: "Presensi Seluruh Siswa",
+          href: "/admin/attendances",
+          icon: <ClipboardList className="h-4 w-4" />,
+        },
+        {
+          title: "Rekapitulasi Nilai",
+          href: "/admin/recap-scores",
+          icon: <BarChart3 className="h-4 w-4" />,
         },
       ],
     },
@@ -206,11 +222,11 @@ export const navByRole = {
           href: "/tutor/submissions",
           icon: <FileSearch className="h-4 w-4" />,
         },
-        {
-          title: "Manajemen Naik Kelas",
-          href: "/tutor/promote-students",
-          icon: <Users className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Manajemen Naik Kelas",
+        //   href: "/tutor/promote-students",
+        //   icon: <Users className="h-4 w-4" />,
+        // },
       ],
     },
     {
@@ -245,11 +261,10 @@ export const navByRole = {
           href: "/siswa/my-class",
           icon: <Users className="h-4 w-4" />,
         },
-
         {
           title: "Presensi",
           href: "/siswa/attendance",
-          icon: <CalendarCheck className="h-4 w-4" />, // icon baru yang cocok
+          icon: <CalendarCheck className="h-4 w-4" />,
         },
       ],
     },
@@ -257,7 +272,7 @@ export const navByRole = {
       title: "Pembelajaran",
       items: [
         {
-          title: "Mata Pelajaran Saya",
+          title: "Mata Pelajaran",
           href: "/siswa/my-subject",
           icon: <FileText className="h-4 w-4" />,
         },
@@ -283,20 +298,18 @@ export const navByRole = {
         },
       ],
     },
-
     {
       title: "Nilai",
       items: [
- 
         {
           title: "Nilai Ujian",
           href: "/siswa/exams-scores",
-          icon: <FileText className="h-4 w-4" />,
+          icon: <BarChart3 className="h-4 w-4" />,
         },
         {
-          title: "Nilai Lainnya",
+          title: "Nilai Tugas & Kuis",
           href: "/siswa/other-scores",
-          icon: <FileText className="h-4 w-4" />,
+          icon: <FileCheck2 className="h-4 w-4" />,
         },
       ],
     },
@@ -306,6 +319,91 @@ export const navByRole = {
         {
           title: "Forum Diskusi",
           href: "/siswa/discussions",
+          icon: <MessagesSquare className="h-4 w-4" />,
+          badge: 0, // Optional: ini kalo mau tampil badge jumlah notifikasi
+        },
+      ],
+    },
+  ],
+
+  homeroom: [
+    {
+      title: "Dashboard",
+      items: [
+        {
+          title: "Dashboard",
+          href: "/homeroom/dashboard",
+          icon: <Layout className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "Kelas",
+      items: [
+        {
+          title: "Presensi Siswa",
+          href: "/homeroom/attendance",
+          icon: <CalendarCheck className="h-4 w-4" />,
+        },
+        {
+          title: "Informasi Kelas",
+          href: "/homeroom/about-class",
+          icon: <Users className="h-4 w-4" />,
+        },
+        {
+          title: "Daftar Siswa",
+          href: "/homeroom/my-students",
+          icon: <Users className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "Penilaian",
+      items: [
+        {
+          title: "Rekap Nilai Akademik",
+          href: "/homeroom/academic-scores",
+          icon: <BarChart3 className="h-4 w-4" />,
+        },
+        {
+          title: "Rekap Nilai Sikap",
+          href: "/homeroom/behavior-scores",
+          icon: <FileCheck2 className="h-4 w-4" />,
+        },
+        {
+          title: "Hitung Nilai Akhir",
+          href: "/homeroom/final-scores ",
+          icon: <FileCheck2 className="h-4 w-4" />,
+        },
+        {
+          title: "Rekap Nilai Ujian",
+          href: "/homeroom/exams-scores",
+          icon: <BarChart3 className="h-4 w-4" />,
+        },
+
+        {
+          title: "Manajemen Naik Kelas", // 🔥 Tambahan ini
+          href: "/homeroom/promote-students",
+          icon: <GraduationCap className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "Pengelolaan",
+      items: [
+        {
+          title: "Catatan & Pengumpulan",
+          href: "/homeroom/submissions",
+          icon: <NotebookPen className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "Komunikasi",
+      items: [
+        {
+          title: "Pesan",
+          href: "/homeroom/messages",
           icon: <MessagesSquare className="h-4 w-4" />,
           badge: 0,
         },

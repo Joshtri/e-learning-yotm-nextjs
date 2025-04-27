@@ -20,6 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function NilaiSiswaPage() {
   const [data, setData] = useState({
@@ -88,6 +94,71 @@ export default function NilaiSiswaPage() {
         <CardTitle>Rekap Nilai Siswa</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Accordion Penjelasan */}
+        <Accordion type="single" collapsible className="mb-6">
+          <AccordionItem value="penjelasan">
+            <AccordionTrigger>
+              📚 Lihat Penjelasan Perhitungan Nilai
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
+                <p>
+                  <strong>
+                    Penjelasan Perhitungan dan Sumber Data Nilai Siswa:
+                  </strong>
+                </p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>
+                    <strong>Kuis</strong>: Nilai dari hasil pengerjaan kuis
+                    siswa.
+                  </li>
+                  <li>
+                    <strong>Tugas</strong>: Nilai dari tugas bertipe{" "}
+                    <em>Latihan (Exercise)</em>.
+                  </li>
+                  <li>
+                    <strong>UTS dan UAS</strong>: Ditampilkan saat filter mata
+                    pelajaran aktif.
+                  </li>
+                  <li>
+                    <strong>Total Nilai</strong>: Rata-rata dari semua nilai
+                    yang tersedia (Kuis + Tugas + UTS + UAS).
+                  </li>
+                  <li>
+                    <strong>Filter</strong>: Data dapat difilter berdasarkan
+                    Mata Pelajaran, Kelas, dan Tahun Ajaran.
+                  </li>
+                </ul>
+
+                <p>
+                  <strong>Catatan:</strong> Jika ada nilai kosong (belum
+                  dikerjakan), maka tidak dihitung dalam rata-rata.
+                </p>
+
+                <div className="mt-4 p-3 rounded-md border bg-muted/20">
+                  <p className="font-semibold mb-2">
+                    Rumus Perhitungan Total Nilai:
+                  </p>
+                  <pre className="text-xs bg-background p-2 rounded-md overflow-x-auto">
+                    Total Nilai = (Jumlah Semua Nilai) ÷ (Jumlah Nilai yang
+                    Diisi)
+                  </pre>
+                  <p className="mt-2">
+                    Contoh:
+                    <br />
+                    Jika siswa memiliki nilai 80 (Kuis), 85 (Tugas), 90 (UTS),
+                    dan tidak mengerjakan UAS, maka:
+                    <br />
+                    <code className="font-mono bg-background px-1 rounded">
+                      Total Nilai = (80 + 85 + 90) ÷ 3 = 85
+                    </code>
+                  </p>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
         <div className="flex flex-wrap gap-4 mb-6">
           <div className="w-full md:w-auto">
             <Select

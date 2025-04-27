@@ -16,6 +16,7 @@ import {
   Clock,
   Filter,
   BarChart3,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -29,7 +30,6 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Trash2 } from "lucide-react";
 
 export default function TutorExamsPage() {
   const [data, setData] = useState([]);
@@ -74,7 +74,7 @@ export default function TutorExamsPage() {
         completedExams: completedExams.length,
       });
     } catch (error) {
-      console.error("Gagal ambil data ujian:", error);
+      console.error("Gagal memuat ujian:", error);
       toast.error("Gagal memuat ujian");
     } finally {
       setIsLoading(false);
@@ -101,16 +101,13 @@ export default function TutorExamsPage() {
 
   const getExamStatus = (exam) => {
     const now = new Date();
-    const startDate = new Date(exam.waktuMulai);
-    const endDate = new Date(exam.waktuSelesai);
+    const start = new Date(exam.waktuMulai);
+    const end = new Date(exam.waktuSelesai);
 
-    if (startDate > now) {
-      return { status: "pending", label: "Akan Datang" };
-    } else if (startDate <= now && endDate >= now) {
+    if (start > now) return { status: "pending", label: "Akan Datang" };
+    if (start <= now && end >= now)
       return { status: "active", label: "Sedang Berlangsung" };
-    } else {
-      return { status: "completed", label: "Selesai" };
-    }
+    return { status: "completed", label: "Selesai" };
   };
 
   const handleDelete = async (id) => {
@@ -122,9 +119,9 @@ export default function TutorExamsPage() {
     try {
       await api.delete(`/tutor/exams/${id}`);
       toast.success("Ujian berhasil dihapus");
-      fetchData(); // refresh data
+      fetchData();
     } catch (error) {
-      console.error("Gagal menghapus ujian:", error);
+      console.error("Gagal hapus ujian:", error);
       toast.error("Gagal menghapus ujian");
     }
   };
@@ -141,7 +138,15 @@ export default function TutorExamsPage() {
         <div>
           <div className="font-medium">{row.judul}</div>
           <Badge variant="outline" className="mt-1">
-            {row.jenis === "MIDTERM" ? "UTS" : "UAS"}
+            {row.jenis === "MIDTERM"
+              ? "UTS"
+              : row.jenis === "FINAL_EXAM"
+              ? "UAS"
+              : row.jenis === "DAILY_TEST"
+              ? "Ujian Harian"
+              : row.jenis === "START_SEMESTER_TEST"
+              ? "Ujian Awal Semester"
+              : "Ujian"}
           </Badge>
         </div>
       ),
@@ -200,14 +205,15 @@ export default function TutorExamsPage() {
             </Link>
           </Button>
 
-          <Button variant="default" size="sm" asChild>
-            <Link
-              href={`/tutor/exams/${row.assignmentId}/submissions/${row.id}`}
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              Jawaban
-            </Link>
-          </Button>
+          {row.jenis !== "DAILY_TEST" &&
+            row.jenis !== "START_SEMESTER_TEST" && (
+              <Button variant="default" size="sm" asChild>
+                <Link href={`/tutor/exams/${row.id}/submissions`}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  Jawaban
+                </Link>
+              </Button>
+            )}
 
           <Button
             variant="destructive"
@@ -222,6 +228,15 @@ export default function TutorExamsPage() {
     },
   ];
 
+  // Filter exams by type
+  const dailyTests = data.filter((exam) => exam.jenis === "DAILY_TEST");
+  const startSemesterTests = data.filter(
+    (exam) => exam.jenis === "START_SEMESTER_TEST"
+  );
+  const midterms = data.filter((exam) => exam.jenis === "MIDTERM");
+  const finalExams = data.filter((exam) => exam.jenis === "FINAL_EXAM");
+
+  // Get upcoming exams for the card
   const upcomingExams = data
     .filter((exam) => {
       const now = new Date();
@@ -235,7 +250,7 @@ export default function TutorExamsPage() {
     <div className="p-6 space-y-6">
       <PageHeader
         title="Daftar Ujian"
-        description="Ujian yang telah Anda buat, seperti UTS atau UAS."
+        description="Kelola semua ujian yang telah Anda buat"
         actions={
           <Button asChild>
             <Link href="/tutor/exams/create">
@@ -289,6 +304,9 @@ export default function TutorExamsPage() {
                 <TabsTrigger value="active">Berlangsung</TabsTrigger>
                 <TabsTrigger value="upcoming">Akan Datang</TabsTrigger>
                 <TabsTrigger value="completed">Selesai</TabsTrigger>
+                <TabsTrigger value="daily">Harian</TabsTrigger>
+                <TabsTrigger value="midterm">UTS</TabsTrigger>
+                <TabsTrigger value="final">UAS</TabsTrigger>
               </TabsList>
 
               <DataToolbar
@@ -306,20 +324,40 @@ export default function TutorExamsPage() {
                           <div className="flex items-center">
                             <input
                               type="checkbox"
-                              id="type-uts"
+                              id="type-daily"
                               className="mr-2"
                             />
-                            <label htmlFor="type-uts" className="text-sm">
+                            <label htmlFor="type-daily" className="text-sm">
+                              Harian
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="type-start"
+                              className="mr-2"
+                            />
+                            <label htmlFor="type-start" className="text-sm">
+                              Awal Semester
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="type-midterm"
+                              className="mr-2"
+                            />
+                            <label htmlFor="type-midterm" className="text-sm">
                               UTS
                             </label>
                           </div>
                           <div className="flex items-center">
                             <input
                               type="checkbox"
-                              id="type-uas"
+                              id="type-final"
                               className="mr-2"
                             />
-                            <label htmlFor="type-uas" className="text-sm">
+                            <label htmlFor="type-final" className="text-sm">
                               UAS
                             </label>
                           </div>
@@ -332,53 +370,79 @@ export default function TutorExamsPage() {
             </div>
 
             <TabsContent value="all" className="space-y-4">
-              {filteredData.length > 0 ? (
-                <DataTable
-                  data={filteredData}
-                  columns={columns}
-                  isLoading={isLoading}
-                  loadingMessage="Memuat ujian..."
-                  emptyMessage="Belum ada ujian"
-                  keyExtractor={(item) => item.id}
-                />
-              ) : (
-                <EmptyState
-                  title="Belum ada ujian"
-                  description="Anda belum membuat ujian. Klik tombol 'Tambah Ujian' untuk mulai membuat ujian baru."
-                  icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-                  action={() => (window.location.href = "/tutor/exams/create")}
-                  actionLabel="Tambah Ujian"
-                />
-              )}
+              <DataTable
+                data={filteredData}
+                columns={columns}
+                isLoading={isLoading}
+                loadingMessage="Memuat ujian..."
+                emptyMessage="Belum ada ujian"
+                keyExtractor={(item) => item.id}
+              />
             </TabsContent>
 
             <TabsContent value="active">
-              <EmptyState
-                title="Tidak ada ujian yang sedang berlangsung"
-                description="Saat ini tidak ada ujian yang sedang aktif."
-                icon={<Clock className="h-6 w-6 text-muted-foreground" />}
+              <DataTable
+                data={filteredData.filter(
+                  (exam) => getExamStatus(exam).status === "active"
+                )}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Tidak ada ujian yang sedang berlangsung"
               />
             </TabsContent>
 
             <TabsContent value="upcoming">
-              <EmptyState
-                title="Tidak ada ujian yang akan datang"
-                description="Anda belum menjadwalkan ujian yang akan datang."
-                icon={<Calendar className="h-6 w-6 text-muted-foreground" />}
+              <DataTable
+                data={filteredData.filter(
+                  (exam) => getExamStatus(exam).status === "pending"
+                )}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Tidak ada ujian yang akan datang"
               />
             </TabsContent>
 
             <TabsContent value="completed">
-              <EmptyState
-                title="Tidak ada ujian yang telah selesai"
-                description="Belum ada ujian yang telah selesai."
-                icon={<BarChart3 className="h-6 w-6 text-muted-foreground" />}
+              <DataTable
+                data={filteredData.filter(
+                  (exam) => getExamStatus(exam).status === "completed"
+                )}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Tidak ada ujian yang telah selesai"
+              />
+            </TabsContent>
+
+            <TabsContent value="daily">
+              <DataTable
+                data={dailyTests}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Belum ada ujian harian"
+              />
+            </TabsContent>
+
+            <TabsContent value="midterm">
+              <DataTable
+                data={midterms}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Belum ada Ujian Tengah Semester (UTS)"
+              />
+            </TabsContent>
+
+            <TabsContent value="final">
+              <DataTable
+                data={finalExams}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="Belum ada Ujian Akhir Semester (UAS)"
               />
             </TabsContent>
           </Tabs>
         </div>
 
-        <div>
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Ujian Mendatang</CardTitle>
@@ -440,6 +504,47 @@ export default function TutorExamsPage() {
                   </Link>
                 </Button>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Jenis Ujian</CardTitle>
+              <CardDescription>
+                Penjelasan singkat tentang jenis-jenis ujian
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2">
+                    Harian
+                  </Badge>
+                  <span className="text-sm">
+                    Ujian harian untuk evaluasi mingguan
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2">
+                    Awal Semester
+                  </Badge>
+                  <span className="text-sm">
+                    Ujian di awal semester untuk mengukur kemampuan awal
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2">
+                    UTS
+                  </Badge>
+                  <span className="text-sm">Ujian Tengah Semester</span>
+                </div>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2">
+                    UAS
+                  </Badge>
+                  <span className="text-sm">Ujian Akhir Semester</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

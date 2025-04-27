@@ -119,39 +119,7 @@ export default function StudentSubjectsPage() {
                   <strong>Jumlah Materi:</strong> {item.jumlahMateri || 0}
                 </p>
 
-                {item.kuisAktif.length > 0 && (
-                  <div>
-                    <p className="font-medium">Kuis:</p>
-                    {item.kuisAktif.map((kuis) => (
-                      <div
-                        key={kuis.id}
-                        className="flex justify-between items-center"
-                      >
-                        <div>
-                          <p className="font-semibold">{kuis.judul}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(kuis.waktuMulai).toLocaleString("id-ID")}{" "}
-                            -{" "}
-                            {new Date(kuis.waktuSelesai).toLocaleString(
-                              "id-ID"
-                            )}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            kuis.status === "SUDAH_MENGERJAKAN"
-                              ? "success"
-                              : "secondary"
-                          }
-                        >
-                          {kuis.status.replace("_", " ")}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {item.tugasAktif.length > 0 && (
+                {item.tugasAktif?.length > 0 && (
                   <div>
                     <p className="font-medium">Tugas:</p>
                     {item.tugasAktif.map((tugas) => (

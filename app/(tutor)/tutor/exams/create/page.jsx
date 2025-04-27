@@ -18,7 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/date-time-picker"; // pastikan ada atau sesuaikan
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+
+const JENIS_UJIAN_OPTIONS = [
+  { label: "Ujian Harian", value: "DAILY_TEST" },
+  { label: "Ujian Awal Semester", value: "START_SEMESTER_TEST" },
+  { label: "UTS (Ujian Tengah Semester)", value: "MIDTERM" },
+  { label: "UAS (Ujian Akhir Semester)", value: "FINAL_EXAM" },
+];
 
 export default function ExamCreatePage() {
   const router = useRouter();
@@ -53,27 +60,30 @@ export default function ExamCreatePage() {
     try {
       setLoading(true);
       const res = await api.post("/tutor/exams", data);
-      const examId = res.data.data.id; // Ambil ID ujian dari response
+      const examId = res.data.data.id;
       toast.success("Ujian berhasil dibuat!");
-      router.push(`/tutor/exams/${examId}/questions/create`); // Redirect ke tambah soal
+      router.push(`/tutor/exams/${examId}/questions/create`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Gagal menyimpan ujian");
+      console.error(err);
+      const message = err?.response?.data?.message || "Gagal menyimpan ujian";
+      toast.error(message); // Ini akan muncul error spesifik dari API (contoh: "UTS sudah pernah dibuat dalam tahun ajaran ini")
     } finally {
       setLoading(false);
     }
   };
+
   const tersediaDari = watch("waktuMulai");
   const tersediaHingga = watch("waktuSelesai");
+
   return (
     <div className="max-w-3xl mx-auto py-10 space-y-6">
       <PageHeader
         title="Buat Ujian Baru"
         description="Lengkapi informasi umum sebelum menambahkan soal."
         breadcrumbs={[
-          { title: "Ujian", href: "/tutor/exams" },
-          { title: "Buat Ujian", href: "/tutor/exams/create" },
+          { label: "Ujian", href: "/tutor/exams" },
+          { label: "Buat Ujian" },
         ]}
-        
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -92,13 +102,20 @@ export default function ExamCreatePage() {
 
         <div>
           <Label>Jenis Ujian</Label>
-          <Select onValueChange={(val) => setValue("jenis", val)}>
+          <Select
+            onValueChange={(val) =>
+              setValue("jenis", val, { shouldValidate: true })
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Pilih jenis ujian" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="MIDTERM">UTS</SelectItem>
-              <SelectItem value="FINAL_EXAM">UAS</SelectItem>
+              {JENIS_UJIAN_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           {errors.jenis && (
@@ -108,7 +125,11 @@ export default function ExamCreatePage() {
 
         <div>
           <Label>Kelas & Mapel</Label>
-          <Select onValueChange={(val) => setValue("classSubjectTutorId", val)}>
+          <Select
+            onValueChange={(val) =>
+              setValue("classSubjectTutorId", val, { shouldValidate: true })
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Pilih kelas dan mapel" />
             </SelectTrigger>

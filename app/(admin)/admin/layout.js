@@ -45,18 +45,25 @@ export default function AdminLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen bg-background">
-            {/* <AdminSidebar
+          <div className="flex h-full overflow-hidden bg-background">
+            {/* Sidebar */}
+            <AppSidebar
+              role="admin"
               isOpen={isSidebarOpen}
               onToggleSidebar={toggleSidebar}
               isMobile={isMobile}
               onClose={() => setIsSidebarOpen(false)}
-            /> */}
-            <AppSidebar role="admin" isOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} isMobile={isMobile} onClose={() => setIsSidebarOpen(false)} />
-            
-            <div className="flex-1 flex flex-col overflow-hidden">
-            <AppHeader role="admin" onMenuClick={toggleSidebar} />
-            <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
+            />
+
+            {/* Right Content */}
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {/* Header */}
+              <AppHeader role="admin" onMenuClick={toggleSidebar} />
+
+              {/* Scrollable content */}
+              <main className="flex-1 overflow-auto p-4 md:p-6">
+                {children}
+              </main>
             </div>
           </div>
         </ThemeProvider>

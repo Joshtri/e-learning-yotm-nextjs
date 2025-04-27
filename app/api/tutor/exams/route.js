@@ -18,7 +18,7 @@ export async function GET() {
 
     const exams = await prisma.assignment.findMany({
       where: {
-        jenis: { in: ["MIDTERM", "FINAL_EXAM"] },
+        jenis: { in: ["DAILY_TEST", "START_SEMESTER_TEST", "MIDTERM", "FINAL_EXAM"] },
         classSubjectTutor: {
           tutorId: tutor.id,
         },
@@ -45,15 +45,17 @@ export async function GET() {
 }
 
 // POST – Tambah ujian baru (hanya jika classSubjectTutorId milik tutor ini)
-// POST – Tambah ujian baru (hanya jika classSubjectTutorId milik tutor ini)
 export async function POST(req) {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const tutor = await prisma.tutor.findFirst({ where: { userId: user.id } });
+    const tutor = await prisma.tutor.findFirst({
+      where: { userId: user.id },
+    });
+
     if (!tutor) {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
@@ -85,11 +87,22 @@ export async function POST(req) {
       );
     }
 
-    // Cek apakah classSubjectTutorId milik tutor login
+    // Pastikan tutor punya akses ke classSubjectTutor
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
         id: classSubjectTutorId,
         tutorId: tutor.id,
+      },
+      include: {
+        class: {
+          select: {
+            academicYear: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -100,27 +113,30 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Cek apakah sudah ada lebih dari 2 ujian untuk MIDTERM atau FINAL_EXAM
+    // Validasi UTS/UAS hanya satu kali per tahun ajaran
     if (jenis === "MIDTERM" || jenis === "FINAL_EXAM") {
-      const existingCount = await prisma.assignment.count({
+      const existingExam = await prisma.assignment.findFirst({
         where: {
-          classSubjectTutorId,
           jenis,
+          classSubjectTutor: {
+            class: {
+              academicYearId: classSubjectTutor.class.academicYear.id,
+            },
+          },
         },
       });
 
-      if (existingCount >= 2) {
+      if (existingExam) {
         return NextResponse.json(
           {
-            message: `Ujian ${
-              jenis === "MIDTERM" ? "UTS" : "UAS"
-            } tidak boleh dibuat lebih dari 2 kali untuk kelas dan mapel ini.`,
+            message: `Ujian ${jenis === "MIDTERM" ? "UTS" : "UAS"} sudah dibuat tahun ini.`,
           },
           { status: 400 }
         );
       }
     }
 
+    // ✨ Bikin Assignment tanpa acakSoal/acakJawaban
     const newExam = await prisma.assignment.create({
       data: {
         judul,

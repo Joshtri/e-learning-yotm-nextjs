@@ -17,36 +17,52 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { useMemo, useState, useEffect } from "react";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const [mode, setMode] = useState("default");
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("/api/auth/logout");
-      toast.success("Berhasil logout!");
-      router.push("/");
-    } catch (error) {
-      toast.error("Gagal logout");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedMode = localStorage.getItem("mode") || "default";
+      setMode(storedMode);
+    }
+  }, []);
+
+  const handleSwitchMode = () => {
+    if (mode === "default") {
+      localStorage.setItem("mode", "homeroom");
+      setMode("homeroom");
+      toast.success("Berpindah ke Mode Wali Kelas");
+      router.push("/homeroom/dashboard");
+    } else {
+      localStorage.setItem("mode", "default");
+      setMode("default");
+      toast.success("Berpindah ke Mode Tutor");
+      router.push("/tutor/dashboard");
     }
   };
 
   const getRolePrefix = () => {
     if (role === "admin") return "/admin";
     if (role === "student") return "/siswa";
-    if (role === "tutor") return "/tutor";
+    if (role === "tutor") {
+      return mode === "homeroom" ? "/homeroom" : "/tutor";
+    }
     return "/";
   };
 
   const rolePrefix = getRolePrefix();
+
   const avatarFallback =
     role === "student" ? "SI" : role === "tutor" ? "TR" : "AD";
   const displayName = role?.charAt(0).toUpperCase() + role?.slice(1) || "User";
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
-      {/* Kiri - tombol menu & search */}
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+      {/* Left */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -72,9 +88,9 @@ export default function AppHeader({ onMenuClick, role }) {
         </div>
       </div>
 
-      {/* Kanan - kontrol user */}
+      {/* Right */}
       <div className="flex items-center gap-2 md:gap-4 pr-1">
-        <Button variant="ghost" size="icon" className="relative hidden md:flex">
+        <Button variant="ghost" size="icon" className="hidden md:flex relative">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notifikasi</span>
           <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-primary"></span>
@@ -93,6 +109,7 @@ export default function AppHeader({ onMenuClick, role }) {
           <span className="sr-only">Toggle Dark Mode</span>
         </Button>
 
+        {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
@@ -100,7 +117,9 @@ export default function AppHeader({ onMenuClick, role }) {
                 <AvatarImage src="/placeholder.svg" alt={displayName} />
                 <AvatarFallback>{avatarFallback}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline">{displayName}</span>
+              <span className="hidden md:inline">
+                {mode === "homeroom" ? "Wali Kelas" : displayName}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -119,12 +138,30 @@ export default function AppHeader({ onMenuClick, role }) {
                 href={`${rolePrefix}/log-activity`}
                 className="w-full cursor-pointer"
               >
-                Log Activity
+                Log Aktivitas
               </Link>
             </DropdownMenuItem>
+            {role === "tutor" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSwitchMode}>
+                  {mode === "homeroom"
+                    ? "Switch ke Mode Tutor"
+                    : "Switch ke Mode Wali Kelas"}
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={handleLogout}
+              onClick={async () => {
+                try {
+                  await axios.post("/api/auth/logout");
+                  toast.success("Berhasil logout!");
+                  router.push("/");
+                } catch {
+                  toast.error("Gagal logout");
+                }
+              }}
               className="w-full cursor-pointer text-red-500 focus:text-red-500"
             >
               Keluar
