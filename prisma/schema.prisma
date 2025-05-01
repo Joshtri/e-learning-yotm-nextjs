@@ -128,6 +128,7 @@ model Student {
   Attendance          Attendance[]
   SkillScore          SkillScore[]
   BehaviorScore       BehaviorScore[]
+  FinalScore          FinalScore[]
 
   // Index
   @@index([nisn])
@@ -172,6 +173,7 @@ model AcademicYear {
   Attendance          Attendance[]
   AttendanceSession   AttendanceSession[]
   BehaviorScore       BehaviorScore[]
+  FinalScore          FinalScore[]
 
   // Validation
   @@unique([tahunMulai, tahunSelesai])
@@ -222,6 +224,7 @@ model Subject {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   SkillScore SkillScore[]
+  FinalScore FinalScore[]
 
   // Index
   @@unique([namaMapel])
@@ -495,4 +498,19 @@ model Log {
   timestamp DateTime @default(now())
   metadata  Json?
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model FinalScore {
+  id            String   @id @default(dbgenerated("concat('fns_', gen_random_uuid())")) @db.VarChar(40)
+  studentId     String
+  subjectId     String
+  nilaiAkhir    Float
+  tahunAjaranId String
+  createdAt     DateTime @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  academicYear AcademicYear @relation(fields: [tahunAjaranId], references: [id])
+
+  @@unique([studentId, subjectId, tahunAjaranId]) // satu nilai akhir per mapel per tahun ajaran
 }

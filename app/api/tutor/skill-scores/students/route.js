@@ -64,10 +64,25 @@ export async function GET(req) {
       select: {
         id: true,
         namaLengkap: true,
+        SkillScore: {
+          where: { subjectId },
+          select: { nilai: true },
+        },
       },
       orderBy: {
         namaLengkap: "asc",
       },
+    });
+    
+    const formattedStudents = students.map((s) => ({
+      id: s.id,
+      namaLengkap: s.namaLengkap,
+      nilai: s.SkillScore[0]?.nilai ?? null, // ambil nilai jika sudah ada
+    }));
+    
+    
+    return new Response(JSON.stringify({ success: true, data: formattedStudents }), {
+      status: 200,
     });
 
     return new Response(JSON.stringify({ success: true, data: students }), {

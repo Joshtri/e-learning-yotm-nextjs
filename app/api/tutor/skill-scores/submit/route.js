@@ -63,27 +63,51 @@ export async function POST(req) {
     }));
 
     // Check existing skill scores to prevent duplicates
-    const existing = await prisma.skillScore.findMany({
-      where: {
-        studentId: { in: scores.map((s) => s.studentId) },
-        subjectId: subjectId,
-      },
-    });
+    // const existing = await prisma.skillScore.findMany({
+    //   where: {
+    //     studentId: { in: scores.map((s) => s.studentId) },
+    //     subjectId: subjectId,
+    //   },
+    // });
 
-    if (existing.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Beberapa siswa sudah memiliki nilai skill di mapel ini.",
-        }),
-        { status: 400 }
-      );
-    }
+    // if (existing.length > 0) {
+    //   return new Response(
+    //     JSON.stringify({
+    //       success: false,
+    //       message: "Beberapa siswa sudah memiliki nilai skill di mapel ini.",
+    //     }),
+    //     { status: 400 }
+    //   );
+    // }
 
-    // Save new skill scores
-    await prisma.skillScore.createMany({
-      data: createData,
-    });
+    // // Save new skill scores
+    // await prisma.skillScore.createMany({
+    //   data: createData,
+    // });
+
+    await prisma.$transaction(
+      scores.map((item) =>
+        prisma.skillScore.upsert({
+          where: {
+            studentId_subjectId: {
+              studentId: item.studentId,
+              subjectId: subjectId,
+            },
+          },
+          update: {
+            nilai: item.nilai,
+            keterangan: item.keterangan || null,
+          },
+          create: {
+            studentId: item.studentId,
+            subjectId: subjectId,
+            nilai: item.nilai,
+            keterangan: item.keterangan || null,
+          },
+        })
+      )
+    );
+    
 
     return new Response(
       JSON.stringify({

@@ -28,13 +28,22 @@ export default function InputSkillScoresPage() {
   useEffect(() => {
     fetchStudents();
   }, []);
-
+  
   const fetchStudents = async () => {
     try {
-      const res = await api.get(
-        `/tutor/skill-scores/students?classId=${classId}&subjectId=${subjectId}`
+      const res = await api.get(`/tutor/skill-scores/students?classId=${classId}&subjectId=${subjectId}`);
+      const studentsData = res.data.data || [];
+  
+      setStudents(studentsData);
+  
+      // 🟢 Set nilai awal ke state scores jika sudah pernah dinilai
+      setScores(
+        Object.fromEntries(
+          studentsData
+            .filter((s) => s.nilai != null)
+            .map((s) => [s.id, s.nilai.toString()])
+        )
       );
-      setStudents(res.data.data || []);
     } catch (error) {
       console.error(error);
       toast.error("Gagal memuat daftar siswa");
@@ -42,6 +51,7 @@ export default function InputSkillScoresPage() {
       setIsLoading(false);
     }
   };
+  
 
   const handleInputChange = (studentId, value) => {
     setScores((prev) => ({
