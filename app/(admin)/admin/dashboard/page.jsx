@@ -76,12 +76,6 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Check if user is admin (you might want to implement proper auth)
-        // const userId = localStorage.getItem("userId");
-        // if (!userId) {
-        //   router.push("/login");
-        //   return;
-        // }
 
         // Fetch all data in parallel
         const [
