@@ -32,23 +32,43 @@ import { useEffect, useState } from "react";
 
 export default function TutorDashboardPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(null); // <- simpan user login
-  const [dashboardData, setDashboardData] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Separate state for each data type
+  const [profile, setProfile] = useState(null);
+  const [classes, setClasses] = useState([]);
+  const [recentActivities, setRecentActivities] = useState({
+    recentAssignments: [],
+    recentQuizzes: [],
+    recentMaterials: [],
+  });
+  const [submissions, setSubmissions] = useState([]);
+  const [statistics, setStatistics] = useState({
+    totalStudents: 0,
+    totalAssignments: 0,
+    totalQuizzes: 0,
+    submissions: {
+      submitted: 0,
+      graded: 0,
+      late: 0,
+      total: 0,
+      averageScore: 0,
+    },
+  });
 
   useEffect(() => {
     const fetchUserAndDashboard = async () => {
       try {
         setLoading(true);
-        
+
         // 1. First check if user is authenticated
         const userRes = await fetch("/api/auth/me", {
           cache: "no-store",
           credentials: "include",
         });
-        
+
         if (!userRes.ok) {
           router.replace("/");
           return;
@@ -56,7 +76,7 @@ export default function TutorDashboardPage() {
 
         const userData = await userRes.json();
         const user = userData.user;
-        
+
         if (!user) {
           router.replace("/");
           return;
@@ -71,25 +91,81 @@ export default function TutorDashboardPage() {
         }
 
         // 3. Check if tutor profile exists
-        const profileRes = await fetch(`/api/users/check-profile?userId=${user.id}&role=${user.role}`);
+        const profileRes = await fetch(
+          `/api/users/check-profile?userId=${user.id}&role=${user.role}`
+        );
         const profileData = await profileRes.json();
-        
+
         if (!profileData.hasProfile) {
           router.replace("/onboarding/tutor");
           return;
         }
 
-        // 4. Only if all checks pass, fetch dashboard data
-        const dashboardRes = await fetch("/api/tutor/dashboard");
-        if (!dashboardRes.ok) throw new Error("Failed to fetch dashboard data");
+        // 4. Fetch all dashboard data in parallel
+        const [
+          profileResponse,
+          classesResponse,
+          recentResponse,
+          submissionsResponse,
+          statsResponse,
+        ] = await Promise.all([
+          fetch("/api/tutor/dashboard/profile"),
+          fetch("/api/tutor/dashboard/classes"),
+          fetch("/api/tutor/dashboard/recent"),
+          fetch("/api/tutor/dashboard/submissions"),
+          fetch("/api/tutor/dashboard/stats"), // You might need to create this endpoint
+        ]);
 
-        const dashboard = await dashboardRes.json();
-        setDashboardData(dashboard);
+        if (!profileResponse.ok) throw new Error("Failed to fetch profile");
+        if (!classesResponse.ok) throw new Error("Failed to fetch classes");
+        if (!recentResponse.ok)
+          throw new Error("Failed to fetch recent activities");
+        if (!submissionsResponse.ok)
+          throw new Error("Failed to fetch submissions");
+        if (!statsResponse.ok) throw new Error("Failed to fetch statistics");
+
+        // In your fetchUserAndDashboard function, fix the Promise.all destructuring:
+        const [
+          profileDetails,
+          classesData,
+          recentData,
+          submissionsData,
+          statsData,
+        ] = await Promise.all([
+          profileResponse.json(),
+          classesResponse.json(),
+          recentResponse.json(),
+          submissionsResponse.json(),
+          statsResponse.json(),
+        ]);
+
+        // Then set all the states:
+        setProfile(profileDetails.tutor);
+        setClasses(classesData.classes);
+        setRecentActivities({
+          recentAssignments: recentData.recentAssignments || [],
+          recentQuizzes: recentData.recentQuizzes || [],
+          recentMaterials: recentData.recentMaterials || [],
+        });
+        setSubmissions(submissionsData.submissions || []);
+        setStatistics(
+          statsData.statistics || {
+            totalStudents: 0,
+            totalAssignments: 0,
+            totalQuizzes: 0,
+            submissions: {
+              submitted: 0,
+              graded: 0,
+              late: 0,
+              total: 0,
+              averageScore: 0,
+            },
+          }
+        );
       } catch (err) {
         console.error("Error:", err);
         setError(err.message);
-        
-        // If it's a profile check error, redirect to onboarding
+
         if (err.message.includes("tutor profile")) {
           router.replace("/onboarding/tutor");
         }
@@ -102,7 +178,7 @@ export default function TutorDashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <LoadingSpinner/>
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -118,32 +194,36 @@ export default function TutorDashboardPage() {
     );
   }
 
-  if (!dashboardData) {
+  if (!profile) {
     return null;
   }
 
-  const {
-    tutor,
-    classes,
-    recentAssignments,
-    recentQuizzes,
-    recentMaterials,
-    submissionsNeedingGrading,
-    statistics,
-  } = dashboardData;
-
   // Format date function
-  const formatDate = (dateString) => {
+// Format date function with error handling
+const formatDate = (dateString) => {
+  try {
+    if (!dateString) return "No date";
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
     return format(date, "d MMMM yyyy", { locale: id });
-  };
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Invalid date";
+  }
+};
 
-  // Format date with time
-  const formatDateTime = (dateString) => {
+// Format date with time with error handling
+const formatDateTime = (dateString) => {
+  try {
+    if (!dateString) return "No date";
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
     return format(date, "d MMM yyyy, HH:mm", { locale: id });
-  };
-
+  } catch (error) {
+    console.error("Error formatting date time:", error);
+    return "Invalid date";
+  }
+};
   return (
     <>
       {currentUser && (
@@ -154,9 +234,9 @@ export default function TutorDashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            Selamat Datang, {tutor.name}
+            Selamat Datang, {profile.name}
           </h1>
-          <p className="text-gray-600">{tutor.bio || "Tutor"}</p>
+          <p className="text-gray-600">{profile.bio || "Tutor"}</p>
         </div>
 
         {/* Stats Overview */}
@@ -179,7 +259,7 @@ export default function TutorDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -199,7 +279,7 @@ export default function TutorDashboardPage() {
                 className="h-1 mt-3"
               />
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardContent className="pt-6">
@@ -259,7 +339,10 @@ export default function TutorDashboardPage() {
                     Kelas dan mata pelajaran yang Anda ajar
                   </CardDescription>
                 </div>
-                <Button size="sm" onClick={() => router.push("/tutor/my-classes")}>
+                <Button
+                  size="sm"
+                  onClick={() => router.push("/tutor/my-classes")}
+                >
                   Lihat Semua
                 </Button>
               </CardHeader>
@@ -286,14 +369,14 @@ export default function TutorDashboardPage() {
                             {cls.totalStudents} Siswa
                           </p>
                         </div>
-                        <div className="text-right">
+                        {/* <div className="text-right">
                           <div className="text-sm font-medium">
                             Nilai Rata-rata:{" "}
                             <span className="text-green-600">
-                              {cls.averageScore.toFixed(1)}
+                              {cls.averageScore?.toFixed(1) || "0.0"}
                             </span>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}
@@ -318,42 +401,55 @@ export default function TutorDashboardPage() {
                   </TabsList>
 
                   <TabsContent value="assignments">
-                    {recentAssignments.length > 0 ? (
+                    {recentActivities.recentAssignments.length > 0 ? (
                       <div className="space-y-4">
-                        {recentAssignments.map((assignment) => (
-                          <div
-                            key={assignment.id}
-                            className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                            onClick={() =>
-                              router.push(`/tutor/assignments/${assignment.id}`)
-                            }
-                          >
-                            <div className="p-2 bg-blue-100 rounded-full mr-3">
-                              <FileText className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">
-                                {assignment.title}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                {assignment.subject} • {assignment.class}
-                              </p>
-                              <div className="flex items-center justify-between mt-1">
-                                <div className="text-xs text-gray-500">
-                                  <Calendar className="inline h-3 w-3 mr-1" />
-                                  <span>
-                                    Tenggat: {formatDate(assignment.dueDate)}
-                                  </span>
-                                </div>
-                                <div className="text-xs">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                                    {assignment.submissionCount} Pengumpulan
-                                  </span>
+                        {recentActivities.recentAssignments.map(
+                          (assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                              onClick={() =>
+                                router.push(
+                                  `/tutor/assignments/${assignment.id}`
+                                )
+                              }
+                            >
+                              <div className="p-2 bg-blue-100 rounded-full mr-3">
+                                <FileText className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium">
+                                  {assignment.title}
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                  {
+                                    assignment.classSubjectTutor?.subject
+                                      ?.namaMapel
+                                  }{" "}
+                                  •{" "}
+                                  {
+                                    assignment.classSubjectTutor?.class
+                                      ?.namaKelas
+                                  }
+                                </p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <div className="text-xs text-gray-500">
+                                    <Calendar className="inline h-3 w-3 mr-1" />
+                                    <span>
+                                      Tenggat: {formatDate(assignment.dueDate)}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                      {assignment.submissions?.length || 0}{" "}
+                                      Pengumpulan
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-6">
@@ -363,9 +459,9 @@ export default function TutorDashboardPage() {
                   </TabsContent>
 
                   <TabsContent value="quizzes">
-                    {recentQuizzes.length > 0 ? (
+                    {recentActivities.recentQuizzes.length > 0 ? (
                       <div className="space-y-4">
-                        {recentQuizzes.map((quiz) => (
+                        {recentActivities.recentQuizzes.map((quiz) => (
                           <div
                             key={quiz.id}
                             className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -379,7 +475,8 @@ export default function TutorDashboardPage() {
                             <div className="flex-1">
                               <h4 className="font-medium">{quiz.title}</h4>
                               <p className="text-sm text-gray-600">
-                                {quiz.subject} • {quiz.class}
+                                {quiz.classSubjectTutor?.subject?.namaMapel} •{" "}
+                                {quiz.classSubjectTutor?.class?.namaKelas}
                               </p>
                               <div className="flex items-center justify-between mt-1">
                                 <div className="text-xs text-gray-500">
@@ -392,7 +489,7 @@ export default function TutorDashboardPage() {
                                 </div>
                                 <div className="text-xs">
                                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                                    {quiz.submissionCount} Pengumpulan
+                                    {quiz.submissions?.length || 0} Pengumpulan
                                   </span>
                                 </div>
                               </div>
@@ -408,9 +505,9 @@ export default function TutorDashboardPage() {
                   </TabsContent>
 
                   <TabsContent value="materials">
-                    {recentMaterials.length > 0 ? (
+                    {recentActivities.recentMaterials.length > 0 ? (
                       <div className="space-y-4">
-                        {recentMaterials.map((material) => (
+                        {recentActivities.recentMaterials.map((material) => (
                           <div
                             key={material.id}
                             className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -424,7 +521,8 @@ export default function TutorDashboardPage() {
                             <div className="flex-1">
                               <h4 className="font-medium">{material.title}</h4>
                               <p className="text-sm text-gray-600">
-                                {material.subject} • {material.class}
+                                {material.classSubjectTutor?.subject?.namaMapel}{" "}
+                                • {material.classSubjectTutor?.class?.namaKelas}
                               </p>
                               <div className="flex items-center mt-1 text-xs text-gray-500">
                                 <Calendar className="h-3 w-3 mr-1" />
@@ -522,9 +620,9 @@ export default function TutorDashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {submissionsNeedingGrading.length > 0 ? (
+                {submissions.length > 0 ? (
                   <div className="space-y-4">
-                    {submissionsNeedingGrading.map((submission) => (
+                    {submissions.map((submission) => (
                       <div
                         key={submission.id}
                         className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -536,19 +634,30 @@ export default function TutorDashboardPage() {
                           <GraduationCap className="h-5 w-5 text-amber-600" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium">{submission.title}</h4>
+                          <h4 className="font-medium">
+                            {submission.assignment?.title ||
+                              submission.quiz?.title}
+                          </h4>
                           <p className="text-sm text-gray-600">
-                            {submission.studentName}
+                            {submission.student?.user?.nama}
                           </p>
                           <div className="flex items-center justify-between mt-1">
                             <div className="text-xs text-gray-500">
                               <span>
-                                {submission.subject} • {submission.class}
+                                {submission.assignment?.classSubjectTutor
+                                  ?.subject?.namaMapel ||
+                                  submission.quiz?.classSubjectTutor?.subject
+                                    ?.namaMapel}{" "}
+                                •
+                                {submission.assignment?.classSubjectTutor?.class
+                                  ?.namaKelas ||
+                                  submission.quiz?.classSubjectTutor?.class
+                                    ?.namaKelas}
                               </span>
                             </div>
                             <div className="text-xs">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                                {submission.type}
+                                {submission.assignmentId ? "Tugas" : "Kuis"}
                               </span>
                             </div>
                           </div>
