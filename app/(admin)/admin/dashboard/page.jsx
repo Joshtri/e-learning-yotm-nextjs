@@ -55,27 +55,105 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 export default function AdminDashboard() {
-  const [dashboardData, setDashboardData] = useState(null);
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const router = useRouter();
+
+  // State for each data type
+  const [overview, setOverview] = useState(null);
+  const [submissionStats, setSubmissionStats] = useState(null);
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
+  const [todaysSchedule, setTodaysSchedule] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/dashboard", {
-          headers: {
-            "x-user-id": localStorage.getItem("userId") || "",
-          },
-        });
+        setLoading(true);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
+        // Check if user is admin (you might want to implement proper auth)
+        // const userId = localStorage.getItem("userId");
+        // if (!userId) {
+        //   router.push("/login");
+        //   return;
+        // }
 
-        const data = await response.json();
-        setDashboardData(data);
+        // Fetch all data in parallel
+        const [
+          overviewRes,
+          submissionStatsRes,
+          recentUsersRes,
+          classesRes,
+          programsRes,
+          subjectsRes,
+          monthlyStatsRes,
+          todayScheduleRes,
+          recentActivitiesRes,
+        ] = await Promise.all([
+          fetch("/api/admin/dashboard/overview"),
+          fetch("/api/admin/dashboard/submission-stats"),
+          fetch("/api/admin/dashboard/recent-users"),
+          fetch("/api/admin/dashboard/classes"),
+          fetch("/api/admin/dashboard/programs"),
+          fetch("/api/admin/dashboard/subjects"),
+          fetch("/api/admin/dashboard/monthly-stats"),
+          fetch("/api/admin/dashboard/today-schedule"),
+          fetch("/api/admin/dashboard/recent-activities"),
+        ]);
+
+        // Check for errors
+        if (!overviewRes.ok) throw new Error("Failed to fetch overview");
+        if (!submissionStatsRes.ok)
+          throw new Error("Failed to fetch submission stats");
+        if (!recentUsersRes.ok) throw new Error("Failed to fetch recent users");
+        if (!classesRes.ok) throw new Error("Failed to fetch classes");
+        if (!programsRes.ok) throw new Error("Failed to fetch programs");
+        if (!subjectsRes.ok) throw new Error("Failed to fetch subjects");
+        if (!monthlyStatsRes.ok)
+          throw new Error("Failed to fetch monthly stats");
+        if (!todayScheduleRes.ok)
+          throw new Error("Failed to fetch today's schedule");
+        if (!recentActivitiesRes.ok)
+          throw new Error("Failed to fetch recent activities");
+
+        // Parse responses
+        const [
+          overviewData,
+          submissionStatsData,
+          recentUsersData,
+          classesData,
+          programsData,
+          subjectsData,
+          monthlyStatsData,
+          todayScheduleData,
+          recentActivitiesData,
+        ] = await Promise.all([
+          overviewRes.json(),
+          submissionStatsRes.json(),
+          recentUsersRes.json(),
+          classesRes.json(),
+          programsRes.json(),
+          subjectsRes.json(),
+          monthlyStatsRes.json(),
+          todayScheduleRes.json(),
+          recentActivitiesRes.json(),
+        ]);
+
+        // Set states
+        setOverview(overviewData);
+        setSubmissionStats(submissionStatsData);
+        setRecentUsers(recentUsersData);
+        setClasses(classesData);
+        setPrograms(programsData);
+        setSubjects(subjectsData);
+        setMonthlyStats(monthlyStatsData);
+        setTodaysSchedule(todayScheduleData);
+        setRecentActivities(recentActivitiesData);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.message);
@@ -84,40 +162,45 @@ export default function AdminDashboard() {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    fetchData();
+  }, [router]);
 
-  // Format date function
+  // Format date function with error handling
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return format(date, "d MMMM yyyy", { locale: id });
+    try {
+      if (!dateString) return "No date";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      return format(date, "d MMMM yyyy", { locale: id });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
-  // Format date with time
+  // Format date with time with error handling
   const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return format(date, "d MMM yyyy, HH:mm", { locale: id });
+    try {
+      if (!dateString) return "No date";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      return format(date, "d MMM yyyy, HH:mm", { locale: id });
+    } catch (error) {
+      console.error("Error formatting date time:", error);
+      return "Invalid date";
+    }
   };
 
   // Format time only
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return format(date, "HH:mm", { locale: id });
-  };
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "GRADED":
-        return "text-green-600";
-      case "SUBMITTED":
-        return "text-blue-600";
-      case "LATE":
-        return "text-amber-600";
-      case "IN_PROGRESS":
-        return "text-purple-600";
-      default:
-        return "text-gray-600";
+    try {
+      if (!dateString) return "No time";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid time";
+      return format(date, "HH:mm", { locale: id });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "Invalid time";
     }
   };
 
@@ -152,18 +235,6 @@ export default function AdminDashboard() {
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <CheckCircle className="w-3 h-3 mr-1" /> Aktif
-          </span>
-        );
-      case "INACTIVE":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            <AlertCircle className="w-3 h-3 mr-1" /> Tidak Aktif
-          </span>
-        );
-      case "PENDING":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="w-3 h-3 mr-1" /> Menunggu
           </span>
         );
       default:
@@ -226,20 +297,9 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!dashboardData) {
+  if (!overview || !submissionStats) {
     return null;
   }
-
-  const {
-    overview,
-    recentActivities,
-    recentUsers,
-    classes,
-    programs,
-    subjects,
-    monthlyStats,
-    todaysSchedule,
-  } = dashboardData;
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -350,15 +410,13 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {Math.round(
-                    (overview.submissionStats.graded /
-                      (overview.submissionStats.total || 1)) *
+                    (submissionStats.graded / (submissionStats.total || 1)) *
                       100
                   )}
                   %
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Rata-rata nilai:{" "}
-                  {overview.submissionStats.averageScore.toFixed(1)}
+                  Rata-rata nilai: {submissionStats.averageScore.toFixed(1)}
                 </p>
               </CardContent>
             </Card>
@@ -543,14 +601,13 @@ export default function AdminDashboard() {
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Dikumpulkan</span>
                     <span className="text-sm font-medium">
-                      {overview.submissionStats.submitted} /{" "}
-                      {overview.submissionStats.total}
+                      {submissionStats.submitted} / {submissionStats.total}
                     </span>
                   </div>
                   <Progress
                     value={
-                      (overview.submissionStats.submitted /
-                        (overview.submissionStats.total || 1)) *
+                      (submissionStats.submitted /
+                        (submissionStats.total || 1)) *
                       100
                     }
                     className="h-2 bg-blue-100"
@@ -560,14 +617,12 @@ export default function AdminDashboard() {
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Dinilai</span>
                     <span className="text-sm font-medium">
-                      {overview.submissionStats.graded} /{" "}
-                      {overview.submissionStats.total}
+                      {submissionStats.graded} / {submissionStats.total}
                     </span>
                   </div>
                   <Progress
                     value={
-                      (overview.submissionStats.graded /
-                        (overview.submissionStats.total || 1)) *
+                      (submissionStats.graded / (submissionStats.total || 1)) *
                       100
                     }
                     className="h-2 bg-green-100"
@@ -577,14 +632,12 @@ export default function AdminDashboard() {
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Terlambat</span>
                     <span className="text-sm font-medium">
-                      {overview.submissionStats.late} /{" "}
-                      {overview.submissionStats.total}
+                      {submissionStats.late} / {submissionStats.total}
                     </span>
                   </div>
                   <Progress
                     value={
-                      (overview.submissionStats.late /
-                        (overview.submissionStats.total || 1)) *
+                      (submissionStats.late / (submissionStats.total || 1)) *
                       100
                     }
                     className="h-2 bg-amber-100"
@@ -596,14 +649,13 @@ export default function AdminDashboard() {
                       Sedang Dikerjakan
                     </span>
                     <span className="text-sm font-medium">
-                      {overview.submissionStats.inProgress} /{" "}
-                      {overview.submissionStats.total}
+                      {submissionStats.inProgress} / {submissionStats.total}
                     </span>
                   </div>
                   <Progress
                     value={
-                      (overview.submissionStats.inProgress /
-                        (overview.submissionStats.total || 1)) *
+                      (submissionStats.inProgress /
+                        (submissionStats.total || 1)) *
                       100
                     }
                     className="h-2 bg-purple-100"
@@ -613,14 +665,13 @@ export default function AdminDashboard() {
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Belum Mulai</span>
                     <span className="text-sm font-medium">
-                      {overview.submissionStats.notStarted} /{" "}
-                      {overview.submissionStats.total}
+                      {submissionStats.notStarted} / {submissionStats.total}
                     </span>
                   </div>
                   <Progress
                     value={
-                      (overview.submissionStats.notStarted /
-                        (overview.submissionStats.total || 1)) *
+                      (submissionStats.notStarted /
+                        (submissionStats.total || 1)) *
                       100
                     }
                     className="h-2 bg-gray-100"
