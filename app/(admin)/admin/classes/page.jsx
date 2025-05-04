@@ -1,44 +1,34 @@
+// File: app/admin/classes/page.jsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0,
-  });
-
   const router = useRouter();
 
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams();
-      params.append("page", pagination.page.toString());
-      params.append("limit", pagination.limit.toString());
-      if (searchQuery) params.append("search", searchQuery);
-
-      const response = await api.get(`/classes?${params.toString()}`);
-      setClasses(response.data.data.classes);
-      setPagination(response.data.data.pagination);
-    } catch (error) {
-      console.error("Gagal memuat data kelas:", error);
+      const res = await api.get("/classes");
+      setClasses(res.data.data.classes || []);
+    } catch (err) {
       toast.error("Gagal memuat data kelas");
     } finally {
       setIsLoading(false);
@@ -47,19 +37,22 @@ export default function ClassesPage() {
 
   useEffect(() => {
     fetchClasses();
-  }, [pagination.page, pagination.limit, searchQuery]);
+  }, []);
 
-  const filteredClasses = useMemo(() => {
-    if (!searchQuery) return classes;
-    return classes.filter((cls) =>
-      cls.namaKelas.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [classes, searchQuery]);
+  const groupedByYear = classes.reduce((acc, cls) => {
+    const ay = cls.academicYear;
+    const label = ay
+      ? `${ay.tahunMulai}/${ay.tahunSelesai}`
+      : "Tidak Diketahui";
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(cls);
+    return acc;
+  }, {});
 
   const columns = [
     {
       header: "No",
-      cell: (_, index) => (pagination.page - 1) * pagination.limit + index + 1,
+      cell: (_, i) => i + 1,
       className: "w-[50px]",
     },
     {
@@ -71,26 +64,20 @@ export default function ClassesPage() {
       cell: (row) => row.program?.namaPaket || "-",
     },
     {
-      header: "Tahun Ajaran",
-      cell: (row) =>
-        row.academicYear
-          ? `${row.academicYear.tahunMulai}/${row.academicYear.tahunSelesai}`
-          : "-",
+      header: "Wali Kelas",
+      cell: (row) => row.homeroomTeacher?.user?.nama || "-",
     },
-
     {
       header: "Aksi",
       className: "w-[120px]",
       cell: (row) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/admin/classes/${row.id}`)}
-          >
-            Detail
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => router.push(`/admin/classes/${row.id}`)}
+        >
+          Detail
+        </Button>
       ),
     },
   ];
@@ -105,7 +92,7 @@ export default function ClassesPage() {
               <>
                 <DataExport
                   data={classes}
-                  filename="classes.csv"
+                  filename="kelas.csv"
                   label="Export"
                 />
                 <Button
@@ -123,40 +110,23 @@ export default function ClassesPage() {
             ]}
           />
 
-          <Tabs defaultValue="all" className="space-y-6">
-            <DataToolbar
-              searchValue={searchQuery}
-              onSearchChange={(value) => {
-                setSearchQuery(value);
-                setPagination((prev) => ({ ...prev, page: 1 }));
-              }}
-              searchPlaceholder="Cari nama kelas..."
-              filterOptions={[]}
-            />
-
-            <TabsContent value="all" className="space-y-4">
-              {Object.entries(
-                filteredClasses.reduce((acc, cls) => {
-                  const program = cls.program?.namaPaket || "Tanpa Program";
-                  if (!acc[program]) acc[program] = [];
-                  acc[program].push(cls);
-                  return acc;
-                }, {})
-              ).map(([programName, groupItems]) => (
-                <div key={programName} className="space-y-2">
-                  <h2 className="text-lg font-semibold">{programName}</h2>
+          <Accordion type="multiple" className="space-y-4 mt-6">
+            {Object.entries(groupedByYear).map(([year, items]) => (
+              <AccordionItem key={year} value={year}>
+                <AccordionTrigger>{year}</AccordionTrigger>
+                <AccordionContent>
                   <DataTable
-                    data={groupItems}
+                    data={items}
                     columns={columns}
                     isLoading={isLoading}
-                    loadingMessage={`Memuat data untuk ${programName}...`}
-                    emptyMessage={`Tidak ada kelas pada program ${programName}`}
+                    loadingMessage={`Memuat kelas untuk tahun ${year}...`}
+                    emptyMessage={`Tidak ada kelas untuk tahun ${year}`}
                     keyExtractor={(item) => item.id}
                   />
-                </div>
-              ))}
-            </TabsContent>
-          </Tabs>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </main>
       </div>
     </div>
