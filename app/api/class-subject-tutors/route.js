@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const academicYearId = searchParams.get("academicYearId");
+    let academicYearId = searchParams.get("academicYearId");
 
     const cookieStore = cookies();
     const token = cookieStore.get("auth_token")?.value;
@@ -44,9 +44,25 @@ export async function GET(request) {
       }
     }
 
+    // Ambil tahun ajaran aktif jika academicYearId tidak diberikan
+    if (!academicYearId) {
+      const activeYear = await prisma.academicYear.findFirst({
+        where: { isActive: true },
+        select: { id: true },
+      });
+
+      if (activeYear) {
+        academicYearId = activeYear.id;
+      }
+    }
+
     const where = {
-      ...(tutorId && { tutorId }), // filter hanya kalau TUTOR
-      ...(academicYearId && { class: { academicYearId } }),
+      ...(tutorId && { tutorId }),
+      ...(academicYearId && {
+        class: {
+          academicYearId,
+        },
+      }),
     };
 
     const data = await prisma.classSubjectTutor.findMany({

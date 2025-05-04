@@ -1,226 +1,150 @@
+// Halaman daftar kelas untuk melihat presensi per kelas
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
 import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataTable } from "@/components/ui/data-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
-import { StatsCard } from "@/components/ui/stats-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { Plus, Users, Calendar, Clock, ClipboardList, Eye } from "lucide-react";
-import Link from "next/link";
-
-export default function TutorAttendancesPage() {
+export default function AttendanceClassListPage() {
   const router = useRouter();
-  const [data, setData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedYearId, setSelectedYearId] = useState("");
+  const [classes, setClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedClassId, setSelectedClassId] = useState("");
 
-  const fetchData = async () => {
+  useEffect(() => {
+    fetchAcademicYears();
+  }, []);
+
+  useEffect(() => {
+    if (selectedYearId) {
+      fetchClasses(selectedYearId);
+    }
+  }, [selectedYearId]);
+
+  const fetchAcademicYears = async () => {
     try {
-      setIsLoading(true);
-      const res = await api.get("/tutor/attendances");
-      setData(res.data.data || []);
+      const res = await api.get("/academic-years");
+      const list = res.data?.data?.academicYears || [];
+      setAcademicYears(list);
+
+      const active = list.find((y) => y.isActive);
+      if (active) setSelectedYearId(active.id);
     } catch (error) {
-      console.error("Gagal memuat data presensi:", error);
-      toast.error("Gagal memuat data presensi");
+      toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  const fetchClasses = async (academicYearId) => {
+    setIsLoading(true);
+    try {
+      const res = await api.get("/tutor/my-classes", {
+        params: { academicYearId },
+      });
+      setClasses(res.data.data || []);
+    } catch (error) {
+      toast.error("Gagal memuat kelas");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const classOptions = useMemo(() => {
-    const uniqueClasses = new Map();
-    data.forEach((d) => {
-      if (d.class) {
-        uniqueClasses.set(d.class.id, d.class.namaKelas);
-      }
-    });
-    return Array.from(uniqueClasses, ([id, namaKelas]) => ({ id, namaKelas }));
-  }, [data]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const filteredData = useMemo(() => {
-    let filtered = data;
-
-    if (selectedClassId) {
-      filtered = filtered.filter((item) => item.class?.id === selectedClassId);
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter((item) =>
-        item.class?.namaKelas?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [data, searchQuery, selectedClassId]);
-
-  const columns = [
-    {
-      header: "Tanggal",
-      accessorKey: "tanggal",
-      cell: (row) =>
-        row.tanggal ? new Date(row.tanggal).toLocaleDateString("id-ID") : "-",
-    },
-    {
-      header: "Kelas",
-      accessorKey: "class.namaKelas",
-      cell: (row) => row.class?.namaKelas || "-",
-    },
-    {
-      header: "Tahun Ajaran",
-      cell: (row) => {
-        const ay = row.academicYear;
-        return ay ? `${ay.tahunMulai}/${ay.tahunSelesai}` : "-";
-      },
-    },
-    {
-      header: "Keterangan",
-      accessorKey: "keterangan",
-      cell: (row) => row.keterangan || "-",
-    },
-    {
-      header: "Aksi",
-      cell: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push(`/tutor/attendances/${row.id}`)}
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          Detail
-        </Button>
-      ),
-    },
-  ];
-
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <PageHeader
-        title="Presensi Siswa"
-        description="Kelola daftar sesi presensi untuk kelas Anda."
-        actions={
-          <Button asChild>
-            <Link href="/tutor/attendances/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Buat Presensi
-            </Link>
-          </Button>
-        }
+        title="Presensi per Kelas"
+        description="Lihat dan kelola sesi presensi berdasarkan kelas."
         breadcrumbs={[
           { label: "Dashboard", href: "/tutor/dashboard" },
-          { label: "Presensi Siswa" },
+          { label: "Presensi", href: "/tutor/attendances" },
+          { label: "Per Kelas" },
         ]}
       />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total Sesi"
-          value={data.length}
-          description="Total presensi yang Anda buat"
-          icon={<ClipboardList className="h-4 w-4" />}
-        />
-        <StatsCard
-          title="Kelas Terlibat"
-          value={new Set(data.map((d) => d.class?.namaKelas)).size}
-          description="Kelas yang memiliki sesi presensi"
-          icon={<Users className="h-4 w-4" />}
-        />
-        <StatsCard
-          title="Tahun Ajaran Aktif"
-          value={
-            new Set(
-              data.map((d) =>
-                d.academicYear
-                  ? `${d.academicYear.tahunMulai}/${d.academicYear.tahunSelesai}`
-                  : "-"
-              )
-            ).size
-          }
-          description="Tahun ajaran yang terlibat"
-          icon={<Calendar className="h-4 w-4" />}
-        />
-        <StatsCard
-          title="Presensi Hari Ini"
-          value={
-            data.filter((d) => {
-              const today = new Date().toDateString();
-              const presensiDate = new Date(d.tanggal).toDateString();
-              return today === presensiDate;
-            }).length
-          }
-          description="Sesi presensi hari ini"
-          icon={<Clock className="h-4 w-4" />}
-        />
+      <div className="flex justify-end">
+        <Select value={selectedYearId} onValueChange={setSelectedYearId}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Pilih Tahun Ajaran" />
+          </SelectTrigger>
+          <SelectContent>
+            {academicYears.map((year) => (
+              <SelectItem key={year.id} value={year.id}>
+                {year.tahunMulai}/{year.tahunSelesai}{" "}
+                {year.isActive ? "(Aktif)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Filter dan Table */}
-      <Tabs defaultValue="all" className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <TabsList>
-            <TabsTrigger value="all">Semua</TabsTrigger>
-          </TabsList>
-
-          {/* Dropdown Select Kelas */}
-          {classOptions.length > 1 && (
-            <div className="flex gap-2 w-full sm:w-auto">
-              <select
-                value={selectedClassId}
-                onChange={(e) => setSelectedClassId(e.target.value)}
-                className="border rounded-md p-2 text-sm"
-              >
-                <option value="">Semua Kelas</option>
-                {classOptions.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.namaKelas}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="Cari kelas..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border rounded-md p-2 text-sm"
-              />
-            </div>
-          )}
-        </div>
-
-        <TabsContent value="all" className="space-y-4">
-          {filteredData.length > 0 ? (
-            <DataTable
-              data={filteredData}
-              columns={columns}
-              isLoading={isLoading}
-              loadingMessage="Memuat data presensi..."
-              emptyMessage="Belum ada presensi"
-              keyExtractor={(item) => item.id}
-            />
-          ) : (
-            <EmptyState
-              title="Belum ada presensi"
-              description="Anda belum membuat presensi. Klik tombol 'Buat Presensi' untuk memulai."
-              icon={<ClipboardList className="h-6 w-6 text-muted-foreground" />}
-              action={() => router.push("/tutor/attendances/create")}
-              actionLabel="Buat Presensi"
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Kelas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>No</TableHead>
+                <TableHead>Kelas</TableHead>
+                <TableHead>Mapel</TableHead>
+                <TableHead>Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4}>Loading...</TableCell>
+                </TableRow>
+              ) : classes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center">
+                    Tidak ada kelas
+                  </TableCell>
+                </TableRow>
+              ) : (
+                classes.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{item.class.namaKelas}</TableCell>
+                    <TableCell>{item.subject.namaMapel}</TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() =>
+                          router.push(
+                            `/tutor/attendances/class/${item.class.id}`
+                          )
+                        }
+                      >
+                        Lihat Presensi
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

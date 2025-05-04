@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getUserFromCookie } from "@/utils/auth"; // path disesuaikan
+import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,24 +9,37 @@ export async function GET() {
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-
+    
     const tutor = await prisma.tutor.findFirst({
       where: { userId: user.id },
     });
-
+    
     if (!tutor) {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
-
+    
     const classSubjectTutors = await prisma.classSubjectTutor.findMany({
       where: {
         tutorId: tutor.id,
+        class: {
+          academicYear: {
+            isActive: true,
+          },
+        },
       },
       include: {
         class: {
           select: {
             id: true,
             namaKelas: true,
+            academicYear: {
+              select: {
+                id: true,
+                tahunMulai: true,
+                tahunSelesai: true,
+                isActive: true,
+              },
+            },
           },
         },
         subject: {
@@ -40,7 +53,7 @@ export async function GET() {
         createdAt: "desc",
       },
     });
-
+    
     return NextResponse.json({
       success: true,
       data: classSubjectTutors,

@@ -12,6 +12,7 @@ export async function GET() {
       );
     }
 
+    // Ambil data siswa
     const student = await prisma.student.findUnique({
       where: { userId: user.id },
       select: { id: true, classId: true },
@@ -24,21 +25,36 @@ export async function GET() {
       );
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // reset jam ke 00:00
+    // Ambil tahun ajaran aktif
+    const activeYear = await prisma.academicYear.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+    });
+
+    if (!activeYear) {
+      return NextResponse.json(
+        { success: false, message: "Tahun ajaran aktif tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    // Ambil sesi presensi dalam bulan berjalan
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     const sessions = await prisma.attendanceSession.findMany({
       where: {
         classId: student.classId,
-        tanggal: today,
-      },
-      include: {
-        class: { select: { namaKelas: true } },
+        academicYearId: activeYear.id,
+        tanggal: {
+          gte: start,
+          lte: end,
+        },
       },
       orderBy: { tanggal: "asc" },
     });
 
-    // Untuk setiap session, cek apakah sudah ada Attendance siswa ini
     const sessionWithStatus = await Promise.all(
       sessions.map(async (session) => {
         const attendance = await prisma.attendance.findFirst({
@@ -49,15 +65,17 @@ export async function GET() {
         });
 
         return {
-          ...session,
-          attendanceStatus: attendance?.status || null, // bisa "PRESENT", "SICK", "EXCUSED", atau null kalau belum absen
+          id: session.id,
+          tanggal: session.tanggal,
+          keterangan: session.keterangan,
+          status: attendance?.status || null,
         };
       })
     );
 
     return NextResponse.json({ success: true, data: sessionWithStatus });
   } catch (error) {
-    console.error("Gagal fetch sesi presensi:", error);
+    console.error("GET /api/student/attendance/sessions error:", error);
     return NextResponse.json(
       { success: false, message: "Gagal memuat sesi presensi" },
       { status: 500 }

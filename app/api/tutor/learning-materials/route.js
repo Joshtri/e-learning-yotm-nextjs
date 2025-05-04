@@ -1,10 +1,11 @@
+// /app/api/tutor/learning-materials/route.ts
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req) {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -18,10 +19,22 @@ export async function GET() {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const academicYearId = searchParams.get("academicYearId");
+
     const materials = await prisma.learningMaterial.findMany({
       where: {
         classSubjectTutor: {
           tutorId: tutor.id,
+          class: academicYearId
+            ? {
+                academicYearId,
+              }
+            : {
+                academicYear: {
+                  isActive: true,
+                },
+              },
         },
       },
       include: {
@@ -49,7 +62,6 @@ export async function GET() {
     );
   }
 }
-
 export async function POST(req) {
   try {
     const user = getUserFromCookie();
@@ -71,23 +83,25 @@ export async function POST(req) {
 
     if (!judul || !classSubjectTutorId) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Judul dan kelas-mapel wajib diisi",
-        },
+        { success: false, message: "Judul dan kelas-mapel wajib diisi" },
         { status: 400 }
       );
     }
 
-    // Pastikan CST milik tutor login
-    const valid = await prisma.classSubjectTutor.findFirst({
+    const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
         id: classSubjectTutorId,
         tutorId: tutor.id,
       },
+      include: {
+        class: {
+          include: { students: { select: { userId: true } } },
+        },
+        subject: true,
+      },
     });
 
-    if (!valid) {
+    if (!classSubjectTutor) {
       return NextResponse.json(
         {
           success: false,
@@ -106,9 +120,27 @@ export async function POST(req) {
       },
     });
 
+    // Kirim notifikasi ke semua siswa di kelas
+    const studentUserIds = classSubjectTutor.class.students.map(
+      (s) => s.userId
+    );
+
+    const notificationPayload = studentUserIds.map((studentId) => ({
+      senderId: user.id,
+      receiverId: studentId,
+      title: `Materi Baru: ${judul}`,
+      message: `Tutor Anda menambahkan materi "${judul}" pada mapel ${classSubjectTutor.subject.nama}.`,
+      type: "MATERIAL",
+    }));
+
+    await prisma.notification.createMany({
+      data: notificationPayload,
+      skipDuplicates: true,
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Materi berhasil disimpan",
+      message: "Materi berhasil disimpan dan notifikasi dikirim",
       data: created,
     });
   } catch (error) {

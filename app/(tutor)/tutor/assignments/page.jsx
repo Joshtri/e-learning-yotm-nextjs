@@ -43,12 +43,30 @@ export default function TutorAssignmentPage() {
     completedAssignments: 0,
   });
 
+  const [academicYears, setAcademicYears] = useState([]);
+const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
+
+useEffect(() => {
+  const fetchAcademicYears = async () => {
+    const res = await api.get("/academic-years");
+    setAcademicYears(res.data.data.academicYears);
+    const active = res.data.data.academicYears.find((y) => y.isActive);
+    if (active) setSelectedAcademicYearId(active.id); // default aktif
+  };
+  fetchAcademicYears();
+}, []);
+
+
   const router = useRouter();
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get("/tutor/assignments");
+      const res = await api.get("/tutor/assignments", {
+        params: {
+          academicYearId: selectedAcademicYearId,
+        },
+      });
       const assignmentsData = res.data.data || [];
       setData(assignmentsData);
 
@@ -81,10 +99,13 @@ export default function TutorAssignmentPage() {
       setIsLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (selectedAcademicYearId) {
+      fetchData();
+    }
+  }, [selectedAcademicYearId]);
+  
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
@@ -206,29 +227,6 @@ export default function TutorAssignmentPage() {
     },
   ];
 
-  const pendingSubmissions = [
-    {
-      id: 1,
-      title: "Tugas Matematika Bab 3",
-      student: "Budi Santoso",
-      class: "Kelas 12A",
-      submittedAt: "2 jam yang lalu",
-    },
-    {
-      id: 2,
-      title: "Tugas Fisika Bab 2",
-      student: "Ani Wijaya",
-      class: "Kelas 11B",
-      submittedAt: "5 jam yang lalu",
-    },
-    {
-      id: 3,
-      title: "Tugas Kimia Praktikum",
-      student: "Deni Pratama",
-      class: "Kelas 12A",
-      submittedAt: "1 hari yang lalu",
-    },
-  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -279,7 +277,7 @@ export default function TutorAssignmentPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="lg:col-span-2">
           <Tabs defaultValue="all" className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -296,37 +294,29 @@ export default function TutorAssignmentPage() {
                 searchPlaceholder="Cari judul, kelas, atau mapel..."
                 filterOptions={[
                   {
-                    label: "Filter",
+                    label: "Tahun Ajaran",
                     icon: <Filter className="h-4 w-4" />,
-                    // content: (
-                    //   <div className="p-2">
-                    //     <p className="text-sm font-medium mb-2">Jenis Tugas</p>
-                    //     <div className="space-y-2">
-                    //       <div className="flex items-center">
-                    //         <input
-                    //           type="checkbox"
-                    //           id="type-individu"
-                    //           className="mr-2"
-                    //         />
-                    //         <label htmlFor="type-individu" className="text-sm">
-                    //           Individu
-                    //         </label>
-                    //       </div>
-                    //       <div className="flex items-center">
-                    //         <input
-                    //           type="checkbox"
-                    //           id="type-kelompok"
-                    //           className="mr-2"
-                    //         />
-                    //         <label htmlFor="type-kelompok" className="text-sm">
-                    //           Kelompok
-                    //         </label>
-                    //       </div>
-                    //     </div>
-                    //   </div>
-                    // ),
+                    content: (
+                      <div className="p-2">
+                        <p className="text-sm font-medium mb-2">Pilih Tahun Ajaran</p>
+                        <select
+                          value={selectedAcademicYearId || ""}
+                          onChange={(e) => setSelectedAcademicYearId(e.target.value)}
+                          className="w-full border rounded-md px-2 py-1 text-sm"
+                        >
+                          {academicYears.map((year) => (
+                            <option key={year.id} value={year.id}>
+                              {year.tahunMulai}/{year.tahunSelesai}
+                              {year.isActive ? " (Aktif)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ),
                   },
                 ]}
+                
+                
               />
             </div>
 
@@ -377,94 +367,6 @@ export default function TutorAssignmentPage() {
           </Tabs>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Menunggu Penilaian</CardTitle>
-              <CardDescription>Tugas yang perlu dinilai</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {pendingSubmissions.map((submission, index) => (
-                <div
-                  key={index}
-                  className="flex items-start space-x-3 p-3 rounded-lg border"
-                >
-                  <div className="rounded-full p-2 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{submission.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {submission.student} - {submission.class}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-muted-foreground">
-                        {submission.submittedAt}
-                      </p>
-                      <Button variant="ghost" size="sm" className="h-6 text-xs">
-                        Nilai
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                size="sm"
-                onClick={() => router.push("/tutor/submissions")}
-              >
-                Lihat Semua Pengumpulan
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Progres Pengumpulan</CardTitle>
-              <CardDescription>Progres pengumpulan tugas aktif</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <p className="text-sm font-medium">
-                      Tugas Matematika Bab 3
-                    </p>
-                    <p className="text-sm">75%</p>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    30/40 siswa telah mengumpulkan
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <p className="text-sm font-medium">Tugas Fisika Bab 2</p>
-                    <p className="text-sm">50%</p>
-                  </div>
-                  <Progress value={50} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    20/40 siswa telah mengumpulkan
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <p className="text-sm font-medium">Tugas Kimia Praktikum</p>
-                    <p className="text-sm">90%</p>
-                  </div>
-                  <Progress value={90} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    36/40 siswa telah mengumpulkan
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

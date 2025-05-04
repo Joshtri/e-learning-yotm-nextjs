@@ -14,6 +14,7 @@ import {
   CalendarCheck,
   FileSearch,
   BarChart3,
+  VenusAndMarsIcon,
 } from "lucide-react";
 
 export const navByRole = {
@@ -88,6 +89,12 @@ export const navByRole = {
           href: "/admin/class-subject-tutor",
           icon: <Users className="h-4 w-4" />,
         },
+
+        {
+          title: "Riwayat Akademik",
+          href: "/admin/academic-history",
+          icon: <FileText className="h-4 w-4" />,
+        },
       ],
     },
     {
@@ -126,7 +133,7 @@ export const navByRole = {
       items: [
         {
           title: "Naik Kelas",
-          href: "/admin/naik-kelas",
+          href: "/admin/promote-students",
           icon: <GraduationCap className="h-4 w-4" />,
         },
         {
@@ -143,6 +150,16 @@ export const navByRole = {
           title: "Rekapitulasi Nilai",
           href: "/admin/recap-scores",
           icon: <BarChart3 className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "Pengelolaan",
+      items: [
+        {
+          title: "Hari Libur",
+          href: "/admin/holidays",
+          icon: <VenusAndMarsIcon className="h-4 w-4" />,
         },
       ],
     },
@@ -232,11 +249,22 @@ export const navByRole = {
     {
       title: "Komunikasi",
       items: [
+        // {
+        //   title: "Pesan",
+        //   href: "/tutor/messages",
+        //   icon: <MessagesSquare className="h-4 w-4" />,
+        //   badge: 0,
+        // },
+
         {
-          title: "Pesan",
+          title: "Pesan Langsung",
           href: "/tutor/messages",
           icon: <MessagesSquare className="h-4 w-4" />,
-          badge: 0,
+        },
+        {
+          title: "Forum Diskusi",
+          href: "/tutor/discussions",
+          icon: <MessagesSquare className="h-4 w-4" />,
         },
       ],
     },
@@ -316,11 +344,16 @@ export const navByRole = {
     {
       title: "Komunikasi",
       items: [
+
+        {
+          title: "Pesan Langsung",
+          href: "/siswa/messages",
+          icon: <MessagesSquare className="h-4 w-4" />,
+        },
         {
           title: "Forum Diskusi",
           href: "/siswa/discussions",
           icon: <MessagesSquare className="h-4 w-4" />,
-          badge: 0, // Optional: ini kalo mau tampil badge jumlah notifikasi
         },
       ],
     },
@@ -366,7 +399,7 @@ export const navByRole = {
           icon: <BarChart3 className="h-4 w-4" />,
         },
         {
-          title: "Rekap Nilai Sikap",
+          title: "Nilai Sikap",
           href: "/homeroom/behavior-scores",
           icon: <FileCheck2 className="h-4 w-4" />,
         },
@@ -395,6 +428,11 @@ export const navByRole = {
           title: "Catatan & Pengumpulan",
           href: "/homeroom/submissions",
           icon: <NotebookPen className="h-4 w-4" />,
+        },
+        {
+          title: "Hari Libur",
+          href: "/homeroom/holidays",
+          icon: <VenusAndMarsIcon className="h-4 w-4" />,
         },
       ],
     },

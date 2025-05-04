@@ -6,17 +6,23 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search");
+    const onlyActive = searchParams.get("onlyActive") === "true";
 
     const skip = (page - 1) * limit;
 
-    const where = {};
-
-    if (search) {
-      where.namaKelas = {
-        contains: search,
-        mode: "insensitive",
-      };
-    }
+    const where = {
+      ...(search && {
+        namaKelas: {
+          contains: search,
+          mode: "insensitive",
+        },
+      }),
+      ...(onlyActive && {
+        academicYear: {
+          isActive: true,
+        },
+      }),
+    };
 
     const [classes, total] = await Promise.all([
       prisma.class.findMany({
@@ -68,6 +74,7 @@ export async function GET(request) {
     );
   }
 }
+
 
 export async function POST(request) {
   try {

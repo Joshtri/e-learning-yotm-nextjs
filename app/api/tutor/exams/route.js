@@ -1,33 +1,42 @@
-import prisma from "@/lib/prisma";
-import { getUserFromCookie } from "@/utils/auth"; // Import fungsi untuk mendapatkan user dari cookie
+// route.ts
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getUserFromCookie } from "@/utils/auth";
 
-// GET – Ambil data ujian milik tutor yang sedang login
-export async function GET() {
+export async function GET(req) {
   try {
     const user = getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Ambil tutorId berdasarkan user.id
     const tutor = await prisma.tutor.findFirst({ where: { userId: user.id } });
     if (!tutor) {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const academicYearId = searchParams.get("academicYearId");
+
     const exams = await prisma.assignment.findMany({
       where: {
-        jenis: { in: ["DAILY_TEST", "START_SEMESTER_TEST", "MIDTERM", "FINAL_EXAM"] },
+        jenis: {
+          in: ["DAILY_TEST", "START_SEMESTER_TEST", "MIDTERM", "FINAL_EXAM"],
+        },
         classSubjectTutor: {
           tutorId: tutor.id,
+          class: academicYearId
+            ? { academicYearId }
+            : {
+                isActive: true, // fallback jika tidak dikirim (opsional)
+              },
         },
       },
       include: {
         classSubjectTutor: {
           include: {
-            class: { select: { namaKelas: true } },
-            subject: { select: { namaMapel: true } },
+            class: true,
+            subject: true,
           },
         },
       },
@@ -87,7 +96,7 @@ export async function POST(req) {
       );
     }
 
-    // Pastikan tutor punya akses ke classSubjectTutor
+    // Validasi akses
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
         id: classSubjectTutorId,
@@ -95,14 +104,14 @@ export async function POST(req) {
       },
       include: {
         class: {
-          select: {
-            academicYear: {
-              select: {
-                id: true,
-              },
+          include: {
+            academicYear: true,
+            students: {
+              include: { user: true },
             },
           },
         },
+        subject: true,
       },
     });
 
@@ -113,7 +122,7 @@ export async function POST(req) {
       );
     }
 
-    // Validasi UTS/UAS hanya satu kali per tahun ajaran
+    // Validasi UTS/UAS
     if (jenis === "MIDTERM" || jenis === "FINAL_EXAM") {
       const existingExam = await prisma.assignment.findFirst({
         where: {
@@ -129,14 +138,16 @@ export async function POST(req) {
       if (existingExam) {
         return NextResponse.json(
           {
-            message: `Ujian ${jenis === "MIDTERM" ? "UTS" : "UAS"} sudah dibuat tahun ini.`,
+            message: `Ujian ${
+              jenis === "MIDTERM" ? "UTS" : "UAS"
+            } sudah dibuat tahun ini.`,
           },
           { status: 400 }
         );
       }
     }
 
-    // ✨ Bikin Assignment tanpa acakSoal/acakJawaban
+    // Simpan exam
     const newExam = await prisma.assignment.create({
       data: {
         judul,
@@ -149,6 +160,19 @@ export async function POST(req) {
         nilaiMaksimal: Number(nilaiMaksimal),
       },
     });
+
+    // 🔔 Kirim notifikasi ke semua siswa di kelas
+    const students = classSubjectTutor.class.students;
+
+    const notifications = students.map((student) => ({
+      senderId: user.id,
+      receiverId: student.userId,
+      title: `Ujian Baru: ${judul}`,
+      message: `Tutor Anda menambahkan ujian "${judul}" pada mata pelajaran ${classSubjectTutor.subject.namaMapel}.`,
+      type: "EXAM",
+    }));
+
+    await prisma.notification.createMany({ data: notifications });
 
     return NextResponse.json(
       { message: "Ujian berhasil dibuat", data: newExam },

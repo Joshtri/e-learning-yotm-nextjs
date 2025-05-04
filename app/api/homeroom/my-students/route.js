@@ -26,15 +26,21 @@ export async function GET(req) {
     }
 
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYear: {
+          isActive: true,
+        },
+      },
       include: {
         students: {
           include: {
-            user: true, // tampilkan info user siswa (nama, email)
+            user: true,
           },
         },
       },
     });
+    
 
     if (!kelas) {
       return new Response(

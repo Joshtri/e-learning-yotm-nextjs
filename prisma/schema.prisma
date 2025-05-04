@@ -92,11 +92,20 @@ model User {
   lastLoginAt DateTime?
 
   // Relations
-  student           Student?
-  tutor             Tutor?
+  student Student?
+  tutor   Tutor?
+
+  // 🔽 Tambahan untuk fitur chat & diskusi
+  chatRooms    ChatRoom[]    @relation("RoomUsers")
+  sentMessages ChatMessage[] @relation("Sender") // semua pesan yg dikirim user
+
   DiscussionRoom    DiscussionRoom[]
   DiscussionMessage DiscussionMessage[]
   Log               Log[]
+
+  sentNotifications     Notification[] @relation("SentNotifications")
+  receivedNotifications Notification[] @relation("ReceivedNotifications")
+  ChatRoom              ChatRoom[]
 
   // Index
   @@index([email])
@@ -119,6 +128,9 @@ model Student {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   status       StudentStatus @default(ACTIVE)
+
+  naikKelas    Boolean @default(false) // usulan dari homeroom untuk naik kelas
+  diprosesNaik Boolean @default(false) // apakah sudah diproses oleh admin
 
   // Relations
   classId             String?
@@ -174,6 +186,7 @@ model AcademicYear {
   AttendanceSession   AttendanceSession[]
   BehaviorScore       BehaviorScore[]
   FinalScore          FinalScore[]
+  HolidayRange        HolidayRange[]
 
   // Validation
   @@unique([tahunMulai, tahunSelesai])
@@ -264,6 +277,7 @@ model ClassSubjectTutor {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   DiscussionRoom DiscussionRoom[]
+  ChatRoom       ChatRoom[]
 
   @@unique([tutorId, classId, subjectId])
 }
@@ -513,4 +527,73 @@ model FinalScore {
   academicYear AcademicYear @relation(fields: [tahunAjaranId], references: [id])
 
   @@unique([studentId, subjectId, tahunAjaranId]) // satu nilai akhir per mapel per tahun ajaran
+}
+
+model HolidayRange {
+  id             String   @id @default(dbgenerated("concat('hlr_', gen_random_uuid())")) @db.VarChar(40)
+  nama           String
+  startDate      DateTime
+  endDate        DateTime
+  academicYearId String?
+
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+
+  @@index([startDate, endDate])
+}
+
+model Holiday {
+  id        String   @id @default(dbgenerated("concat('hld_', gen_random_uuid())")) @db.VarChar(40)
+  tanggal   DateTime @unique
+  reason    String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id         String   @id @default(dbgenerated("concat('ntf_', gen_random_uuid())")) @db.VarChar(40)
+  senderId   String // pengirim (User.id)
+  receiverId String // penerima (User.id)
+  title      String
+  message    String
+  type       String // optional: 'GENERAL', 'TASK', 'ATTENDANCE', etc
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentNotifications", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedNotifications", fields: [receiverId], references: [id])
+}
+
+model ChatRoom {
+  id        String        @id @default(dbgenerated("concat('crm_', gen_random_uuid())")) @db.VarChar(40)
+  name      String?
+  type      ChatRoomType  @default(PRIVATE) // PRIVATE, GROUP, FORUM
+  users     User[]        @relation("RoomUsers") // ✅ BENAR
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  classSubjectTutorId String? // ← Tambahkan ini
+  classSubjectTutor   ClassSubjectTutor? @relation(fields: [classSubjectTutorId], references: [id])
+
+  pinned Boolean @default(false)
+  closed Boolean @default(false)
+}
+
+model ChatMessage {
+  id        String   @id @default(dbgenerated("concat('msg_', gen_random_uuid())")) @db.VarChar(40)
+  senderId  String
+  roomId    String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  sender User     @relation("Sender", fields: [senderId], references: [id])
+  room   ChatRoom @relation(fields: [roomId], references: [id])
+}
+
+enum ChatRoomType {
+  PRIVATE
+  GROUP
+  FORUM
 }

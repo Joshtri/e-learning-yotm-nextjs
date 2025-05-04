@@ -17,7 +17,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 
 export default function FinalScoresPage() {
-  const [data, setData] = useState({ students: [], subjects: [] });
+  const [data, setData] = useState({ students: [], subjects: [], tahunAjaranId: null });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,6 +36,66 @@ export default function FinalScoresPage() {
       setIsLoading(false);
     }
   };
+
+  const handleSaveFinalScores = async () => {
+    try {
+      const payload = [];
+  
+      if (!data.tahunAjaranId) {
+        toast.error("Data tahun ajaran tidak ditemukan.");
+        return;
+      }
+  
+      data.students.forEach((student) => {
+        data.subjects.forEach((subject) => {
+          const mapel = student.mapelDetails.find(
+            (m) => m.namaMapel === subject.namaMapel
+          );
+  
+          if (!mapel) return;
+  
+          const komponen = [
+            mapel.exercise,
+            mapel.quiz,
+            mapel.dailyTest,
+            mapel.midterm,
+            mapel.finalExam,
+            mapel.skill,
+          ];
+  
+          const nilaiList = komponen
+            .map((n) => (typeof n === "number" ? n : parseFloat(n)))
+            .filter((n) => !isNaN(n));
+  
+          if (nilaiList.length === 0) return;
+  
+          const nilaiAkhir = (
+            nilaiList.reduce((acc, n) => acc + n, 0) / nilaiList.length
+          );
+  
+          payload.push({
+            studentId: student.id,
+            subjectId: subject.id,
+            tahunAjaranId: data.tahunAjaranId, // ✅ fix here
+            nilaiAkhir: parseFloat(nilaiAkhir.toFixed(2)),
+          });
+        });
+      });
+  
+      if (payload.length === 0) {
+        toast.warning("Tidak ada data nilai akhir yang valid untuk disimpan.");
+        return;
+      }
+  
+      await api.post("/homeroom/final-scores/save", { finalScores: payload });
+      toast.success("Nilai akhir berhasil disimpan.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan nilai akhir");
+    }
+  };
+  
+  
 
   return (
     <div className="p-6">
@@ -192,8 +252,11 @@ export default function FinalScoresPage() {
             </Table>
           </div>
 
-          <div className="flex justify-end mt-4">
-            <Button onClick={fetchFinalScores}>Refresh Data</Button>
+          <div className="flex justify-between mt-4 gap-2 flex-wrap">
+            <Button variant="outline" onClick={fetchFinalScores}>
+              Refresh Data
+            </Button> 
+            <Button onClick={handleSaveFinalScores}>Simpan Nilai Akhir</Button>
           </div>
         </CardContent>
       </Card>

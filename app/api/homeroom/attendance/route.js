@@ -34,7 +34,12 @@ export async function GET(req) {
     }
 
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYear: {
+          isActive: true,
+        },
+      },
       include: {
         students: {
           where: { status: "ACTIVE" },
@@ -76,12 +81,14 @@ export async function GET(req) {
   }
 }
 
-
 export async function DELETE(req) {
   try {
     const user = getUserFromCookie();
     if (!user) {
-      return new Response(JSON.stringify({ success: false, message: "Unauthorized" }), { status: 401 });
+      return new Response(
+        JSON.stringify({ success: false, message: "Unauthorized" }),
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -90,7 +97,10 @@ export async function DELETE(req) {
 
     if (!bulan || !tahun) {
       return new Response(
-        JSON.stringify({ success: false, message: "Bulan dan Tahun harus diisi" }),
+        JSON.stringify({
+          success: false,
+          message: "Bulan dan Tahun harus diisi",
+        }),
         { status: 400 }
       );
     }
@@ -101,13 +111,25 @@ export async function DELETE(req) {
 
     if (!tutor) {
       return new Response(
-        JSON.stringify({ success: false, message: "Homeroom Teacher tidak ditemukan" }),
+        JSON.stringify({
+          success: false,
+          message: "Homeroom Teacher tidak ditemukan",
+        }),
         { status: 404 }
       );
     }
 
+    // const kelas = await prisma.class.findFirst({
+    //   where: { homeroomTeacherId: tutor.id },
+    // });
+
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYear: {
+          isActive: true,
+        },
+      },
       include: { students: true },
     });
 
@@ -140,7 +162,11 @@ export async function DELETE(req) {
   } catch (error) {
     console.error(error);
     return new Response(
-      JSON.stringify({ success: false, message: "Internal Server Error", error: error.message }),
+      JSON.stringify({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      }),
       { status: 500 }
     );
   }

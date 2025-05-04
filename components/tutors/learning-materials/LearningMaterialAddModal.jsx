@@ -50,7 +50,7 @@ export default function LearningMaterialAddModal({
 
       setLoadingOptions(true);
       try {
-        const res = await api.get("/class-subject-tutors");
+        const res = await api.get("/class-subject-tutors",);
         const options = res.data.data.map((cst) => ({
           value: cst.id,
           label: `${cst.class.namaKelas} - ${cst.subject.namaMapel}`,

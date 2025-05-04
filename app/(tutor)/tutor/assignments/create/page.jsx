@@ -27,7 +27,14 @@ export default function AssignmentCreatePage() {
   const fetchClassOptions = async () => {
     try {
       const res = await api.get("/tutor/my-classes");
-      setClassOptions(res.data.data || []);
+      const all = res.data.data || [];
+
+      // Filter hanya yang academicYear.isActive === true
+      const filtered = all.filter(
+        (item) => item.class.academicYear?.isActive === true
+      );
+
+      setClassOptions(filtered);
     } catch {
       toast.error("Gagal memuat kelas Anda");
     }
@@ -66,7 +73,7 @@ export default function AssignmentCreatePage() {
         description="Buat tugas baru untuk siswa."
         breadcrumbs={[
           { label: "Tugas", href: "/tutor/assignments" },
-          { label: "Tambah Tugas",  },
+          { label: "Tambah Tugas" },
         ]}
       />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
@@ -87,7 +94,9 @@ export default function AssignmentCreatePage() {
             <SelectContent>
               {classOptions.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
-                  {item.class.namaKelas} - {item.subject.namaMapel}
+                  {item.class.namaKelas} - {item.subject.namaMapel} (
+                  {item.class.academicYear.tahunMulai}/
+                  {item.class.academicYear.tahunSelesai})
                 </SelectItem>
               ))}
             </SelectContent>

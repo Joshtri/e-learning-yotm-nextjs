@@ -44,10 +44,18 @@ export default function ExamCreatePage() {
     const fetchOptions = async () => {
       try {
         const res = await api.get("/tutor/my-class-subjects");
-        const mapped = res.data.data.map((item) => ({
+        const items = res.data.data;
+
+        // ✅ Sesuaikan: akses tahun ajaran aktif dari item.class.academicYear
+        const filtered = items.filter(
+          (item) => item.class?.academicYear?.isActive
+        );
+
+        const mapped = filtered.map((item) => ({
           id: item.id,
           label: `${item.class.namaKelas} - ${item.subject.namaMapel}`,
         }));
+
         setOptions(mapped);
       } catch (err) {
         toast.error("Gagal memuat data kelas & mapel");

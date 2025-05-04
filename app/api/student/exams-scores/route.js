@@ -27,13 +27,22 @@ export async function GET() {
     const submissions = await prisma.submission.findMany({
       where: {
         studentId: student.id,
-        assignmentId: { not: null }, // khusus assignment
+        assignmentId: { not: null },
         assignment: {
           jenis: {
             in: ["DAILY_TEST", "START_SEMESTER_TEST", "MIDTERM", "FINAL_EXAM"],
           },
+          classSubjectTutor: {
+            class: {
+              academicYear: {
+                isActive: true, // ✅ hanya tahun ajar aktif
+              },
+            },
+          },
         },
-        status: { in: ["SUBMITTED", "GRADED"] }, // 💥 INI DIA FLEXIBLE: mau SUBMITTED, mau GRADED
+        status: {
+          in: ["SUBMITTED", "GRADED"],
+        },
       },
       include: {
         assignment: {
@@ -44,14 +53,30 @@ export async function GET() {
             nilaiMaksimal: true,
             classSubjectTutor: {
               select: {
-                subject: { select: { id: true, namaMapel: true } },
+                subject: {
+                  select: {
+                    id: true,
+                    namaMapel: true,
+                  },
+                },
+                class: {
+                  select: {
+                    academicYear: {
+                      select: {
+                        tahunMulai: true,
+                        tahunSelesai: true,
+                        isActive: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
         },
       },
       orderBy: {
-        updatedAt: "desc", // ❗ updatedAt lebih aman daripada waktuDinilai
+        updatedAt: "desc",
       },
     });
 
@@ -68,8 +93,10 @@ export async function GET() {
         nilai,
         nilaiMaksimal,
         statusKelulusan: nilai >= nilaiMaksimal ? "LULUS" : "TIDAK LULUS",
-
-        // statusKelulusan: nilai >= 0.6 * nilaiMaksimal ? "LULUS" : "TIDAK LULUS",
+        tahunAjaran: submission.assignment?.classSubjectTutor?.class
+          ?.academicYear
+          ? `${submission.assignment.classSubjectTutor.class.academicYear.tahunMulai}/${submission.assignment.classSubjectTutor.class.academicYear.tahunSelesai}`
+          : "-",
       };
     });
 

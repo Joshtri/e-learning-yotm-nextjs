@@ -14,28 +14,62 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function TutorSkillScoresPage() {
   const [classes, setClasses] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedYearId, setSelectedYearId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    fetchClasses();
+    fetchAcademicYears();
   }, []);
 
-  const fetchClasses = async () => {
+  useEffect(() => {
+    if (academicYears.length > 0) {
+      const active = academicYears.find((y) => y.isActive);
+      const defaultYearId = selectedYearId || active?.id || "";
+      setSelectedYearId(defaultYearId);
+      fetchClasses(defaultYearId);
+    }
+  }, [academicYears]);
+
+  const fetchAcademicYears = async () => {
     try {
-      const res = await api.get("/tutor/my-classes");
+      const res = await api.get("/academic-years");
+      setAcademicYears(res.data?.data?.academicYears || []);
+    } catch (error) {
+      toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  const fetchClasses = async (academicYearId) => {
+    setIsLoading(true);
+    try {
+      const res = await api.get("/tutor/my-classes", {
+        params: { academicYearId },
+      });
       setClasses(res.data.data || []);
     } catch (error) {
-      console.error(error);
       toast.error("Gagal memuat daftar kelas");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleYearChange = (val) => {
+    setSelectedYearId(val);
+    fetchClasses(val);
   };
 
   const handleBeriNilaiSkill = (classId, subjectId) => {
@@ -53,11 +87,25 @@ export default function TutorSkillScoresPage() {
         ]}
       />
 
+      <div className="flex justify-end">
+        <Select value={selectedYearId} onValueChange={handleYearChange}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Pilih Tahun Ajaran" />
+          </SelectTrigger>
+          <SelectContent>
+            {academicYears.map((year) => (
+              <SelectItem key={year.id} value={year.id}>
+                {year.tahunMulai}/{year.tahunSelesai}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Daftar Kelas yang Diampu</CardTitle>
         </CardHeader>
-
         <CardContent>
           <div className="overflow-x-auto">
             <Table>

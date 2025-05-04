@@ -38,16 +38,19 @@ export async function GET(request) {
       filter.OR = [
         {
           class: {
-            is: {
-              academicYearId,
-            },
+            academicYearId: academicYearId,
           },
         },
         {
-          classId: null, // tampilkan juga student yang belum punya kelas
+          StudentClassHistory: {
+            some: {
+              academicYearId: academicYearId,
+            },
+          },
         },
       ];
     }
+    
 
     // Relasi ke class.academicYearId
     // if (academicYearId) {

@@ -1,17 +1,19 @@
-// app/(student)/attendance/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CalendarCheck, FileText } from "lucide-react";
-import api from "@/lib/axios";
+import { CalendarCheck } from "lucide-react";
 
 export default function StudentAttendancePage() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("table"); // table or calendar
 
   const fetchSessions = async () => {
     try {
@@ -29,16 +31,28 @@ export default function StudentAttendancePage() {
     fetchSessions();
   }, []);
 
+  const statusLabel = (status) => {
+    switch (status) {
+      case "PRESENT":
+        return "✅";
+      case "SICK":
+        return "🤒";
+      case "EXCUSED":
+        return "📄";
+      case "ABSENT":
+        return "❌";
+      default:
+        return "-";
+    }
+  };
+
   const handleSubmitAttendance = async (sessionId, status) => {
     try {
       await api.post(`/student/attendance/${sessionId}`, { status });
       toast.success("Presensi berhasil!");
-      fetchSessions(); // Refresh list
+      fetchSessions();
     } catch (error) {
-      console.error("Gagal submit presensi:", error);
-      const message =
-        error?.response?.data?.message || "Gagal mengisi presensi";
-      toast.error(message);
+      toast.error("Gagal mengisi presensi");
     }
   };
 
@@ -49,38 +63,14 @@ export default function StudentAttendancePage() {
       cell: (row) => new Date(row.tanggal).toLocaleDateString("id-ID"),
     },
     {
-      header: "Kelas",
-      accessorKey: "class.namaKelas",
-      cell: (row) => row.class?.namaKelas || "-",
-    },
-    {
       header: "Keterangan",
       accessorKey: "keterangan",
-      cell: (row) => row.keterangan || "-",
     },
     {
       header: "Status Presensi",
       cell: (row) => {
         if (row.attendanceStatus) {
-          let label = "";
-          switch (row.attendanceStatus) {
-            case "PRESENT":
-              label = "Hadir ✅";
-              break;
-            case "SICK":
-              label = "Sakit 🤒";
-              break;
-            case "EXCUSED":
-              label = "Izin 📄";
-              break;
-            default:
-              label = "Sudah Presensi";
-          }
-          return (
-            <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-              {label}
-            </span>
-          );
+          return <span>{statusLabel(row.attendanceStatus)}</span>;
         }
         return "-";
       },
@@ -117,11 +107,22 @@ export default function StudentAttendancePage() {
     },
   ];
 
+  const markedDates = sessions.reduce((acc, s) => {
+    acc[new Date(s.tanggal).toDateString()] = s.attendanceStatus;
+    return acc;
+  }, {});
+
+  const tileContent = ({ date, view }) => {
+    if (view !== "month") return null;
+    const status = markedDates[date.toDateString()];
+    return status ? <span>{statusLabel(status)}</span> : null;
+  };
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Presensi Hari Ini"
-        description="Lakukan presensi untuk sesi yang tersedia."
+        title="Presensi Siswa"
+        description="Lihat dan isi presensi sesi harian"
         breadcrumbs={[
           { label: "Dashboard", href: "/siswa/dashboard" },
           { label: "Presensi" },
@@ -129,16 +130,37 @@ export default function StudentAttendancePage() {
         icon={<CalendarCheck className="h-6 w-6" />}
       />
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="flex justify-end">
+        <Button
+          onClick={() =>
+            setViewMode(viewMode === "table" ? "calendar" : "table")
+          }
+        >
+          {viewMode === "table" ? "Tampilan Kalender" : "Tampilan Tabel"}
+        </Button>
+      </div>
+
+      {viewMode === "table" ? (
         <DataTable
           data={sessions}
           columns={columns}
           isLoading={isLoading}
           loadingMessage="Memuat sesi presensi..."
-          emptyMessage="Tidak ada sesi presensi hari ini."
+          emptyMessage="Tidak ada sesi presensi."
           keyExtractor={(item) => item.id}
         />
-      </div>
+      ) : (
+        <div className="rounded border p-4">
+          <Calendar
+            tileContent={tileContent}
+            calendarType="iso8601" // ✅ Benar (pakai huruf kecil semua)
+            locale="id-ID"
+          />{" "}
+          <div className="mt-4 text-sm text-muted-foreground">
+            <strong>Keterangan:</strong> ✅ Hadir, 🤒 Sakit, 📄 Izin, ❌ Alpha
+          </div>
+        </div>
+      )}
     </div>
   );
 }

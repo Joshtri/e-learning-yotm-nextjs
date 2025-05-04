@@ -42,10 +42,27 @@ export default function TutorExamsPage() {
     completedExams: 0,
   });
 
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
+
+  useEffect(() => {
+    const fetchYears = async () => {
+      const res = await api.get("/academic-years");
+      const years = res.data.data.academicYears;
+      setAcademicYears(years);
+
+      const active = years.find((y) => y.isActive);
+      if (active) setSelectedAcademicYearId(active.id);
+    };
+    fetchYears();
+  }, []);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get("/tutor/exams");
+      const res = await api.get("/tutor/exams", {
+        params: { academicYearId: selectedAcademicYearId },
+      });
       const examsData = res.data.data || [];
       setData(examsData);
 
@@ -82,8 +99,10 @@ export default function TutorExamsPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (selectedAcademicYearId) {
+      fetchData();
+    }
+  }, [selectedAcademicYearId]);
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
@@ -298,8 +317,8 @@ export default function TutorExamsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Tabs defaultValue="all" className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <TabsList>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start flex-wrap gap-4">
+                <TabsList className="overflow-x-auto">
                 <TabsTrigger value="all">Semua</TabsTrigger>
                 <TabsTrigger value="active">Berlangsung</TabsTrigger>
                 <TabsTrigger value="upcoming">Akan Datang</TabsTrigger>
@@ -315,53 +334,27 @@ export default function TutorExamsPage() {
                 searchPlaceholder="Cari judul, kelas, atau mapel..."
                 filterOptions={[
                   {
-                    label: "Filter",
+                    label: "Tahun Ajaran",
                     icon: <Filter className="h-4 w-4" />,
                     content: (
-                      <div className="p-2">
-                        <p className="text-sm font-medium mb-2">Jenis Ujian</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-daily"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-daily" className="text-sm">
-                              Harian
-                            </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-start"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-start" className="text-sm">
-                              Awal Semester
-                            </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-midterm"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-midterm" className="text-sm">
-                              UTS
-                            </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-final"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-final" className="text-sm">
-                              UAS
-                            </label>
-                          </div>
-                        </div>
+                      <div className="flex flex-col items-start justify-start">
+                        <label className="text-sm font-medium mb-1">
+                          Pilih Tahun Ajaran
+                        </label>
+                        <select
+                          value={selectedAcademicYearId || ""}
+                          onChange={(e) =>
+                            setSelectedAcademicYearId(e.target.value)
+                          }
+                          className="border rounded-md px-3 py-1 text-sm min-w-[180px]"
+                        >
+                          {academicYears.map((year) => (
+                            <option key={year.id} value={year.id}>
+                              {year.tahunMulai}/{year.tahunSelesai}
+                              {year.isActive ? " (Aktif)" : ""}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     ),
                   },

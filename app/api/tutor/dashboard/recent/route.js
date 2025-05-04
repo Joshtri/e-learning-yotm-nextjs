@@ -4,16 +4,26 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
-
 export async function GET(req) {
   const user = getUserFromCookie();
   if (!user || user.role !== "TUTOR")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tutor = await prisma.tutor.findFirst({ where: { userId: user.id } });
-  const cstIds = (
-    await prisma.classSubjectTutor.findMany({ where: { tutorId: tutor?.id } })
-  ).map((c) => c.id);
+
+  // ✅ Hanya ambil pengajaran dengan tahun ajaran aktif
+  const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+    where: {
+      tutorId: tutor?.id,
+      class: {
+        academicYear: {
+          isActive: true,
+        },
+      },
+    },
+  });
+
+  const cstIds = classSubjectTutors.map((c) => c.id);
 
   const [assignments, quizzes, materials] = await Promise.all([
     prisma.assignment.findMany({

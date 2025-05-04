@@ -13,11 +13,9 @@ export async function GET(request) {
       );
     }
 
-    // ✅ Cari tutorId berdasarkan user.id
+    // Cari tutorId berdasarkan userId
     const tutor = await prisma.tutor.findUnique({
-      where: {
-        userId: user.id,
-      },
+      where: { userId: user.id },
     });
 
     if (!tutor) {
@@ -27,16 +25,24 @@ export async function GET(request) {
       );
     }
 
-    const tutorId = tutor.id;
     const { searchParams } = new URL(request.url);
-    const academicYearId = searchParams.get("academicYearId");
+    let academicYearId = searchParams.get("academicYearId");
+
+    // Jika tidak ada academicYearId, fallback ke tahun ajaran aktif
+    if (!academicYearId) {
+      const activeYear = await prisma.academicYear.findFirst({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      academicYearId = activeYear?.id || null;
+    }
 
     const data = await prisma.classSubjectTutor.findMany({
       where: {
-        tutorId,
+        tutorId: tutor.id,
         class: academicYearId
           ? {
-              academicYearId,
+              academicYearId: academicYearId,
             }
           : undefined,
       },
@@ -50,6 +56,7 @@ export async function GET(request) {
                 id: true,
                 tahunMulai: true,
                 tahunSelesai: true,
+                isActive: true,
               },
             },
             program: {

@@ -17,24 +17,38 @@ export default function TutorQuizPage() {
   const [data, setData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
 
   const router = useRouter();
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const res = await api.get("/tutor/quizzes");
-      setData(res.data.data || []);
-    } catch (error) {
-      console.error("Gagal ambil quiz:", error);
-      toast.error("Gagal memuat data kuis");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!selectedAcademicYearId) return;
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await api.get("/tutor/quizzes", {
+          params: { academicYearId: selectedAcademicYearId },
+        });
+        setData(res.data.data || []);
+      } catch (error) {
+        console.error("Gagal ambil quiz:", error);
+        toast.error("Gagal memuat data kuis");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [selectedAcademicYearId]);
 
   useEffect(() => {
-    fetchData();
+    const fetchYears = async () => {
+      const res = await api.get("/academic-years");
+      setAcademicYears(res.data.data.academicYears);
+      const active = res.data.data.academicYears.find((y) => y.isActive);
+      if (active) setSelectedAcademicYearId(active.id);
+    };
+    fetchYears();
   }, []);
 
   const filteredData = useMemo(() => {
@@ -194,8 +208,29 @@ export default function TutorQuizPage() {
             searchPlaceholder="Cari judul, kelas, atau mapel..."
             filterOptions={[
               {
-                label: "Filter",
+                label: "Tahun Ajaran",
                 icon: <Filter className="h-4 w-4" />,
+                content: (
+                  <div className="p-2">
+                    <p className="text-sm font-medium mb-2">
+                      Pilih Tahun Ajaran
+                    </p>
+                    <select
+                      value={selectedAcademicYearId || ""}
+                      onChange={(e) =>
+                        setSelectedAcademicYearId(e.target.value)
+                      }
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    >
+                      {academicYears.map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.tahunMulai}/{year.tahunSelesai}
+                          {year.isActive ? " (Aktif)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ),
               },
             ]}
           />

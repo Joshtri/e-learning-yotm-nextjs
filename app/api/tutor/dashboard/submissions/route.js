@@ -9,9 +9,20 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tutor = await prisma.tutor.findFirst({ where: { userId: user.id } });
-  const cstIds = (
-    await prisma.classSubjectTutor.findMany({ where: { tutorId: tutor?.id } })
-  ).map((c) => c.id);
+
+  // ✅ Ambil hanya pengajaran yang berada di tahun ajaran aktif
+  const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+    where: {
+      tutorId: tutor?.id,
+      class: {
+        academicYear: {
+          isActive: true,
+        },
+      },
+    },
+  });
+
+  const cstIds = classSubjectTutors.map((c) => c.id);
 
   const recentAssignments = await prisma.assignment.findMany({
     where: { classSubjectTutorId: { in: cstIds } },

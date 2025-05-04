@@ -14,7 +14,14 @@ export async function GET(req) {
     return NextResponse.json({ error: "Tutor not found" }, { status: 404 });
 
   const classSubjectTutors = await prisma.classSubjectTutor.findMany({
-    where: { tutorId: tutor.id },
+    where: {
+      tutorId: tutor.id,
+      class: {
+        academicYear: {
+          isActive: true, // ✅ hanya tahun ajaran aktif
+        },
+      },
+    },
     include: {
       class: {
         include: {
@@ -26,7 +33,7 @@ export async function GET(req) {
       subject: true,
     },
   });
-
+  
   const classStats = classSubjectTutors.map((cst) => {
     return {
       classId: cst.class.id,

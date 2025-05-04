@@ -23,8 +23,14 @@ export async function GET(req) {
     }
 
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYear: {
+          isActive: true, // ✅ filter tahun ajaran aktif
+        },
+      },
     });
+    
 
     if (!kelas) {
       return new Response(
@@ -48,6 +54,11 @@ export async function GET(req) {
 
     const academicScores = await prisma.skillScore.findMany({
       where: {
+        student: {
+          class: {
+            academicYearId: kelas.academicYearId, // ✅ pastikan data nilai sesuai tahun ajaran kelas aktif
+          },
+        },
         studentId: { in: studentIds },
       },
       include: {
@@ -68,6 +79,7 @@ export async function GET(req) {
         createdAt: "desc",
       },
     });
+    
 
     return new Response(
       JSON.stringify({ success: true, data: academicScores }),

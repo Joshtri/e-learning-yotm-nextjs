@@ -14,7 +14,9 @@ function getUserFromCookie() {
 }
 
 // ========== GET: List kuis tutor ==========
-export async function GET() {
+// app/api/tutor/quizzes/route.ts
+
+export async function GET(req) {
   try {
     const user = getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -29,10 +31,28 @@ export async function GET() {
       return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const academicYearId = searchParams.get("academicYearId");
+
+    // Cari tahun ajaran aktif jika tidak ada filter
+    const activeYear = academicYearId
+      ? { id: academicYearId }
+      : await prisma.academicYear.findFirst({ where: { isActive: true } });
+
+    if (!activeYear) {
+      return NextResponse.json(
+        { message: "Tahun ajaran tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
     const quizzes = await prisma.quiz.findMany({
       where: {
         classSubjectTutor: {
           tutorId: tutor.id,
+          class: {
+            academicYearId: activeYear.id,
+          },
         },
       },
       include: {
@@ -55,7 +75,11 @@ export async function GET() {
   } catch (error) {
     console.error("Gagal ambil data quiz:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal mengambil data quiz" },
+      {
+        success: false,
+        message: "Gagal mengambil data quiz",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
@@ -105,11 +129,24 @@ export async function POST(req) {
       );
     }
 
-    // Validasi apakah classSubjectTutorId memang milik tutor ini
+    // Validasi akses tutor
     const isOwned = await prisma.classSubjectTutor.findFirst({
       where: {
         id: classSubjectTutorId,
         tutorId: tutor.id,
+      },
+      include: {
+        class: {
+          include: {
+            students: {
+              select: {
+                id: true,
+                userId: true,
+              },
+            },
+          },
+        },
+        subject: true,
       },
     });
 
@@ -167,9 +204,24 @@ export async function POST(req) {
       }
     }
 
+    // Kirim notifikasi ke semua siswa yang ada di class tersebut
+    const students = isOwned.class.students;
+
+    if (students.length > 0) {
+      const notifikasi = students.map((s) => ({
+        senderId: user.id,
+        receiverId: s.userId,
+        title: `Kuis Baru: ${judul}`,
+        message: `Tutor Anda menambahkan kuis "${judul}" pada mata pelajaran ${isOwned.subject.namaMapel}.`,
+        type: "QUIZ",
+      }));
+
+      await prisma.notification.createMany({ data: notifikasi });
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Kuis berhasil disimpan",
+      message: "Kuis berhasil disimpan dan notifikasi dikirim",
       data: quiz,
     });
   } catch (error) {

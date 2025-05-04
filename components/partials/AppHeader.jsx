@@ -18,17 +18,31 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useMemo, useState, useEffect } from "react";
+import { NotificationDropdown } from "../ui/notification-dropdown";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mode, setMode] = useState("default");
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedMode = localStorage.getItem("mode") || "default";
       setMode(storedMode);
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("/api/auth/me");
+        setUser(res.data.user);
+      } catch (err) {
+        console.error("Gagal mengambil data user:", err);
+      }
+    };
+    fetchUser();
   }, []);
 
   const handleSwitchMode = () => {
@@ -58,7 +72,8 @@ export default function AppHeader({ onMenuClick, role }) {
 
   const avatarFallback =
     role === "student" ? "SI" : role === "tutor" ? "TR" : "AD";
-  const displayName = role?.charAt(0).toUpperCase() + role?.slice(1) || "User";
+  // const displayName = role?.charAt(0).toUpperCase() + role?.slice(1) || "User";
+  const displayName = user?.nama || "User";
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
@@ -91,9 +106,12 @@ export default function AppHeader({ onMenuClick, role }) {
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4 pr-1">
         <Button variant="ghost" size="icon" className="hidden md:flex relative">
-          <Bell className="h-5 w-5" />
+          {/* <Bell className="h-5 w-5" /> */}
           <span className="sr-only">Notifikasi</span>
-          <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-primary"></span>
+          {/* <NotificationDropdown userId={user.id} /> */}
+          {user && <NotificationDropdown userId={user.id} />}
+
+          {/* <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-primary"></span> */}
         </Button>
 
         <Button
@@ -115,10 +133,12 @@ export default function AppHeader({ onMenuClick, role }) {
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg" alt={displayName} />
-                <AvatarFallback>{avatarFallback}</AvatarFallback>
+                <AvatarFallback>
+                  {user?.nama?.charAt(0).toUpperCase() || avatarFallback}
+                </AvatarFallback>{" "}
               </Avatar>
               <span className="hidden md:inline">
-                {mode === "homeroom" ? "Wali Kelas" : displayName}
+                {mode === "homeroom" ? "Wali Kelas" : user?.nama}
               </span>
             </Button>
           </DropdownMenuTrigger>

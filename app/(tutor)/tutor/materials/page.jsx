@@ -1,3 +1,4 @@
+// /app/tutor/learning-materials/page.tsx
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -39,15 +40,30 @@ export default function TutorMaterialsPage() {
     recentUploads: 0,
     studentViews: 0,
   });
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState("");
 
-  const fetchData = async () => {
+  const fetchAcademicYears = async () => {
+    try {
+      const res = await api.get("/academic-years?pagination=false");
+      const list = res.data.data?.academicYears || [];
+      const activeYear = list.find((y) => y.isActive);
+      setAcademicYears(list);
+      setSelectedYear(activeYear?.id || "");
+    } catch (err) {
+      toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  const fetchData = async (yearId) => {
     try {
       setIsLoading(true);
-      const res = await api.get("/tutor/learning-materials");
+      const res = await api.get("/tutor/learning-materials", {
+        params: { academicYearId: yearId },
+      });
       const materialsData = res.data.data || [];
       setData(materialsData);
 
-      // Calculate stats
       setStats({
         totalMaterials: materialsData.length,
         recentUploads: materialsData.filter((m) => {
@@ -70,8 +86,14 @@ export default function TutorMaterialsPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchAcademicYears();
   }, []);
+
+  useEffect(() => {
+    if (selectedYear) {
+      fetchData(selectedYear);
+    }
+  }, [selectedYear]);
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
@@ -93,7 +115,7 @@ export default function TutorMaterialsPage() {
     try {
       await api.delete(`/tutor/learning-materials/${id}`);
       toast.success("Materi dihapus");
-      fetchData(); // refresh list
+      fetchData(selectedYear);
     } catch (error) {
       toast.error("Gagal menghapus materi");
     }
@@ -101,28 +123,21 @@ export default function TutorMaterialsPage() {
 
   const getFileTypeIcon = (filename) => {
     if (!filename) return <FileText className="h-4 w-4" />;
-
-    const extension = filename.split(".").pop().toLowerCase();
-
-    if (["pdf"].includes(extension)) {
-      return <FileText className="h-4 w-4 text-red-500" />;
-    } else if (["doc", "docx"].includes(extension)) {
-      return <FileText className="h-4 w-4 text-blue-500" />;
-    } else if (["xls", "xlsx"].includes(extension)) {
-      return <FileText className="h-4 w-4 text-green-500" />;
-    } else if (["ppt", "pptx"].includes(extension)) {
-      return <FileText className="h-4 w-4 text-orange-500" />;
-    } else {
-      return <FileText className="h-4 w-4" />;
-    }
+    const ext = filename.split(".").pop().toLowerCase();
+    const colors = {
+      pdf: "text-red-500",
+      doc: "text-blue-500",
+      docx: "text-blue-500",
+      xls: "text-green-500",
+      xlsx: "text-green-500",
+      ppt: "text-orange-500",
+      pptx: "text-orange-500",
+    };
+    return <FileText className={`h-4 w-4 ${colors[ext] || ""}`} />;
   };
 
   const columns = [
-    {
-      header: "No",
-      cell: (_, index) => index + 1,
-      className: "w-[50px]",
-    },
+    { header: "No", cell: (_, index) => index + 1, className: "w-[50px]" },
     {
       header: "Materi",
       cell: (row) => (
@@ -152,15 +167,7 @@ export default function TutorMaterialsPage() {
     },
     {
       header: "Status",
-      cell: (row) => {
-        const isPublished = true; // Replace with actual logic
-        return (
-          <StatusBadge
-            status={isPublished ? "active" : "pending"}
-            label={isPublished ? "Dipublikasikan" : "Draft"}
-          />
-        );
-      },
+      cell: () => <StatusBadge status="active" label="Dipublikasikan" />, // update logic here if needed
     },
     {
       header: "Dibuat",
@@ -179,28 +186,22 @@ export default function TutorMaterialsPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="h-8 w-8 p-0">
             <Eye className="h-4 w-4" />
-            <span className="sr-only">View</span>
           </Button>
           <Button variant="outline" size="sm" className="h-8 w-8 p-0">
             <Download className="h-4 w-4" />
-            <span className="sr-only">Download</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
             onClick={() => handleDelete(row.id)}
           >
             <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
           </Button>
         </div>
       ),
-      className: "text-right",
     },
   ];
-
-  const recentMaterials = data.slice(0, 3);
 
   return (
     <div className="p-6 space-y-6">
@@ -219,7 +220,6 @@ export default function TutorMaterialsPage() {
         ]}
       />
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Materi"
@@ -243,147 +243,55 @@ export default function TutorMaterialsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="all" className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <TabsList>
-                <TabsTrigger value="all">Semua Materi</TabsTrigger>
-                <TabsTrigger value="documents">Dokumen</TabsTrigger>
-                <TabsTrigger value="videos">Video</TabsTrigger>
-              </TabsList>
+      <Tabs defaultValue="all" className="space-y-5">
+        <TabsList>
+          <TabsTrigger value="all">Semua Materi</TabsTrigger>
+          <TabsTrigger value="documents">Dokumen</TabsTrigger>
+          <TabsTrigger value="videos">Video</TabsTrigger>
+        </TabsList>
 
-              <DataToolbar
-                searchValue={searchQuery}
-                onSearchChange={(value) => setSearchQuery(value)}
-                searchPlaceholder="Cari judul, kelas, mapel..."
-                filterOptions={[
-                  {
-                    label: "Filter",
-                    icon: <Filter className="h-4 w-4" />,
-                    content: (
-                      <div className="p-2">
-                        <p className="text-sm font-medium mb-2">Jenis Materi</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-document"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-document" className="text-sm">
-                              Dokumen
-                            </label>
-                          </div>
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="type-video"
-                              className="mr-2"
-                            />
-                            <label htmlFor="type-video" className="text-sm">
-                              Video
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            </div>
+        <DataToolbar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Cari judul, kelas, mapel..."
+          filterOptions={[
+            {
+              label: "Tahun Ajaran",
+              icon: <Filter className="h-4 w-4" />,
+              content: (
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  {academicYears.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.tahunMulai}/{year.tahunSelesai}{" "}
+                      {year.isActive ? "(Aktif)" : ""}
+                    </option>
+                  ))}
+                </select>
+              ),
+            },
+          ]}
+        />
 
-            <TabsContent value="all" className="space-y-4">
-              {filteredData.length > 0 ? (
-                <DataTable
-                  data={filteredData}
-                  columns={columns}
-                  isLoading={isLoading}
-                  loadingMessage="Memuat materi..."
-                  emptyMessage="Belum ada materi"
-                  keyExtractor={(item) => item.id}
-                />
-              ) : (
-                <EmptyState
-                  title="Belum ada materi"
-                  description="Anda belum mengunggah materi pembelajaran. Klik tombol 'Tambah Materi' untuk mulai mengunggah."
-                  icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-                  action={() => setIsModalOpen(true)}
-                  actionLabel="Tambah Materi"
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="documents">
-              <EmptyState
-                title="Belum ada dokumen"
-                description="Anda belum mengunggah dokumen pembelajaran."
-                icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-              />
-            </TabsContent>
-
-            <TabsContent value="videos">
-              <EmptyState
-                title="Belum ada video"
-                description="Anda belum mengunggah video pembelajaran."
-                icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Materi Terbaru</CardTitle>
-              <CardDescription>Materi yang baru diunggah</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentMaterials.length > 0 ? (
-                recentMaterials.map((material, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-3 p-3 rounded-lg border"
-                  >
-                    <div className="rounded-md bg-muted p-2">
-                      {getFileTypeIcon(material.fileName)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{material.judul}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {material.classSubjectTutor?.class?.namaKelas} -{" "}
-                        {material.classSubjectTutor?.subject?.namaMapel}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(material.createdAt).toLocaleDateString(
-                          "id-ID"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">
-                    Belum ada materi
-                  </p>
-                </div>
-              )}
-
-              {recentMaterials.length > 0 && (
-                <Button variant="outline" className="w-full" size="sm">
-                  Lihat Semua Materi
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        <TabsContent value="all">
+          <DataTable
+            data={filteredData}
+            columns={columns}
+            isLoading={isLoading}
+            loadingMessage="Memuat materi..."
+            emptyMessage="Belum ada materi"
+            keyExtractor={(item) => item.id}
+          />
+        </TabsContent>
+      </Tabs>
 
       <LearningMaterialAddModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={() => fetchData(selectedYear)}
       />
     </div>
   );

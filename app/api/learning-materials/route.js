@@ -1,13 +1,22 @@
-// /app/api/learning-materials/route.ts
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const { searchParams } = new URL(req.url);
+    const academicYearId = searchParams.get("academicYearId");
+
     const materials = await prisma.learningMaterial.findMany({
+      where: {
+        classSubjectTutor: {
+          class: {
+            academicYearId: academicYearId || undefined, // jika tidak ada, ambil semua
+          },
+        },
+      },
       include: {
         classSubjectTutor: {
           include: {
-            class: { select: { id: true, namaKelas: true } }, // <= perbaikan disini
+            class: { select: { id: true, namaKelas: true, academicYearId: true } },
             subject: { select: { namaMapel: true } },
             tutor: { select: { namaLengkap: true } },
           },

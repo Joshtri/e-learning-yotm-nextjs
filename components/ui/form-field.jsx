@@ -49,6 +49,8 @@ const FormField = forwardRef(
       control,
       register, // ✅ add support for register fallback
       rules,
+      helperText,
+      text,
       ...rest
     },
     ref
@@ -313,6 +315,9 @@ const FormField = forwardRef(
           </Label>
         )}
         {renderField()}
+        {helperText && !error && (
+          <p className="text-sm text-muted-foreground">{helperText}</p>
+        )}
         {error && <p className="text-sm text-red-500">{error}</p>}
         {rest.children}
       </div>
