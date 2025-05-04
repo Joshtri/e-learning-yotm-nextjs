@@ -38,7 +38,7 @@ export default function StudentCreatePage() {
         setLoading(true);
         const [usersResponse, classesResponse] = await Promise.all([
           api.get("/students/account"),
-          api.get("/classes"),
+          api.get("/classes", { params: { onlyActive: true } }), // ⬅️ hanya tahun ajaran aktif
         ]);
 
         setUsers(usersResponse.data?.data?.users || []);
@@ -170,11 +170,24 @@ export default function StudentCreatePage() {
                   required: "NISN wajib diisi",
                   validate: {
                     exactLength: (value) =>
-                      value.length === 10 || "NISN harus tepat 10 digit",
+                      value?.length === 10 || "NISN harus tepat 10 digit",
                     onlyNumbers: (value) =>
-                      /^[0-9]+$/.test(value) || "NISN hanya boleh berisi angka",
+                      !value ||
+                      /^[0-9]+$/.test(value) ||
+                      "NISN hanya boleh berisi angka",
                   },
                 }}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (value.length <= 10) {
+                    form.setValue("nisn", value);
+                  }
+                }}
+                helperText={
+                  form.watch("nisn")?.length > 10
+                    ? "NISN tidak boleh lebih dari 10 digit"
+                    : `Sisa digit: ${10 - (form.watch("nisn")?.length || 0)}`
+                }
               />
               <FormField
                 control={form.control}
