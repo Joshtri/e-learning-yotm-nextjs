@@ -56,7 +56,7 @@ export default function ClassSubjectTutorPage() {
 
       const [res, clsRes, subRes, tutRes] = await Promise.all([
         api.get(`/class-subject-tutors?${params.toString()}`),
-        api.get("/classes"),
+        api.get("/classes", { params: { onlyActive: true } }),
         api.get("/subjects"),
         api.get("/tutors"),
       ]);
@@ -156,6 +156,23 @@ export default function ClassSubjectTutorPage() {
               { label: "Pembagian Jadwal Belajar" },
             ]} // Add breadcrumbs here
           />
+
+          {selectedAcademicYear && (
+            <div className="mb-4 text-sm text-muted-foreground">
+              Tahun Ajaran Aktif:{" "}
+              <span className="font-medium text-foreground">
+                {
+                  academicYears.find((y) => y.id === selectedAcademicYear)
+                    ?.tahunMulai
+                }
+                /
+                {
+                  academicYears.find((y) => y.id === selectedAcademicYear)
+                    ?.tahunSelesai
+                }
+              </span>
+            </div>
+          )}
 
           <Tabs defaultValue="all" className="space-y-6">
             <DataToolbar
