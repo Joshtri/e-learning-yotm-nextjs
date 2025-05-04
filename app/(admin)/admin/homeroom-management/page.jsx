@@ -23,6 +23,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"; // pastikan komponen ini tersedia
+
 export default function HomeroomManagementPage() {
   const [classes, setClasses] = useState([]);
   const [tutors, setTutors] = useState([]);
@@ -62,6 +69,23 @@ export default function HomeroomManagementPage() {
       toast.error("Gagal menetapkan wali kelas");
     }
   };
+
+  const groupedByAcademicYear = useMemo(() => {
+    const grouped = {};
+
+    classes.forEach((kelas) => {
+      const year =
+        kelas.academicYear &&
+        `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`;
+
+      if (!grouped[year]) {
+        grouped[year] = [];
+      }
+      grouped[year].push(kelas);
+    });
+
+    return grouped;
+  }, [classes]);
 
   const columns = [
     {
@@ -151,15 +175,26 @@ export default function HomeroomManagementPage() {
         ]}
       />
 
-      {filteredClasses.length > 0 ? (
-        <DataTable
-          data={filteredClasses}
-          columns={columns}
-          isLoading={isLoading}
-          loadingMessage="Memuat daftar kelas..."
-          emptyMessage="Belum ada kelas."
-          keyExtractor={(item) => item.id}
-        />
+      {Object.keys(groupedByAcademicYear).length > 0 ? (
+        <Accordion type="multiple" className="space-y-4">
+          {Object.entries(groupedByAcademicYear).map(([tahun, kelasList]) => (
+            <AccordionItem key={tahun} value={tahun}>
+              <AccordionTrigger className="text-base font-semibold">
+                Tahun Ajaran {tahun}
+              </AccordionTrigger>
+              <AccordionContent>
+                <DataTable
+                  data={kelasList}
+                  columns={columns}
+                  isLoading={isLoading}
+                  loadingMessage={`Memuat kelas untuk tahun ajaran ${tahun}...`}
+                  emptyMessage="Tidak ada kelas di tahun ini."
+                  keyExtractor={(item) => item.id}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       ) : (
         <EmptyState
           title="Belum ada data kelas"
