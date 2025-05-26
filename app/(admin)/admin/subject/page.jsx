@@ -13,6 +13,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 import SubjectCreateModal from "@/components/subject/SubjectCreateModal";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState([]);
@@ -129,15 +130,52 @@ export default function SubjectPage() {
                 loadingMessage="Memuat data mata pelajaran..."
                 emptyMessage="Tidak ada data mata pelajaran ditemukan"
                 keyExtractor={(item) => item.id}
-                pagination={{
-                  currentPage: pagination.page,
-                  totalPages: pagination.pages,
-                  onPageChange: (newPage) =>
-                    setPagination((prev) => ({ ...prev, page: newPage })),
-                  totalItems: pagination.total,
-                  itemsPerPage: pagination.limit,
-                }}
+                pagination={null} // atau bisa dihapus kalau tidak dipakai
               />
+
+              {/* Tambahkan Pagination di sini */}
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  {pagination.page > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page - 1,
+                          }))
+                        }
+                      />
+                    </PaginationItem>
+                  )}
+
+                  {Array.from({ length: pagination.pages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={pagination.page === i + 1}
+                        onClick={() =>
+                          setPagination((prev) => ({ ...prev, page: i + 1 }))
+                        }
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  {pagination.page < pagination.pages && (
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page + 1,
+                          }))
+                        }
+                      />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
             </TabsContent>
           </Tabs>
 
