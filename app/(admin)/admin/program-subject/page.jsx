@@ -23,6 +23,11 @@ export default function ProgramSubjectPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
 
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+  });
+
   const handleDelete = async (id) => {
     if (!confirm("Yakin ingin menghapus data ini?")) return;
 
@@ -57,6 +62,12 @@ export default function ProgramSubjectPage() {
       setIsLoading(false);
     }
   };
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    const endIndex = startIndex + pagination.limit;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, pagination]);
 
   useEffect(() => {
     fetchData();
@@ -151,7 +162,7 @@ export default function ProgramSubjectPage() {
 
             <TabsContent value="all" className="space-y-6">
               {Object.entries(
-                filteredData.reduce((acc, item) => {
+                paginatedData.reduce((acc, item) => {
                   const paket = item.program?.namaPaket || "Tanpa Program";
                   if (!acc[paket]) acc[paket] = [];
                   acc[paket].push(item);

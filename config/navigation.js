@@ -15,6 +15,7 @@ import {
   FileSearch,
   BarChart3,
   VenusAndMarsIcon,
+  Volleyball,
 } from "lucide-react";
 
 export const navByRole = {
@@ -159,7 +160,7 @@ export const navByRole = {
         {
           title: "Hari Libur",
           href: "/admin/holidays",
-          icon: <VenusAndMarsIcon className="h-4 w-4" />,
+          icon: <Volleyball className="h-4 w-4" />,
         },
       ],
     },
@@ -242,6 +243,7 @@ export const navByRole = {
         // {
         //   title: "Manajemen Naik Kelas",
         //   href: "/tutor/promote-students",
+        // <Volleyball />
         //   icon: <Users className="h-4 w-4" />,
         // },
       ],
