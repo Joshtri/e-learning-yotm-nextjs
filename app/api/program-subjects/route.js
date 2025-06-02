@@ -1,15 +1,39 @@
 import prisma from '@/lib/prisma'
 
-// GET: Ambil semua relasi Program ↔️ Subject
-export async function GET() {
+export async function GET(request) {
   try {
-    const programSubjects = await prisma.programSubject.findMany({
+    const url = new URL(request.url)
+    const page = parseInt(url.searchParams.get('page')) || 1
+    const limitParam = url.searchParams.get('limit')
+    let limit = limitParam ? parseInt(limitParam) : 10
+
+    const search = url.searchParams.get('search') || ''
+
+    const findOptions = {
       include: {
         program: { select: { id: true, namaPaket: true } },
         subject: { select: { id: true, namaMapel: true } },
       },
       orderBy: { createdAt: 'desc' },
-    })
+    }
+
+    if (limit <= 0) {
+      // ambil semua data tanpa limit dan skip
+    } else {
+      findOptions.take = limit
+      findOptions.skip = (page - 1) * limit
+    }
+
+    if (search) {
+      findOptions.where = {
+        OR: [
+          { program: { namaPaket: { contains: search, mode: 'insensitive' } } },
+          { subject: { namaMapel: { contains: search, mode: 'insensitive' } } },
+        ],
+      }
+    }
+
+    const programSubjects = await prisma.programSubject.findMany(findOptions)
 
     return new Response(
       JSON.stringify({
@@ -29,6 +53,7 @@ export async function GET() {
     )
   }
 }
+
 
 // POST: Tambah relasi baru Program ↔️ Subject
 export async function POST(request) {

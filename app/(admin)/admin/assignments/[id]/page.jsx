@@ -52,6 +52,7 @@ export default function AssignmentDetailPage() {
       header: "Status",
       cell: (row) => row.status || "-",
     },
+    
   ];
 
   return (

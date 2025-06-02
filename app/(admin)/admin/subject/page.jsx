@@ -13,7 +13,14 @@ import { DataTable } from "@/components/ui/data-table";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 import SubjectCreateModal from "@/components/subject/SubjectCreateModal";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState([]);
@@ -79,6 +86,42 @@ export default function SubjectPage() {
       accessorKey: "deskripsi",
       cell: (item) =>
         item.deskripsi || <span className="text-muted-foreground">-</span>,
+    },
+
+    {
+      header: "Aksi",
+      cell: (item) => (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/admin/subjects/${item.id}`)}
+          >
+            Lihat Detail
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-2"
+            onClick={async () => {
+              if (confirm("Yakin ingin menghapus mata pelajaran ini?")) {
+                try {
+                  await api.delete(`/subjects/${item.id}`);
+                  toast.success("Mata pelajaran berhasil dihapus");
+                  fetchSubjects();
+                } catch (error) {
+                  console.error("Gagal menghapus mapel:", error);
+                  toast.error("Gagal menghapus mata pelajaran");
+                }
+              }
+            }}
+          >
+            Hapus
+          </Button>
+        </>
+      ),
+      className: "w-[120px] text-right",
     },
   ];
 

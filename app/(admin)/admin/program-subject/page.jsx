@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
-import api from "@/lib/axios";
-import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { DataToolbar } from "@/components/ui/data-toolbar";
+import ProgramSubjectAddModal from "@/components/program-subject/ProgramSubjectAddModal";
+import { Button } from "@/components/ui/button";
 import { DataExport } from "@/components/ui/data-export";
 import { DataTable } from "@/components/ui/data-table";
-import { Button } from "@/components/ui/button";
-import ProgramSubjectAddModal from "@/components/program-subject/ProgramSubjectAddModal";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import api from "@/lib/axios";
 
 export default function ProgramSubjectPage() {
   const [data, setData] = useState([]);
@@ -23,38 +22,43 @@ export default function ProgramSubjectPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
 
+  // Pagination state, simpan total dan pages dari API juga
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
+    total: 0,
+    pages: 0,
   });
 
-  const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menghapus data ini?")) return;
-
-    try {
-      await api.delete(`/program-subjects/${id}`);
-      toast.success("Berhasil menghapus data");
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error("Gagal menghapus data");
-    }
+  const params = {
+    page: pagination.page,
+    search: searchQuery,
   };
-
-  const router = useRouter();
+  if (pagination.limit && pagination.limit > 0) {
+    params.limit = pagination.limit;
+  }
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
       const [res, progRes, subRes] = await Promise.all([
-        api.get("/program-subjects"),
+        api.get("/program-subjects", { params }),
         api.get("/programs"),
-        api.get("/subjects"),
+        api.get("/subjects", { params: { page: 1, limit: 50 } }),
       ]);
 
       setData(res.data.data.programSubjects);
       setPrograms(progRes.data.data.programs);
       setSubjects(subRes.data.data.subjects);
+
+      // Update total dan pages dari response
+      if (res.data.data.pagination) {
+        setPagination((prev) => ({
+          ...prev,
+          total: res.data.data.pagination.total,
+          pages: res.data.data.pagination.pages,
+        }));
+      }
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data program-subject");
@@ -63,31 +67,23 @@ export default function ProgramSubjectPage() {
     }
   };
 
-  const paginatedData = useMemo(() => {
-    const startIndex = (pagination.page - 1) * pagination.limit;
-    const endIndex = startIndex + pagination.limit;
-    return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, pagination]);
-
+  // Fetch ulang data kalau page, limit, atau search berubah
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [pagination.page, pagination.limit, searchQuery]);
 
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    return data.filter(
-      (item) =>
-        item.program.namaPaket
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        item.subject.namaMapel.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [data, searchQuery]);
+  // Handler pagination
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > pagination.pages) return;
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  // Optional: handler untuk ubah limit jika mau buat dropdown limit
 
   const columns = [
     {
       header: "No",
-      cell: (_, index) => index + 1,
+      cell: (_, index) => (pagination.page - 1) * pagination.limit + index + 1,
       className: "w-[50px]",
     },
     {
@@ -98,7 +94,6 @@ export default function ProgramSubjectPage() {
       header: "Mata Pelajaran",
       cell: (row) => row.subject?.namaMapel || "-",
     },
-
     {
       header: "Aksi",
       className: "w-[120px]",
@@ -126,6 +121,24 @@ export default function ProgramSubjectPage() {
     },
   ];
 
+  const handleDelete = async (id) => {
+    if (!confirm("Yakin ingin menghapus data ini?")) return;
+
+    try {
+      await api.delete(`/program-subjects/${id}`);
+      toast.success("Berhasil menghapus data");
+      // Kalau data di halaman terakhir habis dihapus, pindah ke halaman sebelumnya
+      if (data.length === 1 && pagination.page > 1) {
+        setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
+      } else {
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal menghapus data");
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <div className="flex-1">
@@ -149,20 +162,23 @@ export default function ProgramSubjectPage() {
             breadcrumbs={[
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Program Mapel" },
-            ]} // Add breadcrumbs here
+            ]}
           />
 
           <Tabs defaultValue="all" className="space-y-6">
             <DataToolbar
               searchValue={searchQuery}
-              onSearchChange={(value) => setSearchQuery(value)}
+              onSearchChange={(value) =>
+                setPagination((p) => ({ ...p, page: 1 })) ||
+                setSearchQuery(value)
+              }
               searchPlaceholder="Cari berdasarkan program atau mapel..."
               filterOptions={[]}
             />
 
             <TabsContent value="all" className="space-y-6">
               {Object.entries(
-                paginatedData.reduce((acc, item) => {
+                data.reduce((acc, item) => {
                   const paket = item.program?.namaPaket || "Tanpa Program";
                   if (!acc[paket]) acc[paket] = [];
                   acc[paket].push(item);
@@ -175,12 +191,31 @@ export default function ProgramSubjectPage() {
                     data={items}
                     columns={columns}
                     isLoading={isLoading}
-                    loadingMessage={`Memuat data untuk ${paket}...`}
+                    loadingMessage={`Memuat data`}
                     emptyMessage={`Tidak ada mata pelajaran untuk ${paket}`}
                     keyExtractor={(item) => item.id}
                   />
                 </div>
               ))}
+
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center space-x-4 mt-6">
+                <Button
+                  disabled={pagination.page <= 1}
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                >
+                  Prev
+                </Button>
+                <span>
+                  Halaman {pagination.page} dari {pagination.pages || 1}
+                </span>
+                <Button
+                  disabled={pagination.page >= pagination.pages}
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </main>

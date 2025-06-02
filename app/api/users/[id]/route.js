@@ -143,6 +143,11 @@ export async function DELETE(request, { params }) {
       }
     }
 
+    // **Tambah hapus log dulu sebelum hapus user utama**
+    await prisma.log.deleteMany({
+      where: { userId: id },
+    });
+
     // 🧨 Hapus user utama
     await prisma.user.delete({ where: { id } });
 

@@ -1,9 +1,6 @@
-// app/layout.jsx
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
-import { ThemeProvider } from "@/providers/themes-provider";
-import { ReactQueryProvider } from "@/providers/ReactQueryProvider"; // 🟢 tambahkan ini
+import { Providers } from "@/components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,19 +23,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ReactQueryProvider>
-            {" "}
-            {/* ✅ Bungkus di sini */}
-            <Toaster richColors position="top-right" />
-            {children}
-          </ReactQueryProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
