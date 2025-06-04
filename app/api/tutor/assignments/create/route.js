@@ -13,6 +13,18 @@ export async function POST(req) {
       );
     }
 
+    // Cari tutorId berdasarkan userId
+    const tutor = await prisma.tutor.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Data tutor tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
     const {
       judul,
       deskripsi,
@@ -21,6 +33,7 @@ export async function POST(req) {
       waktuSelesai,
       batasWaktuMenit,
       nilaiMaksimal,
+      jenis,
     } = await req.json();
 
     if (!judul || !classSubjectTutorId || !waktuMulai || !waktuSelesai) {
@@ -30,9 +43,13 @@ export async function POST(req) {
       );
     }
 
+    console.log("User ID:", user.id);
+    console.log("Tutor ID:", tutor.id);
+    console.log("ClassSubjectTutor ID:", classSubjectTutorId);
+
     // Ambil info class + subject + semua siswa
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
-      where: { id: classSubjectTutorId, tutorId: user.id },
+      where: { id: classSubjectTutorId, tutorId: tutor.id },
       include: {
         class: {
           include: { students: { select: { userId: true } } },
@@ -42,6 +59,7 @@ export async function POST(req) {
     });
 
     if (!classSubjectTutor) {
+      console.log("ClassSubjectTutor not found for given ID and tutorId");
       return NextResponse.json(
         {
           success: false,
@@ -56,12 +74,12 @@ export async function POST(req) {
       data: {
         judul,
         deskripsi,
-        jenis: "EXERCISE",
+        jenis: jenis || "EXERCISE", // Default ke EXERCISE jika tidak diberikan
         classSubjectTutorId,
         waktuMulai: new Date(waktuMulai),
         waktuSelesai: new Date(waktuSelesai),
-        batasWaktuMenit,
-        nilaiMaksimal,
+        batasWaktuMenit: batasWaktuMenit ? Number(batasWaktuMenit) : undefined,
+        nilaiMaksimal: nilaiMaksimal ? Number(nilaiMaksimal) : undefined,
       },
     });
 
@@ -73,8 +91,10 @@ export async function POST(req) {
       senderId: user.id,
       receiverId: studentId,
       title: `Tugas Baru: ${judul}`,
-      message: `Tutor Anda memberikan tugas "${judul}" untuk mata pelajaran ${classSubjectTutor.subject.nama}.`,
+      message: `Tutor Anda memberikan tugas "${judul}" untuk mata pelajaran ${classSubjectTutor.subject.namaMapel}.`,
       type: "ASSIGNMENT",
+      isRead: false,
+      createdAt: new Date(),
     }));
 
     await prisma.notification.createMany({

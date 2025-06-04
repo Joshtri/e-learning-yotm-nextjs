@@ -4,10 +4,16 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const user = getUserFromCookie();
+    //error from atan was happend because for to add await keyword,
+    //the behavior of getUserFromCookie is async function
+    //so we need to add await keyword to get the user data
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "TUTOR") {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
     
     const tutor = await prisma.tutor.findFirst({

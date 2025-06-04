@@ -22,18 +22,31 @@ import { formatISO } from "date-fns";
 export default function AssignmentCreatePage() {
   const [classOptions, setClassOptions] = useState([]);
   const router = useRouter();
-  const { register, handleSubmit, setValue, watch } = useForm();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      waktuMulai: formatISO(new Date(), { representation: "complete" }).slice(
+        0,
+        16
+      ),
+      waktuSelesai: formatISO(new Date(), { representation: "complete" }).slice(
+        0,
+        16
+      ),
+    },
+  });
 
   const fetchClassOptions = async () => {
     try {
       const res = await api.get("/tutor/my-classes");
       const all = res.data.data || [];
-
-      // Filter hanya yang academicYear.isActive === true
       const filtered = all.filter(
         (item) => item.class.academicYear?.isActive === true
       );
-
       setClassOptions(filtered);
     } catch {
       toast.error("Gagal memuat kelas Anda");
@@ -67,28 +80,64 @@ export default function AssignmentCreatePage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-8 max-w-4xl mx-auto bg-gray-50 min-h-screen">
       <PageHeader
         title="Tambah Tugas"
-        description="Buat tugas baru untuk siswa."
+        description="Buat tugas baru untuk siswa dengan mengisi informasi di bawah."
         breadcrumbs={[
           { label: "Tugas", href: "/tutor/assignments" },
           { label: "Tambah Tugas" },
         ]}
       />
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="mt-6 bg-white shadow-md rounded-lg p-6 space-y-6"
+      >
+        {/* Judul */}
         <div>
-          <Label>Judul</Label>
-          <Input {...register("judul", { required: true })} />
+          <Label className="text-gray-700 font-medium">
+            Judul <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            {...register("judul", { required: "Judul wajib diisi" })}
+            className={`mt-1 border ${
+              errors.judul ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+            placeholder="Masukkan judul tugas"
+          />
+          {errors.judul && (
+            <p className="mt-1 text-sm text-red-500">{errors.judul.message}</p>
+          )}
         </div>
+
+        {/* Deskripsi */}
         <div>
-          <Label>Deskripsi</Label>
-          <Textarea {...register("deskripsi")} />
+          <Label className="text-gray-700 font-medium">Deskripsi</Label>
+          <Textarea
+            {...register("deskripsi")}
+            className="mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            placeholder="Masukkan deskripsi tugas (opsional)"
+            rows={4}
+          />
         </div>
+
+        {/* Kelas dan Mapel */}
         <div>
-          <Label>Kelas dan Mapel</Label>
-          <Select onValueChange={(val) => setValue("classSubjectTutorId", val)}>
-            <SelectTrigger>
+          <Label className="text-gray-700 font-medium">
+            Kelas dan Mapel <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            onValueChange={(val) =>
+              setValue("classSubjectTutorId", val, { shouldValidate: true })
+            }
+          >
+            <SelectTrigger
+              className={`mt-1 border ${
+                errors.classSubjectTutorId
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+            >
               <SelectValue placeholder="Pilih kelas & mapel" />
             </SelectTrigger>
             <SelectContent>
@@ -101,41 +150,115 @@ export default function AssignmentCreatePage() {
               ))}
             </SelectContent>
           </Select>
+          <input
+            type="hidden"
+            {...register("classSubjectTutorId", {
+              required: "Kelas dan Mapel wajib dipilih",
+            })}
+          />
+          {errors.classSubjectTutorId && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors.classSubjectTutorId.message}
+            </p>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-4">
+
+        {/* Waktu Mulai dan Selesai */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label>Waktu Mulai</Label>
+            <Label className="text-gray-700 font-medium">
+              Waktu Mulai <span className="text-red-500">*</span>
+            </Label>
             <Input
               type="datetime-local"
-              {...register("waktuMulai")}
-              defaultValue={formatISO(new Date(), {
-                representation: "complete",
-              }).slice(0, 16)}
+              {...register("waktuMulai", {
+                required: "Waktu mulai wajib diisi",
+              })}
+              className={`mt-1 border ${
+                errors.waktuMulai ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
             />
+            {errors.waktuMulai && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.waktuMulai.message}
+              </p>
+            )}
           </div>
           <div>
-            <Label>Waktu Selesai</Label>
+            <Label className="text-gray-700 font-medium">
+              Waktu Selesai <span className="text-red-500">*</span>
+            </Label>
             <Input
               type="datetime-local"
-              {...register("waktuSelesai")}
-              defaultValue={formatISO(new Date(), {
-                representation: "complete",
-              }).slice(0, 16)}
+              {...register("waktuSelesai", {
+                required: "Waktu selesai wajib diisi",
+              })}
+              className={`mt-1 border ${
+                errors.waktuSelesai ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
             />
+            {errors.waktuSelesai && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.waktuSelesai.message}
+              </p>
+            )}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+
+        {/* Batas Waktu dan Nilai Maksimal */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label>Batas Waktu (menit)</Label>
-            <Input type="number" {...register("batasWaktuMenit")} />
+            <Label className="text-gray-700 font-medium">
+              Batas Waktu (menit) <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              {...register("batasWaktuMenit", {
+                required: "Batas waktu wajib diisi",
+                min: 1,
+              })}
+              className={`mt-1 border ${
+                errors.batasWaktuMenit ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+              placeholder="Masukkan batas waktu dalam menit"
+            />
+            {errors.batasWaktuMenit && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.batasWaktuMenit.message}
+              </p>
+            )}
           </div>
           <div>
-            <Label>Nilai Maksimal</Label>
-            <Input type="number" {...register("nilaiMaksimal")} />
+            <Label className="text-gray-700 font-medium">
+              Nilai Maksimal <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              {...register("nilaiMaksimal", {
+                required: "Nilai maksimal wajib diisi",
+                min: 1,
+              })}
+              className={`mt-1 border ${
+                errors.nilaiMaksimal ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+              placeholder="Masukkan nilai maksimal"
+            />
+            {errors.nilaiMaksimal && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.nilaiMaksimal.message}
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Submit Button */}
         <div className="pt-4">
-          <Button type="submit">Simpan</Button>
+          <Button
+            type="submit"
+            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition-all"
+          >
+            Simpan
+          </Button>
         </div>
       </form>
     </div>

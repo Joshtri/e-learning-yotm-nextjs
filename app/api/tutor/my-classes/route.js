@@ -25,6 +25,9 @@ export async function GET(request) {
       );
     }
 
+    console.log("User ID:", user.id);
+    console.log("Tutor ID:", tutor.id);
+
     const { searchParams } = new URL(request.url);
     let academicYearId = searchParams.get("academicYearId");
 
@@ -34,7 +37,13 @@ export async function GET(request) {
         where: { isActive: true },
         select: { id: true },
       });
-      academicYearId = activeYear?.id || null;
+      academicYearId = activeYear?.id;
+      if (!academicYearId) {
+        return NextResponse.json(
+          { success: false, message: "Tidak ada tahun ajaran aktif" },
+          { status: 400 }
+        );
+      }
     }
 
     const data = await prisma.classSubjectTutor.findMany({
@@ -85,6 +94,7 @@ export async function GET(request) {
       },
     });
 
+    console.log("Fetched classSubjectTutor data:", data);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Gagal mengambil data kelas yang diajar tutor:", error);

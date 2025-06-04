@@ -122,11 +122,11 @@ export const navByRole = {
           href: "/admin/exams",
           icon: <ClipboardList className="h-4 w-4" />,
         },
-        {
-          title: "Ujian Harian & Awal Semester",
-          href: "/admin/exams",
-          icon: <ClipboardList className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Ujian Harian & Awal Semester",
+        //   href: "/admin/exams",
+        //   icon: <ClipboardList className="h-4 w-4" />,
+        // },
       ],
     },
     {

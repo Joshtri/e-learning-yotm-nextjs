@@ -53,8 +53,8 @@ export default function StudentEditPage() {
         title="Edit Siswa"
         description="Ubah data siswa yang terdaftar"
         breadcrumbs={[
-          { title: "Siswa", href: "/admin/students" },
-          { title: "Edit Siswa" },
+          { label: "Siswa", href: "/admin/students" },
+          { label: "Edit Siswa" },
         ]}
       />
       {!loading && student && (

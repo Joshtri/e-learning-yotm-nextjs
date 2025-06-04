@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading/loading-spinner";
 
 export default function AssignmentQuestionsViewPage() {
   const { id } = useParams(); // assignmentId
@@ -28,7 +29,7 @@ export default function AssignmentQuestionsViewPage() {
     fetchData();
   }, [id]);
 
-  if (!assignment) return <div className="p-6">Memuat...</div>;
+  if (!assignment) return <LoadingSpinner/>;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

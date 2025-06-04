@@ -115,8 +115,8 @@ export default function StudentCreatePage() {
           label: "Kembali ke daftar siswa",
         }}
         breadcrumbs={[
-          { title: "Siswa", href: "/admin/students" },
-          { title: "Tambah Siswa" },
+          { label: "Siswa", href: "/admin/students" },
+          { label: "Tambah Siswa" },
         ]}
       />
 
@@ -254,9 +254,10 @@ export default function StudentCreatePage() {
             <FormField
               control={form.control}
               name="classId"
-              label="Kelas (opsional)"
+              label="Kelas"
               type="select"
-              placeholder="Pilih kelas siswa (opsional)"
+              required
+              placeholder="Pilih kelas siswa"
               options={classes.map((kelas) => ({
                 value: kelas.id,
                 label: `${kelas.namaKelas} - ${
@@ -265,6 +266,7 @@ export default function StudentCreatePage() {
                   kelas.academicYear?.tahunSelesai
                 }`,
               }))}
+              
             />
           </CardContent>
         </Card>

@@ -145,6 +145,7 @@ export default function StudentForm({
           }))}
         placeholder="Pilih kelas"
         error={errors.classId?.message}
+        required
       />
 
       <div className="pt-4">
