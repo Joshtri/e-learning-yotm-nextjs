@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 // 1️⃣ Profile - GET /api/tutor/dashboard/profile
 export async function GET(req) {
-  const user = getUserFromCookie();
+  const user = await getUserFromCookie();
   if (!user || user.role !== "TUTOR")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

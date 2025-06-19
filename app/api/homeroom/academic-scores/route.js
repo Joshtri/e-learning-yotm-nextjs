@@ -3,7 +3,7 @@ import { getUserFromCookie } from "@/utils/auth"; // ✅ kita pakai ini sesuai y
 
 export async function GET(req) {
   try {
-    const user = getUserFromCookie(); // ambil user login
+    const user = await getUserFromCookie(); // ambil user login
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),

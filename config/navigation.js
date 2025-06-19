@@ -431,11 +431,7 @@ export const navByRole = {
           href: "/homeroom/submissions",
           icon: <NotebookPen className="h-4 w-4" />,
         },
-        {
-          title: "Hari Libur",
-          href: "/homeroom/holidays",
-          icon: <VenusAndMarsIcon className="h-4 w-4" />,
-        },
+ 
       ],
     },
     {

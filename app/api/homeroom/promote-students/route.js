@@ -5,7 +5,7 @@ import { getUserFromCookie } from "@/utils/auth";
 
 export async function PATCH(req) {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user) {
       return new Response(

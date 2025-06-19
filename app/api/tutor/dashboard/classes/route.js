@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 // 2️⃣ Classes - GET /api/tutor/dashboard/classes
 export async function GET(req) {
-  const user = getUserFromCookie();
+  const user = await getUserFromCookie();
   if (!user || user.role !== "TUTOR")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -13,7 +13,7 @@ export async function GET(req) {
   if (!tutor)
     return NextResponse.json({ error: "Tutor not found" }, { status: 404 });
 
-  const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+const classSubjectTutors = await prisma.classSubjectTutor.findMany({
     where: {
       tutorId: tutor.id,
       class: {

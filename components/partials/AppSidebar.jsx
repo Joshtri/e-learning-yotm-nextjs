@@ -140,7 +140,7 @@ export function AppSidebar({
 function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
   return (
     <div className="border-b px-3 py-2 h-16 flex items-center justify-between">
-      <Link href={href} className="flex items-center gap-2">
+      <Link href="#" className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
           <span className="text-sm font-bold text-primary-foreground">YOT</span>
         </div>
