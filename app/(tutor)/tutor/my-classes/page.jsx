@@ -128,6 +128,10 @@ export default function MyClassesPage() {
       cell: (row) => row.class?.program?.namaPaket || "-",
     },
     {
+      header: "Wali Kelas", // ✅ tambahan baru
+      cell: (row) => row.class?.homeroomTeacher?.namaLengkap || "-",
+    },
+    {
       header: "Tahun Akademik",
       cell: (row) => (
         <div className="flex items-center">
@@ -243,7 +247,7 @@ export default function MyClassesPage() {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <LoadingSpinner/>
+            <LoadingSpinner />
             // <EmptyState
             //   title="Belum ada kelas"
             //   description="Anda belum memiliki kelas yang diajar pada tahun ajaran ini."

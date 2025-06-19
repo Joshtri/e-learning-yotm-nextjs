@@ -31,13 +31,15 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     let academicYearId = searchParams.get("academicYearId");
 
-    // Jika tidak ada academicYearId, fallback ke tahun ajaran aktif
+    // Fallback ke tahun ajaran aktif jika tidak diberikan
     if (!academicYearId) {
       const activeYear = await prisma.academicYear.findFirst({
         where: { isActive: true },
         select: { id: true },
       });
+
       academicYearId = activeYear?.id;
+
       if (!academicYearId) {
         return NextResponse.json(
           { success: false, message: "Tidak ada tahun ajaran aktif" },
@@ -49,11 +51,9 @@ export async function GET(request) {
     const data = await prisma.classSubjectTutor.findMany({
       where: {
         tutorId: tutor.id,
-        class: academicYearId
-          ? {
-              academicYearId: academicYearId,
-            }
-          : undefined,
+        class: {
+          academicYearId: academicYearId,
+        },
       },
       include: {
         class: {
@@ -72,6 +72,13 @@ export async function GET(request) {
               select: {
                 id: true,
                 namaPaket: true,
+              },
+            },
+            homeroomTeacher: {
+              select: {
+                id: true,
+                namaLengkap: true,
+                userId: true,
               },
             },
           },
@@ -94,7 +101,6 @@ export async function GET(request) {
       },
     });
 
-    console.log("Fetched classSubjectTutor data:", data);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Gagal mengambil data kelas yang diajar tutor:", error);
