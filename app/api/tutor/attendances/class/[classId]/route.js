@@ -1,5 +1,3 @@
-// File: app/api/tutor/attendances/class/[classId]/route.js
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
@@ -16,7 +14,7 @@ export async function GET(_, { params }) {
 
     const { classId } = params;
     if (!classId) {
-      return NextResponse.json( 
+      return NextResponse.json(
         { success: false, message: "classId diperlukan" },
         { status: 400 }
       );
@@ -33,8 +31,8 @@ export async function GET(_, { params }) {
       );
     }
 
-    // 🔥 Ambil semua sesi presensi berdasarkan classId
-    const sessions = await prisma.attendanceSession.findMany({
+    // Ambil sesi presensi unik berdasarkan classId dan tanggal
+    const rawSessions = await prisma.attendanceSession.findMany({
       where: {
         classId,
       },
@@ -50,6 +48,18 @@ export async function GET(_, { params }) {
         tanggal: "desc",
       },
     });
+
+    // 🧠 Dedup berdasarkan tanggal (jika tanggal sama muncul berkali)
+    const uniqueSessionsMap = new Map();
+
+    for (const session of rawSessions) {
+      const key = new Date(session.tanggal).toISOString().split("T")[0]; // YYYY-MM-DD
+      if (!uniqueSessionsMap.has(key)) {
+        uniqueSessionsMap.set(key, session);
+      }
+    }
+
+    const sessions = Array.from(uniqueSessionsMap.values());
 
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {

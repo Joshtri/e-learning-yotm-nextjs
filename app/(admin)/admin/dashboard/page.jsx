@@ -300,14 +300,14 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Admin</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
+          {/* <Button variant="outline">
             <Settings className="mr-2 h-4 w-4" />
             Pengaturan
-          </Button>
-          <Button>
+          </Button> */}
+          {/* <Button>
             <Download className="mr-2 h-4 w-4" />
             Unduh Laporan
-          </Button>
+          </Button> */}
         </div>
       </div>
 

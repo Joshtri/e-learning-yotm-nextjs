@@ -137,9 +137,9 @@ export default function AppHeader({ onMenuClick, role }) {
                   {user?.nama?.charAt(0).toUpperCase() || avatarFallback}
                 </AvatarFallback>{" "}
               </Avatar>
-              <span className="hidden md:inline">
+              {/* <span className="hidden md:inline">
                 {mode === "homeroom" ? "Wali Kelas" : user?.nama}
-              </span>
+              </span> */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
