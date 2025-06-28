@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/providers/themes-provider";
 import { Geist, Geist_Mono } from "next/font/google";
 import { useEffect, useState } from "react";
 import "../../globals.css";
-import { AdminSidebar } from "./partials/Sidebar";
 import { AppSidebar } from "@/components/partials/AppSidebar";
 
 const geistSans = Geist({

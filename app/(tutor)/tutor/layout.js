@@ -23,7 +23,7 @@ export default function TutorLayout({ children }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = () => { 
       if (window.innerWidth < 768) {
         setIsSidebarOpen(false);
       } else {
