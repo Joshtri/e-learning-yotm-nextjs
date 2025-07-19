@@ -17,9 +17,11 @@ export async function GET(request) {
           mode: "insensitive",
         },
       }),
-      ...(onlyActive && {
+      ...(onlyActive && {/*  */
         academicYear: {
-          isActive: true,
+          is: {
+            isActive: true,
+          },
         },
       }),
     };
@@ -74,7 +76,6 @@ export async function GET(request) {
     );
   }
 }
-
 
 export async function POST(request) {
   try {

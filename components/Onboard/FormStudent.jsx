@@ -18,6 +18,8 @@ export default function StudentForm({
     defaultValues,
   });
 
+  console.log(classOptions);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <FormField
@@ -169,14 +171,11 @@ export default function StudentForm({
         name="classId"
         control={control}
         type="select"
-        options={classOptions
-          .filter((cls) => cls.academicYear?.isActive)
-          .map((cls) => ({
-            label: `${cls.namaKelas} (${cls.program?.namaPaket}) - ${cls.academicYear?.tahunMulai}/${cls.academicYear?.tahunSelesai}`,
-            value: cls.id,
-          }))}
+        required
         placeholder="Pilih kelas"
         error={errors.classId?.message}
+        rules={{ required: "Kelas wajib dipilih" }}
+        options={classOptions}
       />
 
       <div className="pt-4">
