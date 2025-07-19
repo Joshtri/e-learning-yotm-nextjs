@@ -375,7 +375,7 @@ export default function UsersPage() {
                   disabled={isImporting}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {isImporting ? "Mengimpor..." : "Import CSV"}
+                  {isImporting ? "Mengimpor..." : "Import"}
                 </Button>
 
                 <DataExport data={users} filename="users.csv" label="Export" />
