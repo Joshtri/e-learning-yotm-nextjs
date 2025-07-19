@@ -172,16 +172,14 @@ export default function StudentCreatePage() {
                     exactLength: (value) =>
                       value?.length === 10 || "NISN harus tepat 10 digit",
                     onlyNumbers: (value) =>
-                      !value ||
-                      /^[0-9]+$/.test(value) ||
-                      "NISN hanya boleh berisi angka",
+                      /^[0-9]*$/.test(value) || "NISN hanya boleh berisi angka",
                   },
                 }}
+                inputProps={{ maxLength: 10 }} // jika komponen mendukung ini
                 onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "");
-                  if (value.length <= 10) {
-                    form.setValue("nisn", value);
-                  }
+                  const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+                  const trimmed = rawValue.slice(0, 10); // maksimal 10 digit
+                  form.setValue("nisn", trimmed, { shouldValidate: true });
                 }}
                 helperText={
                   form.watch("nisn")?.length > 10
@@ -189,6 +187,7 @@ export default function StudentCreatePage() {
                     : `Sisa digit: ${10 - (form.watch("nisn")?.length || 0)}`
                 }
               />
+
               <FormField
                 control={form.control}
                 name="jenisKelamin"
@@ -266,7 +265,6 @@ export default function StudentCreatePage() {
                   kelas.academicYear?.tahunSelesai
                 }`,
               }))}
-              
             />
           </CardContent>
         </Card>
