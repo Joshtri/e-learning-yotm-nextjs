@@ -16,6 +16,9 @@ import { EntityActions } from "@/components/ui/entity-actions";
 import { DataExport } from "@/components/ui/data-export";
 import { EntityDialog } from "@/components/ui/entity-dialog";
 // import { useAuth } from "@/lib/useAuth";
+import { Upload } from "lucide-react";
+import { useRef } from "react";
+import * as XLSX from "xlsx";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -31,6 +34,8 @@ export default function UsersPage() {
     total: 0,
     pages: 0,
   });
+  const fileInputRef = useRef(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Check if user is admin and redirect if not
   // useEffect(() => {
@@ -239,7 +244,9 @@ export default function UsersPage() {
       } catch (error) {
         console.error("Failed to delete user:", error);
         const errorMessage =
-        error.response?.data?.message || error.message || "Gagal menghapus pengguna";
+          error.response?.data?.message ||
+          error.message ||
+          "Gagal menghapus pengguna";
         toast.error(errorMessage);
       }
     }
@@ -266,6 +273,77 @@ export default function UsersPage() {
     }
   };
 
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 0 });
+
+        // Konversi jadi CSV string manual untuk kirim ke backend
+        const csvRows = ["nama,email,password,role"];
+        jsonData.forEach((row) => {
+          const nama = row.nama || "";
+          const email = row.email || "";
+          const password = row.password || "";
+          const role = row.role || "";
+          csvRows.push(`${nama},${email},${password},${role}`);
+        });
+
+        const csvBlob = new Blob([csvRows.join("\n")], {
+          type: "text/csv",
+        });
+
+        const formData = new FormData();
+        formData.append("file", csvBlob, "import.csv");
+
+        const res = await fetch("/api/users/import", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          toast.success(result.message || "Import berhasil");
+          fetchUsers();
+        } else {
+          toast.error(result.message || "Import gagal");
+        }
+      };
+
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Terjadi kesalahan saat import");
+    } finally {
+      setIsImporting(false);
+      e.target.value = ""; // Reset input
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const worksheetData = [
+      ["nama", "email", "password", "role"],
+      ["John Doe", "john@example.com", "password123", "ADMIN"],
+      ["Jane Smith", "jane@example.com", "securepass456", "TUTOR"],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Pengguna");
+
+    XLSX.writeFile(workbook, "template_pengguna.xlsx");
+  };
+
   // if (!user) {
   //   return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   // }
@@ -278,6 +356,28 @@ export default function UsersPage() {
             title="Manajemen Pengguna"
             actions={
               <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv ,.xlsx" 
+                  onChange={handleImportExcel}
+                  style={{ display: "none" }}
+                />
+
+                {/* Download Template */}
+                <Button variant="ghost" onClick={handleDownloadTemplate}>
+                  Template Excel
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isImporting}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {isImporting ? "Mengimpor..." : "Import CSV"}
+                </Button>
+
                 <DataExport data={users} filename="users.csv" label="Export" />
                 <Button onClick={() => setIsCreateUserOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
