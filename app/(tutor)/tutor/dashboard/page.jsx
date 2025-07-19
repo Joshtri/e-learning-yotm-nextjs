@@ -199,31 +199,31 @@ export default function TutorDashboardPage() {
   }
 
   // Format date function
-// Format date function with error handling
-const formatDate = (dateString) => {
-  try {
-    if (!dateString) return "No date";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    return format(date, "d MMMM yyyy", { locale: id });
-  } catch (error) {
-    console.error("Error formatting date:", error);
-    return "Invalid date";
-  }
-};
+  // Format date function with error handling
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return "No date";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      return format(date, "d MMMM yyyy", { locale: id });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  };
 
-// Format date with time with error handling
-const formatDateTime = (dateString) => {
-  try {
-    if (!dateString) return "No date";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    return format(date, "d MMM yyyy, HH:mm", { locale: id });
-  } catch (error) {
-    console.error("Error formatting date time:", error);
-    return "Invalid date";
-  }
-};
+  // Format date with time with error handling
+  const formatDateTime = (dateString) => {
+    try {
+      if (!dateString) return "No date";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      return format(date, "d MMM yyyy, HH:mm", { locale: id });
+    } catch (error) {
+      console.error("Error formatting date time:", error);
+      return "Invalid date";
+    }
+  };
   return (
     <>
       {currentUser && (
@@ -368,6 +368,10 @@ const formatDateTime = (dateString) => {
                             Tahun Ajaran {cls.academicYear} •{" "}
                             {cls.totalStudents} Siswa
                           </p>
+                          <p className="text-xs text-gray-500">
+                            Wali Kelas:{" "}
+                            {cls.homeroomTeacher || "Belum ditentukan"}
+                          </p>
                         </div>
                         {/* <div className="text-right">
                           <div className="text-sm font-medium">
@@ -432,6 +436,12 @@ const formatDateTime = (dateString) => {
                                       ?.namaKelas
                                   }
                                 </p>
+                                <p className="text-xs text-gray-500">
+                                  Wali Kelas:{" "}
+                                  {assignment.classSubjectTutor?.class
+                                    ?.homeroomTeacher?.namaLengkap ||
+                                    "Belum ditentukan"}
+                                </p>
                                 <div className="flex items-center justify-between mt-1">
                                   <div className="text-xs text-gray-500">
                                     <Calendar className="inline h-3 w-3 mr-1" />
@@ -478,6 +488,11 @@ const formatDateTime = (dateString) => {
                                 {quiz.classSubjectTutor?.subject?.namaMapel} •{" "}
                                 {quiz.classSubjectTutor?.class?.namaKelas}
                               </p>
+                              <p className="text-xs text-gray-500">
+                                Wali Kelas:{" "}
+                                {quiz.classSubjectTutor?.class?.homeroomTeacher
+                                  ?.namaLengkap || "Belum ditentukan"}
+                              </p>
                               <div className="flex items-center justify-between mt-1">
                                 <div className="text-xs text-gray-500">
                                   <Calendar className="inline h-3 w-3 mr-1" />
@@ -523,6 +538,12 @@ const formatDateTime = (dateString) => {
                               <p className="text-sm text-gray-600">
                                 {material.classSubjectTutor?.subject?.namaMapel}{" "}
                                 • {material.classSubjectTutor?.class?.namaKelas}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Wali Kelas:{" "}
+                                {material.classSubjectTutor?.class
+                                  ?.homeroomTeacher?.namaLengkap ||
+                                  "Belum ditentukan"}
                               </p>
                               <div className="flex items-center mt-1 text-xs text-gray-500">
                                 <Calendar className="h-3 w-3 mr-1" />

@@ -76,7 +76,6 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-
         // Fetch all data in parallel
         const [
           overviewRes,
@@ -519,6 +518,14 @@ export default function AdminDashboard() {
                           <p className="text-sm text-gray-600">
                             {activity.user}
                           </p>
+                          {activity.type === "submission" &&
+                            activity.homeroomTeacher && (
+                              <p className="text-xs text-gray-500">
+                                {activity.className &&
+                                  `${activity.className} • `}
+                                Wali Kelas: {activity.homeroomTeacher}
+                              </p>
+                            )}
                           <div className="text-xs text-gray-500 mt-1">
                             <Calendar className="inline h-3 w-3 mr-1" />
                             <span>{formatDateTime(activity.date)}</span>
@@ -1132,6 +1139,7 @@ export default function AdminDashboard() {
                     <TableHead>Nama Kelas</TableHead>
                     <TableHead>Program</TableHead>
                     <TableHead>Tahun Akademik</TableHead>
+                    <TableHead>Wali Kelas</TableHead>
                     <TableHead>Jumlah Siswa</TableHead>
                     <TableHead>Mata Pelajaran</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
@@ -1143,6 +1151,7 @@ export default function AdminDashboard() {
                       <TableCell className="font-medium">{cls.name}</TableCell>
                       <TableCell>{cls.program}</TableCell>
                       <TableCell>{cls.academicYear}</TableCell>
+                      <TableCell>{cls.homeroomTeacher}</TableCell>
                       <TableCell>{cls.studentCount}</TableCell>
                       <TableCell>{cls.subjectCount}</TableCell>
                       <TableCell className="text-right">

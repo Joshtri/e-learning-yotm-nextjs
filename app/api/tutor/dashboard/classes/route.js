@@ -28,6 +28,12 @@ const classSubjectTutors = await prisma.classSubjectTutor.findMany({
           program: true,
           academicYear: true,
           students: { select: { id: true } },
+          homeroomTeacher: {
+            select: {
+              id: true,
+              namaLengkap: true,
+            },
+          },
         },
       },
       subject: true,

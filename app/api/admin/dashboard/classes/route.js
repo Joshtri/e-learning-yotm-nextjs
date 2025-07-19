@@ -19,26 +19,36 @@ export async function GET() {
         classSubjectTutors: {
           include: {
             subject: true,
-            tutor: { include: { user: { select: { nama: true } } } }
-          }
-        }
+            tutor: { include: { user: { select: { nama: true } } } },
+          },
+        },
+        homeroomTeacher: {
+          include: {
+            user: { select: { nama: true } },
+          },
+        },
       },
-      orderBy: { namaKelas: "asc" }
+      orderBy: { namaKelas: "asc" },
     });
 
-    return NextResponse.json(classes.map(cls => ({
-      id: cls.id,
-      name: cls.namaKelas,
-      program: cls.program.namaPaket,
-      academicYear: `${cls.academicYear.tahunMulai}/${cls.academicYear.tahunSelesai}`,
-      studentCount: cls.students.length,
-      subjectCount: cls.classSubjectTutors.length,
-      subjects: cls.classSubjectTutors.map(cst => ({
-        id: cst.subject.id,
-        name: cst.subject.namaMapel,
-        tutor: cst.tutor.user.nama
+    return NextResponse.json(
+      classes.map((cls) => ({
+        id: cls.id,
+        name: cls.namaKelas,
+        program: cls.program.namaPaket,
+        academicYear: `${cls.academicYear.tahunMulai}/${cls.academicYear.tahunSelesai}`,
+        studentCount: cls.students.length,
+        subjectCount: cls.classSubjectTutors.length,
+        homeroomTeacher: cls.homeroomTeacher
+          ? cls.homeroomTeacher.namaLengkap
+          : "Belum ditentukan",
+        subjects: cls.classSubjectTutors.map((cst) => ({
+          id: cst.subject.id,
+          name: cst.subject.namaMapel,
+          tutor: cst.tutor.user.nama,
+        })),
       }))
-    })));
+    );
   } catch (error) {
     console.error("Error fetching classes:", error);
     return NextResponse.json(

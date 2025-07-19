@@ -29,7 +29,21 @@ export async function GET(req) {
     prisma.assignment.findMany({
       where: { classSubjectTutorId: { in: cstIds } },
       include: {
-        classSubjectTutor: { include: { class: true, subject: true } },
+        classSubjectTutor: {
+          include: {
+            class: {
+              include: {
+                homeroomTeacher: {
+                  select: {
+                    id: true,
+                    namaLengkap: true,
+                  },
+                },
+              },
+            },
+            subject: true,
+          },
+        },
         submissions: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -38,7 +52,21 @@ export async function GET(req) {
     prisma.quiz.findMany({
       where: { classSubjectTutorId: { in: cstIds } },
       include: {
-        classSubjectTutor: { include: { class: true, subject: true } },
+        classSubjectTutor: {
+          include: {
+            class: {
+              include: {
+                homeroomTeacher: {
+                  select: {
+                    id: true,
+                    namaLengkap: true,
+                  },
+                },
+              },
+            },
+            subject: true,
+          },
+        },
         submissions: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -47,7 +75,21 @@ export async function GET(req) {
     prisma.learningMaterial.findMany({
       where: { classSubjectTutorId: { in: cstIds } },
       include: {
-        classSubjectTutor: { include: { class: true, subject: true } },
+        classSubjectTutor: {
+          include: {
+            class: {
+              include: {
+                homeroomTeacher: {
+                  select: {
+                    id: true,
+                    namaLengkap: true,
+                  },
+                },
+              },
+            },
+            subject: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: 5,
