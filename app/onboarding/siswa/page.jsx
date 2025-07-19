@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FormStudent } from "@/components/Onboard/FormStudent";
+import  StudentForm  from "@/components/Onboard/FormStudent";
 import { FullScreenLoader } from "@/components/ui/full-screen-loader";
 
 export default function StudentOnboardingPage() {
@@ -45,7 +45,7 @@ export default function StudentOnboardingPage() {
         </p>
 
         {user && (
-          <FormStudent
+          <StudentForm
             userId={user.id}
             onSuccess={() => router.push("/siswa/dashboard")}
           />
