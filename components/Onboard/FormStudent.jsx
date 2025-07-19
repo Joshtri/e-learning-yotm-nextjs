@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Form, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/ui/form-field";
 
@@ -64,6 +64,21 @@ export default function StudentForm({
       />
 
       <FormField
+        label="NIS"
+        name="nis"
+        control={control}
+        required
+        placeholder="NIS siswa"
+        rules={{
+          required: "NIS wajib diisi",
+          pattern: {
+            // value: /^[0-9]{8}$/,
+            // message: "NIS harus 8 digit angka",
+          },
+        }}
+      />
+
+      <FormField
         label="Jenis Kelamin"
         name="jenisKelamin"
         control={control}
@@ -109,6 +124,28 @@ export default function StudentForm({
           },
         }}
         error={errors.tanggalLahir?.message}
+      />
+
+      <FormField
+        label="No Telepon"
+        name="noTelepon"
+        control={control}
+        type="text"
+        required
+        placeholder="Nomor telepon siswa"
+        rules={{
+          required: "Nomor telepon wajib diisi",
+          pattern: {
+            value: /^[0-9]{10,15}$/,
+            message: "Nomor telepon harus 10-15 digit angka",
+          },
+        }}
+        inputProps={{ maxLength: 15 }} // maksimal 15 digit
+        onChange={(e) => {
+          const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+          form.setValue("noTelepon", rawValue, { shouldValidate: true });
+        }}
+        error={errors.noTelepon?.message}
       />
 
       <FormField

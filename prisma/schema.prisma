@@ -128,6 +128,8 @@ model Student {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   status       StudentStatus @default(ACTIVE)
+  noTelepon     String?       @db.VarChar(20)
+  nis         String?       @db.VarChar(20) // Nomor Induk Siswa Nasional
 
   naikKelas    Boolean @default(false) // usulan dari homeroom untuk naik kelas
   diprosesNaik Boolean @default(false) // apakah sudah diproses oleh admin

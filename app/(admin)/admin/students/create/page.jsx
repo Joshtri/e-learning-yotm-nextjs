@@ -71,6 +71,8 @@ export default function StudentCreatePage() {
         ...formData,
         namaLengkap: formData.namaLengkap?.trim(),
         nisn: formData.nisn?.trim(),
+        nis: formData.nis?.trim(),
+        noTelepon: formData.noTelepon?.trim(),
         tempatLahir: formData.tempatLahir?.trim(),
         alamat: formData.alamat?.trim(),
         classId: formData.classId || null,
@@ -203,6 +205,49 @@ export default function StudentCreatePage() {
                 ]}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="noTelepon"
+              label="Nomor Telepon"
+              type="text"
+              placeholder="Nomor telepon siswa"
+              required
+              rules={{
+                required: "Nomor telepon wajib diisi",
+                pattern: {
+                  value: /^[0-9]{10,15}$/,
+                  message: "Nomor telepon harus 10-15 digit angka",
+                },
+              }}
+              inputProps={{ maxLength: 15 }} // maksimal 15 digit
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+                form.setValue("noTelepon", rawValue, { shouldValidate: true });
+              }}
+            />
+            <FormField
+              control={form.control}
+              name="nis"
+              label="NIS"
+              type="text"
+              placeholder="Nomor Induk Siswa"
+              required
+              rules={{
+                required: "NIS wajib diisi",
+                pattern: {
+                  value: /^[0-9]{1,20}$/,
+                  message: "NIS harus berupa angka (maksimal 20 digit)",
+                },
+              }}
+              inputProps={{ maxLength: 20 }} // maksimal 20 digit
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+                form.setValue("nis", rawValue, { shouldValidate: true });
+              }}
+            />
+
+          
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField

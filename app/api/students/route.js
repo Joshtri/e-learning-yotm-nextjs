@@ -165,6 +165,8 @@ export async function POST(request) {
       userId,
       namaLengkap,
       nisn,
+      noTelepon,
+      nis,
       jenisKelamin,
       tempatLahir,
       tanggalLahir,
@@ -177,6 +179,8 @@ export async function POST(request) {
       !userId ||
       !namaLengkap?.trim() ||
       !nisn?.trim() ||
+      !nis?.trim() ||
+      !noTelepon?.trim() ||
       !jenisKelamin ||
       !tempatLahir?.trim() ||
       !tanggalLahir ||
@@ -210,6 +214,8 @@ export async function POST(request) {
         namaLengkap: namaLengkap.trim(),
         nisn: nisn.trim(),
         jenisKelamin,
+        noTelepon: noTelepon.trim(),
+        nis: nis.trim(),
         tempatLahir: tempatLahir.trim(),
         tanggalLahir: new Date(tanggalLahir),
         alamat: alamat.trim(),
