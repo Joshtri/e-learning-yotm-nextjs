@@ -20,6 +20,15 @@ import { Upload } from "lucide-react";
 import { useRef } from "react";
 import * as XLSX from "xlsx";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 export default function UsersPage() {
   const router = useRouter();
   // const { user } = useAuth();
@@ -359,7 +368,7 @@ export default function UsersPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv ,.xlsx" 
+                  accept=".csv ,.xlsx"
                   onChange={handleImportExcel}
                   style={{ display: "none" }}
                 />
@@ -424,6 +433,50 @@ export default function UsersPage() {
                   itemsPerPage: pagination.limit,
                 }}
               />
+
+              {/* Pagination manual */}
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  {pagination.page > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page - 1,
+                          }))
+                        }
+                      />
+                    </PaginationItem>
+                  )}
+
+                  {Array.from({ length: pagination.pages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={pagination.page === i + 1}
+                        onClick={() =>
+                          setPagination((prev) => ({ ...prev, page: i + 1 }))
+                        }
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  {pagination.page < pagination.pages && (
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page + 1,
+                          }))
+                        }
+                      />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
             </TabsContent>
           </Tabs>
         </main>
