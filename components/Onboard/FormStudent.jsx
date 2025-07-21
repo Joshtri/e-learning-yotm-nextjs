@@ -1,24 +1,51 @@
 "use client";
 
-import { Form, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/ui/form-field";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import axios from "axios";
 
 export default function StudentForm({
   defaultValues = {},
-  onSubmit,
+  userId,
+  onSuccess, // Tambahkan prop onSuccess
   classOptions = [],
 }) {
+  const router = useRouter();
   const {
     control,
     handleSubmit,
-    register,
+    setValue,
     formState: { errors },
   } = useForm({
-    defaultValues,
+    defaultValues, // Set default values
   });
 
-  console.log(classOptions);
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (formData) => {
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/students", {
+        ...formData,
+        userId,
+      });
+
+      toast.success("Profil siswa berhasil disimpan!");
+      onSuccess?.(); // Tutup dialog jika ada callback
+      router.push("/siswa/dashboard") // bisa diarahkan ke dashboard jika perlu
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message || "Gagal menyimpan profil siswa";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -73,10 +100,11 @@ export default function StudentForm({
         placeholder="NIS siswa"
         rules={{
           required: "NIS wajib diisi",
-          pattern: {
-            // value: /^[0-9]{8}$/,
-            // message: "NIS harus 8 digit angka",
-          },
+          // Uncomment jika ingin validasi format khusus
+          // pattern: {
+          //   value: /^[0-9]{8}$/,
+          //   message: "NIS harus 8 digit angka",
+          // },
         }}
       />
 
@@ -99,6 +127,7 @@ export default function StudentForm({
         label="Tempat Lahir"
         name="tempatLahir"
         control={control}
+        required
         placeholder="Contoh: Kupang"
         rules={{
           required: "Tempat lahir wajib diisi",
@@ -114,7 +143,7 @@ export default function StudentForm({
         label="Tanggal Lahir"
         name="tanggalLahir"
         control={control}
-        type="birthdate" // Changed from "date" to "birthdate"
+        type="birthdate"
         required
         placeholder="Pilih tanggal lahir"
         rules={{
@@ -145,7 +174,7 @@ export default function StudentForm({
         inputProps={{ maxLength: 15 }} // maksimal 15 digit
         onChange={(e) => {
           const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
-          form.setValue("noTelepon", rawValue, { shouldValidate: true });
+          setValue("noTelepon", rawValue, { shouldValidate: true }); // Fix: gunakan setValue bukan form.setValue
         }}
         error={errors.noTelepon?.message}
       />
@@ -155,6 +184,7 @@ export default function StudentForm({
         name="alamat"
         control={control}
         type="textarea"
+        required
         rows={4}
         rules={{
           required: "Alamat wajib diisi",
@@ -179,7 +209,9 @@ export default function StudentForm({
       />
 
       <div className="pt-4">
-        <Button type="submit">Simpan Perubahan</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Menyimpan..." : "Simpan Perubahan"}
+        </Button>
       </div>
     </form>
   );
