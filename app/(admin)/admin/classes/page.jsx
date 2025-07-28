@@ -49,6 +49,15 @@ export default function ClassesPage() {
     return acc;
   }, {});
 
+  // Urutkan setiap grup berdasarkan nama program (paket)
+  Object.keys(groupedByYear).forEach((year) => {
+    groupedByYear[year].sort((a, b) => {
+      const paketA = a.program?.namaPaket || "";
+      const paketB = b.program?.namaPaket || "";
+      return paketA.localeCompare(paketB, "id"); // sort alfabetis A-Z
+    });
+  });
+
   const columns = [
     {
       header: "No",
@@ -71,13 +80,23 @@ export default function ClassesPage() {
       header: "Aksi",
       className: "w-[120px]",
       cell: (row) => (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => router.push(`/admin/classes/${row.id}`)}
-        >
-          Detail
-        </Button>
+        <>
+          {/* <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/admin/classes/${row.id}/edit`)}
+          >
+            Edit
+          </Button> */}
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/admin/classes/${row.id}`)}
+          >
+            Detail
+          </Button>
+        </>
       ),
     },
   ];

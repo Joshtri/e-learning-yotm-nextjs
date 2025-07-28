@@ -21,17 +21,18 @@ export default function ProgramSubjectAddModal({
     reset,
     control,
     formState: { errors },
-  } = useForm({});
+  } = useForm();
 
+  // Reset form saat modal dibuka
   useEffect(() => {
     if (open) {
       if (editData) {
         reset({
-          programId: editData.program?.id || "",
-          subjectId: editData.subject?.id || "",
+          programId: editData.program?.id ?? "",
+          subjectId: editData.subject?.id ?? "",
         });
       } else {
-        reset({ 
+        reset({
           programId: "",
           subjectId: "",
         });
@@ -39,13 +40,13 @@ export default function ProgramSubjectAddModal({
     }
   }, [editData, open, reset]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (formData) => {
     try {
       if (editData) {
-        await api.put(`/program-subjects/${editData.id}`, data);
+        await api.put(`/program-subjects/${editData.id}`, formData);
         toast.success("Berhasil memperbarui data");
       } else {
-        await api.post("/program-subjects", data);
+        await api.post("/program-subjects", formData);
         toast.success("Berhasil menambahkan data");
       }
 
@@ -77,10 +78,14 @@ export default function ProgramSubjectAddModal({
         control={control}
         placeholder="Pilih program"
         {...register("programId", { required: "Program wajib dipilih" })}
-        options={programs.map((p) => ({
-          value: p.id,
-          label: p.namaPaket,
-        }))}
+        options={
+          Array.isArray(programs)
+            ? programs.map((p) => ({
+                value: p.id,
+                label: p.namaPaket,
+              }))
+            : []
+        }
         error={errors.programId?.message}
       />
 
@@ -93,10 +98,14 @@ export default function ProgramSubjectAddModal({
         {...register("subjectId", {
           required: "Mata pelajaran wajib dipilih",
         })}
-        options={subjects.map((s) => ({
-          value: s.id,
-          label: s.namaMapel,
-        }))}
+        options={
+          Array.isArray(subjects)
+            ? subjects.map((s) => ({
+                value: s.id,
+                label: s.namaMapel,
+              }))
+            : []
+        }
         error={errors.subjectId?.message}
       />
     </ModalForm>

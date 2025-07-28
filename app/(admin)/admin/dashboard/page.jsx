@@ -483,8 +483,8 @@ export default function AdminDashboard() {
                   Aktivitas pengguna dalam 7 hari terakhir
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-0">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto p-4">
                   {recentActivities.length > 0 ? (
                     recentActivities.map((activity, index) => (
                       <div

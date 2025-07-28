@@ -32,11 +32,12 @@ export default function LogActivityPage() {
       <Stack className="space-y-2">
         {/* <TypographyH2>Log Aktivitas</TypographyH2> */}
         <PageHeader
-            breadcrumbs={[
-              { title: "Dashboard", href: "/admin" },
-              { title: "Log Aktivitas", href: "/admin/log-activity" },
-            ]}
-            title="Log Aktivitas"
+          breadcrumbs={[
+            { label: "Dashboard", href: "/tutor/dashboard" },
+            { label: "Log Aktivitas" },
+          ]}
+          title="Log Aktivitas"
+          description="Riwayat aktivitas penting pada akun Anda, seperti login, logout, dan pembaruan data."
             
         />
         <TypographyP>

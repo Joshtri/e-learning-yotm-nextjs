@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import ProgramAddModal from "@/components/program/ProgramAddModal";
+import { Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
+import { DataExport } from "@/components/ui/data-export";
 import { DataTable } from "@/components/ui/data-table";
 import { DataToolbar } from "@/components/ui/data-toolbar";
-import { DataExport } from "@/components/ui/data-export";
+import { EntityActions } from "@/components/ui/entity-actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import api from "@/lib/axios";
+import { deleteProgram } from "@/services/ProgramsService";
 
 export default function ProgramPage() {
   const [programs, setPrograms] = useState([]);
@@ -26,9 +28,7 @@ export default function ProgramPage() {
   });
 
   const [openModal, setOpenModal] = useState(false);
-
-  const router = useRouter();
-
+ 
   const fetchPrograms = async () => {
     try {
       setIsLoading(true);
@@ -59,6 +59,17 @@ export default function ProgramPage() {
     );
   }, [programs, searchQuery]);
 
+  // ✅ Handler untuk hapus program
+  const handleDelete = async (id) => {
+    try {
+      await deleteProgram(id);
+      toast.success("Program berhasil dihapus");
+      fetchPrograms(); // refresh data
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Gagal menghapus program");
+    }
+  };
+
   const columns = [
     {
       header: "No",
@@ -68,6 +79,32 @@ export default function ProgramPage() {
     {
       header: "Nama Program",
       accessorKey: "namaPaket",
+    },
+    {
+      header: "Aksi",
+      cell: (row) => (
+        <>
+          <EntityActions
+            entityId={row.id}
+            editPath={`/admin/programs/${row.id}/edit`}
+            withoutDelete // kita hapus tombol delete dari dalam EntityActions
+          />
+
+          <ConfirmationDialog
+            trigger={
+              <Button variant="destructive" size="sm" className="ml-2">
+                Hapus
+              </Button>
+            }
+            title="Yakin ingin menghapus program ini?"
+            description="Tindakan ini akan menghapus data program secara permanen."
+            confirmText="Hapus"
+            cancelText="Batal"
+            onConfirm={() => handleDelete(row.id)}
+          />
+        </>
+      ),
+      className: "w-[160px]",
     },
   ];
 
@@ -90,10 +127,10 @@ export default function ProgramPage() {
                 </Button>
               </>
             }
-            description={"Kelola program yang tersedia di sistem. Anda dapat menambah, mengedit, atau menghapus program sesuai kebutuhan."}
+            description="Kelola program yang tersedia di sistem. Anda dapat menambah, mengedit, atau menghapus program sesuai kebutuhan."
             breadcrumbs={[
-              { title: "Dashboard", href: "/admin" },
-              { title: "Program", href: "/admin/programs" },
+              { label: "Dashboard", href: "/admin" },
+              { label: "Program" },
             ]}
           />
 

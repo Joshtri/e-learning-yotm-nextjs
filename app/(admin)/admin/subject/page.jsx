@@ -76,11 +76,6 @@ export default function SubjectPage() {
       header: "Nama Mapel",
       accessorKey: "namaMapel",
     },
-    // {
-    //   header: "Kode Mapel",
-    //   cell: (item) =>
-    //     item.kodeMapel || <span className="text-muted-foreground">-</span>,
-    // },
     {
       header: "Deskripsi",
       accessorKey: "deskripsi",
@@ -95,10 +90,11 @@ export default function SubjectPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/admin/subjects/${item.id}`)}
+            onClick={() => router.push(`/admin/subject/${item.id}/edit`)}
           >
-            Lihat Detail
+            Edit
           </Button>
+
 
           <Button
             variant="destructive"
@@ -130,7 +126,7 @@ export default function SubjectPage() {
       <div className="flex-1">
         <main className="p-6">
           <PageHeader
-            title="Manajemen Mata Pelajaran"
+            title="Manajemen Mata Pelajaran 3"
             actions={
               <>
                 <DataExport

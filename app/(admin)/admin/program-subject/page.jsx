@@ -12,6 +12,7 @@ import { DataToolbar } from "@/components/ui/data-toolbar";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 export default function ProgramSubjectPage() {
   const [data, setData] = useState([]);
@@ -21,6 +22,8 @@ export default function ProgramSubjectPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+
+  const router = useRouter();
 
   // Pagination state, simpan total dan pages dari API juga
   const [pagination, setPagination] = useState({
@@ -98,25 +101,26 @@ export default function ProgramSubjectPage() {
       header: "Aksi",
       className: "w-[120px]",
       cell: (row) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setEditData(row);
-              setIsModalOpen(true);
-            }}
-          >
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => handleDelete(row.id)}
-          >
-            Hapus
-          </Button>
-        </div>
+        <>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                router.push(`/admin/program-subject/${row.id}/edit`)
+              }
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleDelete(row.id)}
+            >
+              Hapus
+            </Button>
+          </div>
+        </>
       ),
     },
   ];

@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { getAuthUser, createApiResponse } from "@/lib/auth";
+import { createApiResponse, getAuthUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // GET program by ID
@@ -21,7 +20,7 @@ export async function GET(request, { params }) {
         classes: {
           select: {
             id: true,
-            name: true,
+            namaKelas: true,
           },
         },
       },

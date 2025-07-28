@@ -36,9 +36,8 @@ export default function StudentForm({
 
       toast.success("Profil siswa berhasil disimpan!");
       onSuccess?.(); // Tutup dialog jika ada callback
-      router.push("/siswa/dashboard") // bisa diarahkan ke dashboard jika perlu
+      router.push("/siswa/dashboard"); // bisa diarahkan ke dashboard jika perlu
     } catch (err) {
-      console.error(err);
       const msg =
         err?.response?.data?.message || "Gagal menyimpan profil siswa";
       toast.error(msg);
