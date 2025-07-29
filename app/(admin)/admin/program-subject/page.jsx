@@ -183,20 +183,21 @@ export default function ProgramSubjectPage() {
             <TabsContent value="all" className="space-y-6">
               {Object.entries(
                 data.reduce((acc, item) => {
-                  const paket = item.program?.namaPaket || "Tanpa Program";
-                  if (!acc[paket]) acc[paket] = [];
-                  acc[paket].push(item);
+                  const programName =
+                    item.program?.namaPaket || "Tanpa Program";
+                  if (!acc[programName]) acc[programName] = [];
+                  acc[programName].push(item);
                   return acc;
                 }, {})
-              ).map(([paket, items]) => (
-                <div key={paket} className="space-y-2">
-                  <h2 className="text-lg font-semibold">{paket}</h2>
+              ).map(([programName, groupedItems]) => (
+                <div key={programName} className="space-y-2">
+                  <h2 className="text-lg font-semibold">{programName}</h2>
                   <DataTable
-                    data={items}
+                    data={groupedItems}
                     columns={columns}
                     isLoading={isLoading}
-                    loadingMessage={`Memuat data`}
-                    emptyMessage={`Tidak ada mata pelajaran untuk ${paket}`}
+                    loadingMessage={`Memuat data...`}
+                    emptyMessage={`Tidak ada data untuk ${programName}`}
                     keyExtractor={(item) => item.id}
                   />
                 </div>

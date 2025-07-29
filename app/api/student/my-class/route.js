@@ -1,10 +1,9 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const user = getUserFromCookie();
-
+    const user = await getUserFromCookie(request);
     if (!user || user.role !== "STUDENT") {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
