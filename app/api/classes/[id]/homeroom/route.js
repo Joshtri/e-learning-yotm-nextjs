@@ -6,7 +6,7 @@ export async function PATCH(req, { params }) {
   const { id: classId } = params;
 
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
