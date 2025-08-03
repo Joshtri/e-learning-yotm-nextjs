@@ -74,99 +74,111 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-4 items-center text-center">
-          <div className="flex justify-center items-center">
-            <Image
-              src="/yotm_logo.png"
-              alt="Yayasan Obor Timor Logo"
-              width={80}
-              height={80}
-              className="rounded-full"
-            />
-          </div>
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: "url('/bg-yotm.png')" }} // ganti sesuai path file kamu
+    >
+      {/* Overlay for subtle dark effect */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-0"></div>
 
-          {/* Welcome Section */}
-          <div className="space-y-3">
-            <h1 className="text-2xl font-bold text-primary">
-              Halo, Selamat Datang!
-            </h1>
-            <CardTitle className="text-lg font-semibold text-gray-800">
-              Yayasan Obor Timor
-            </CardTitle>
-            <CardDescription className="text-sm text-gray-600 leading-relaxed">
-              Masuk ke akun e-learning Anda untuk mulai belajar, mengerjakan
-              tugas, dan berinteraksi dengan pengajar.
-            </CardDescription>
-            <p className="text-sm font-medium text-primary">
-              Belajar jadi lebih mudah dan fleksibel!
-            </p>
-          </div>
-        </CardHeader>
-
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="nama@email.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+      {/* Content (login card) */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <Card className="w-full max-w-md shadow-xl bg-white/70 backdrop-blur-md transition-all duration-500 animate-fade-in rounded-xl">
+          <CardHeader className="space-y-4 items-center text-center">
+            <div className="flex justify-center items-center">
+              <Image
+                src="/yotm_logo.png"
+                alt="Yayasan Obor Timor Logo"
+                width={80}
+                height={80}
+                className="rounded-full"
               />
-              {emailError && (
-                <p className="text-sm text-red-600 mt-1">{emailError}</p>
-              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+
+            <div className="space-y-3">
+              <h1 className="text-2xl font-bold text-primary">
+                Halo, Selamat Datang!
+              </h1>
+              <CardTitle className="text-lg font-semibold text-gray-800">
+                Yayasan Obor Timor Ministry
+              </CardTitle>
+              <CardDescription className="text-sm text-gray-600 leading-relaxed">
+                Masuk ke akun e-learning Anda untuk mulai belajar, mengerjakan
+                tugas, dan berinteraksi dengan pengajar.
+              </CardDescription>
+              <p className="text-sm font-medium text-primary">
+                Belajar jadi lebih mudah dan fleksibel!
+              </p>
+            </div>
+          </CardHeader>
+
+          <form onSubmit={handleLogin}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  id="email"
+                  type="email"
+                  placeholder="nama@email.com"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  <span className="sr-only">
-                    {showPassword ? "Hide password" : "Show password"}
-                  </span>
-                </Button>
+                {emailError && (
+                  <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                )}
               </div>
-              {passwordError && (
-                <p className="text-sm text-red-600 mt-1">{passwordError}</p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col">
-            <Button type="submit" className="w-full mt-7" disabled={isLoading}>
-              {isLoading ? (
-                <span className="animate-pulse">Loading...</span>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Masuk
-                </>
-              )}
-            </Button>
-            <p className="mt-4 text-sm text-center text-muted-foreground">
-              Lupa password? Hubungi administrator
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <span className="sr-only">
+                      {showPassword ? "Hide password" : "Show password"}
+                    </span>
+                  </Button>
+                </div>
+                {passwordError && (
+                  <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col">
+              <Button
+                type="submit"
+                className="w-full mt-7"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="animate-pulse">Loading...</span>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Masuk
+                  </>
+                )}
+              </Button>
+              <p className="mt-4 text-sm text-center text-muted-foreground">
+                Lupa password? Hubungi administrator
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }
