@@ -187,7 +187,7 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
 
 function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto custom-scroll">
       <nav className="flex flex-col px-3 py-4">
         {groups.map((group) => (
           <NavGroup

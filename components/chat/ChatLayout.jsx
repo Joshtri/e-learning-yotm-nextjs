@@ -16,7 +16,7 @@ import { ChatWindow } from "./ChatWindow";
 export function ChatLayout({
   className,
   defaultSelectedUserId,
-  currentUserRole = "Tutor",
+  currentUserRole = "TUTOR",
 }) {
   const [selectedUserId, setSelectedUserId] = React.useState(
     defaultSelectedUserId || null

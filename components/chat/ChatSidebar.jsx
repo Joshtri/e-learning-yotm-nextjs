@@ -17,7 +17,7 @@ export function ChatSidebar({
   selectedUserId,
   onSelectUser,
   className,
-  currentUserRole = "Tutor",
+  currentUserRole = "TUTOR",
 }) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = React.useState(false);

@@ -25,15 +25,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-export function NewChatDialog({ open, onOpenChange, onCreateChat, currentUserRole  = "Tutor" }) {
+export function NewChatDialog({
+  open,
+  onOpenChange,
+  onCreateChat,
+  currentUserRole = "TUTOR",
+}) {
   const [selectedTab, setSelectedTab] = React.useState("individual");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedUser, setSelectedUser] = React.useState(null);
 
   const { data: users = [] } = useQuery({
-    queryKey: ["chat-available-users"],
+    queryKey: ["chat-available-users", currentUserRole],
     queryFn: async () => {
-      const res = await axios.get("/api/chat/available-users");
+      const res = await axios.get("/api/chat/available-users", {
+        params: { forRole: currentUserRole },
+      });
       return res.data.data;
     },
     enabled: open,

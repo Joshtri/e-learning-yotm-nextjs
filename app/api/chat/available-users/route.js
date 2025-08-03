@@ -1,4 +1,3 @@
-// app/api/chat/available-users/route.js
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -25,8 +24,10 @@ export async function GET(req) {
     );
   }
 
+  // ==========================================
+  // TUTOR: siswa yang diajar, tutor lain, admin
+  // ==========================================
   if (user.role === "TUTOR") {
-    // Ambil siswa dari kelas yang diajar tutor ini
     const classSubjectTutor = await prisma.classSubjectTutor.findMany({
       where: {
         tutor: {
@@ -46,12 +47,10 @@ export async function GET(req) {
       },
     });
 
-    // Ambil semua siswa yang diajar
     const studentUsers = classSubjectTutor.flatMap((entry) =>
       entry.class.students.map((s) => s.user)
     );
 
-    // Ambil tutor lain
     const otherTutors = await prisma.user.findMany({
       where: {
         role: "TUTOR",
@@ -64,11 +63,23 @@ export async function GET(req) {
       },
     });
 
-    // Gabungkan & hilangkan duplikat
+    const admins = await prisma.user.findMany({
+      where: {
+        role: "ADMIN",
+      },
+      select: {
+        id: true,
+        nama: true,
+        role: true,
+      },
+    });
+
     const combined = [
       ...studentUsers.map(({ id, nama, role }) => ({ id, nama, role })),
       ...otherTutors,
+      ...admins,
     ];
+
     const uniqueUsers = Array.from(
       new Map(combined.map((u) => [u.id, u])).values()
     );
@@ -76,9 +87,11 @@ export async function GET(req) {
     return NextResponse.json({ success: true, data: uniqueUsers });
   }
 
+  // ==========================================
+  // STUDENT: boleh chat ke TUTOR, HOMEROOM_TEACHER, ADMIN
+  // ==========================================
   if (user.role === "STUDENT") {
-    // Siswa hanya boleh chat ke TUTOR dan HOMEROOM_TEACHER
-    const allowedRoles = ["TUTOR", "HOMEROOM_TEACHER"];
+    const allowedRoles = ["TUTOR", "HOMEROOM_TEACHER", "ADMIN"];
     const users = await prisma.user.findMany({
       where: {
         id: { not: user.id },
@@ -94,9 +107,11 @@ export async function GET(req) {
     return NextResponse.json({ success: true, data: users });
   }
 
+  // ==========================================
+  // HOMEROOM_TEACHER: boleh chat ke STUDENT, TUTOR, ADMIN
+  // ==========================================
   if (user.role === "HOMEROOM_TEACHER") {
-    // Wali kelas hanya boleh chat ke siswa dan sesama tutor
-    const allowedRoles = ["STUDENT", "TUTOR"];
+    const allowedRoles = ["STUDENT", "TUTOR", "ADMIN"];
     const users = await prisma.user.findMany({
       where: {
         id: { not: user.id },
@@ -112,8 +127,10 @@ export async function GET(req) {
     return NextResponse.json({ success: true, data: users });
   }
 
+  // ==========================================
+  // ADMIN: bisa lihat semua user kecuali dirinya sendiri
+  // ==========================================
   if (user.role === "ADMIN") {
-    // Admin boleh lihat semua kecuali dirinya sendiri
     const users = await prisma.user.findMany({
       where: {
         id: { not: user.id },
