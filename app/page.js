@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { LogIn, EyeOff, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -22,16 +22,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setIsLoading(true);
     setEmailError("");
     setPasswordError("");
@@ -43,7 +40,6 @@ export default function LoginPage() {
       });
 
       toast.success("Berhasil login");
-
       const role = res.data.user.role;
 
       // Redirect berdasarkan role
@@ -60,9 +56,7 @@ export default function LoginPage() {
       if (axios.isAxiosError(error)) {
         const errorMessage =
           error.response?.data?.message || "Terjadi kesalahan saat login";
-
         toast.error(errorMessage);
-
         // Simple error mapping
         if (errorMessage.toLowerCase().includes("email")) {
           setEmailError(errorMessage);
@@ -82,7 +76,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-2 items-center text-center">
+        <CardHeader className="space-y-4 items-center text-center">
           <div className="flex justify-center items-center">
             <Image
               src="/yotm_logo.png"
@@ -92,13 +86,25 @@ export default function LoginPage() {
               className="rounded-full"
             />
           </div>
-          <CardTitle className="text-2xl font-bold text-primary">
-            Yayasan Obor Timor
-          </CardTitle>
-          <CardDescription>
-            Masuk ke platform pembelajaran digital Yayasan Obor Timor Ministry
-          </CardDescription>
+
+          {/* Welcome Section */}
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold text-primary">
+              Halo, Selamat Datang!
+            </h1>
+            <CardTitle className="text-lg font-semibold text-gray-800">
+              Yayasan Obor Timor
+            </CardTitle>
+            <CardDescription className="text-sm text-gray-600 leading-relaxed">
+              Masuk ke akun e-learning Anda untuk mulai belajar, mengerjakan
+              tugas, dan berinteraksi dengan pengajar.
+            </CardDescription>
+            <p className="text-sm font-medium text-primary">
+              Belajar jadi lebih mudah dan fleksibel!
+            </p>
+          </div>
         </CardHeader>
+
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
