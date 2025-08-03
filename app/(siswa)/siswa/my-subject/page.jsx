@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Accordion,
   AccordionItem,
@@ -22,6 +22,9 @@ import {
   BookOpen,
   CheckCircle,
   AlertCircle,
+  GraduationCap,
+  User,
+  Activity,
 } from "lucide-react";
 
 export default function StudentSubjectsPage() {
@@ -74,106 +77,10 @@ export default function StudentSubjectsPage() {
     </div>
   );
 
-  const renderActiveActivities = (activities, type) => {
-    if (!activities || activities.length === 0) return null;
-
-    return (
-      <div className="mt-4 space-y-3">
-        <h4 className="font-medium flex items-center gap-2">
-          {type === "kuis" ? (
-            <>
-              <FileText className="h-4 w-4" />
-              Kuis Aktif
-            </>
-          ) : (
-            <>
-              <File className="h-4 w-4" />
-              Tugas Aktif
-            </>
-          )}
-        </h4>
-        <div className="space-y-2">
-          {activities.map((activity) => (
-            <div
-              key={activity.id}
-              className="p-3 border rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">{activity.judul}</p>
-                  <Badge
-                    variant="outline"
-                    className="capitalize"
-                    style={{
-                      backgroundColor:
-                        activity.jenis === "MIDTERM" ? "#f0fdf4" : "#fff",
-                      color: activity.jenis === "MIDTERM" ? "#15803d" : "#000",
-                    }}
-                  >
-                    {activity.jenis || "EXERCISE"}
-                  </Badge>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {formatDateRange(
-                        activity.waktuMulai,
-                        activity.waktuSelesai
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      activity.status === "SUDAH_MENGERJAKAN"
-                        ? "success"
-                        : activity.status === "BELUM_MENGERJAKAN" &&
-                          new Date(activity.waktuSelesai) < new Date()
-                        ? "destructive"
-                        : "secondary"
-                    }
-                    className="capitalize"
-                  >
-                    {activity.status === "SUDAH_MENGERJAKAN" ? (
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                    ) : activity.status === "BELUM_MENGERJAKAN" &&
-                      new Date(activity.waktuSelesai) < new Date() ? (
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                    ) : null}
-                    {activity.status.replace("_", " ").toLowerCase()}
-                    {new Date(activity.waktuSelesai) < new Date() &&
-                      activity.status === "BELUM_MENGERJAKAN" &&
-                      " (terlewat)"}
-                  </Badge>
-
-                  {activity.status === "BELUM_MENGERJAKAN" &&
-                    new Date(activity.waktuSelesai) > new Date() && (
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          router.push(
-                            type === "kuis"
-                              ? `/siswa/quiz/${activity.id}/start`
-                              : `/siswa/assignments/${activity.id}/start`
-                          )
-                        }
-                      >
-                        Kerjakan
-                      </Button>
-                    )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderLearningMaterials = (materials) => {
     if (!materials || materials.length === 0) {
       return (
-        <div className="text-muted-foreground text-sm py-2">
+        <div className="text-muted-foreground text-sm py-4 text-center">
           Belum ada materi pembelajaran
         </div>
       );
@@ -182,15 +89,15 @@ export default function StudentSubjectsPage() {
     return (
       <div className="space-y-3">
         {materials.map((material) => (
-          <div key={material.id} className="border rounded-lg p-3">
-            <h4 className="font-medium">{material.judul}</h4>
+          <div key={material.id} className="border rounded-lg p-4">
+            <h5 className="font-medium text-sm mb-2">{material.judul}</h5>
             {material.konten && (
-              <p className="text-muted-foreground text-sm mt-1">
+              <p className="text-muted-foreground text-sm mb-3">
                 {material.konten}
               </p>
             )}
             {material.fileUrl && (
-              <div className="mt-2">
+              <div className="mb-3">
                 <a
                   href={material.fileUrl}
                   target="_blank"
@@ -202,9 +109,105 @@ export default function StudentSubjectsPage() {
                 </a>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground">
               Dibuat: {formatDateTime(material.createdAt)}
             </p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderActiveActivities = (activities, type) => {
+    if (!activities || activities.length === 0) {
+      return (
+        <div className="text-muted-foreground text-sm py-4 text-center">
+          Tidak ada {type} aktif saat ini
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {activities.map((activity) => (
+          <div
+            key={activity.id}
+            className="p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1">
+                <h5 className="font-semibold text-sm mb-2">{activity.judul}</h5>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge
+                    variant="outline"
+                    className="capitalize text-xs"
+                    style={{
+                      backgroundColor:
+                        activity.jenis === "MIDTERM" ? "#f0fdf4" : "#fff",
+                      color: activity.jenis === "MIDTERM" ? "#15803d" : "#000",
+                    }}
+                  >
+                    {activity.jenis || "EXERCISE"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    {formatDateRange(
+                      activity.waktuMulai,
+                      activity.waktuSelesai
+                    )}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <Badge
+                  variant={
+                    activity.status === "SUDAH_MENGERJAKAN"
+                      ? "success"
+                      : activity.status === "BELUM_MENGERJAKAN" &&
+                        new Date(activity.waktuSelesai) < new Date()
+                      ? "destructive"
+                      : "secondary"
+                  }
+                  className="capitalize text-xs"
+                >
+                  {activity.status === "SUDAH_MENGERJAKAN" ? (
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                  ) : activity.status === "BELUM_MENGERJAKAN" &&
+                    new Date(activity.waktuSelesai) < new Date() ? (
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                  ) : null}
+                  {activity.status.replace("_", " ").toLowerCase()}
+                  {new Date(activity.waktuSelesai) < new Date() &&
+                    activity.status === "BELUM_MENGERJAKAN" &&
+                    " (terlewat)"}
+                </Badge>
+
+                {activity.status === "BELUM_MENGERJAKAN" &&
+                  new Date(activity.waktuSelesai) > new Date() && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        // Route based on activity type
+                        const quizTypes = [
+                          "QUIZ",
+                          "DAILY_TEST",
+                          "START_SEMESTER_TEST",
+                          "MIDTERM",
+                          "FINAL_EXAM",
+                        ];
+                        const route = quizTypes.includes(activity.jenis)
+                          ? `/siswa/quiz/${activity.id}/start`
+                          : `/siswa/assignments/${activity.id}/start`;
+                        router.push(route);
+                      }}
+                    >
+                      Kerjakan
+                    </Button>
+                  )}
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -251,85 +254,265 @@ export default function StudentSubjectsPage() {
           { label: "Mata Pelajaran", href: "/siswa/subjects" },
           { label: "Daftar Mata Pelajaran" },
         ]}
-        
       />
 
-      <div className="mt-6 space-y-4">
-        {subjects.length === 0
-          ? renderEmptyState()
-          : subjects.map((subject) => (
-              <Card
+      <div className="mt-6">
+        {subjects.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <Accordion type="single" collapsible className="space-y-4">
+            {subjects.map((subject) => (
+              <AccordionItem
                 key={subject.id}
-                className="hover:shadow-md transition-shadow"
+                value={`subject-${subject.id}`}
+                className="border rounded-lg shadow-sm hover:shadow-md transition-shadow"
               >
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-start">
-                    <span>{subject.namaMapel}</span>
-                    <Badge variant="outline" className="ml-2">
-                      {subject.jumlahMateri} Materi • {subject.jumlahTugas}{" "}
-                      Tugas • {subject.jumlahKuis} Kuis
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Tutor</p>
-                      <p>{subject.tutor}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Total Aktivitas</p>
-                      <p>
-                        {subject.jumlahTugas + subject.jumlahKuis} aktivitas
-                        tersedia
-                      </p>
-                    </div>
-                  </div>
-
-                  {renderActiveActivities(subject.kuisAktif, "kuis")}
-                  {renderActiveActivities(subject.tugasAktif, "tugas")}
-
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value={`materi-${subject.id}`}>
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center">
-                          <BookOpen className="h-4 w-4 mr-2" />
-                          Lihat Materi Pembelajaran
+                <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                  <div className="flex items-center justify-between w-full mr-4">
+                    <div className="flex items-center gap-3">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      <div className="text-left">
+                        <h3 className="font-semibold text-lg">
+                          {subject.namaMapel}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <User className="h-4 w-4" />
+                          <span>{subject.tutor}</span>
                         </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        {renderLearningMaterials(subject.materi)}
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push(`/siswa/materi/${subject.id}`)}
-                    >
-                      Lihat Semua Materi
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        router.push(`/siswa/mapel/${subject.id}/tugas`)
-                      }
-                    >
-                      Lihat Semua Tugas
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        router.push(`/siswa/mapel/${subject.id}/kuis`)
-                      }
-                    >
-                      Lihat Semua Kuis
-                    </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        <Activity className="h-3 w-3 mr-1" />
+                        {subject.jumlahMateri} Materi
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        <FileText className="h-3 w-3 mr-1" />
+                        {subject.jumlahTugas} Tugas
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        <File className="h-3 w-3 mr-1" />
+                        {subject.jumlahKuis} Kuis
+                      </Badge>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-4">
+                    {/* Subject Info */}
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tutor</p>
+                        <p className="font-medium">{subject.tutor}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Total Aktivitas
+                        </p>
+                        <p className="font-medium">
+                          {subject.jumlahTugas + subject.jumlahKuis} aktivitas
+                          tersedia
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Nested Accordions */}
+                    <Accordion type="multiple" className="space-y-2">
+                      {(() => {
+                        // Separate tugasAktif by type
+                        const exerciseActivities = (
+                          subject.tugasAktif || []
+                        ).filter(
+                          (activity) =>
+                            !activity.jenis || activity.jenis === "EXERCISE"
+                        );
+
+                        const nonExerciseActivities = (
+                          subject.tugasAktif || []
+                        ).filter(
+                          (activity) =>
+                            activity.jenis && activity.jenis !== "EXERCISE"
+                        );
+
+                        // Group non-exercise activities by type
+                        const groupedNonExercise = nonExerciseActivities.reduce(
+                          (groups, activity) => {
+                            const type = activity.jenis;
+                            if (!groups[type]) {
+                              groups[type] = [];
+                            }
+                            groups[type].push(activity);
+                            return groups;
+                          },
+                          {}
+                        );
+
+                        // Type configurations
+                        const typeConfigs = {
+                          DAILY_TEST: {
+                            label: "Ujian Harian",
+                            icon: FileText,
+                            color: "text-orange-600",
+                            description: "Ujian Harian",
+                          },
+                          START_SEMESTER_TEST: {
+                            label: "UAS",
+                            icon: FileText,
+                            color: "text-red-600",
+                            description: "Ujian Awal Semester",
+                          },
+                          MIDTERM: {
+                            label: "UTS",
+                            icon: FileText,
+                            color: "text-indigo-600",
+                            description: "Ujian Tengah Semester",
+                          },
+                          FINAL_EXAM: {
+                            label: "UAS",
+                            icon: FileText,
+                            color: "text-red-700",
+                            description: "Ujian Akhir Semester",
+                          },
+                          MATERIAL: {
+                            label: "Materi",
+                            icon: BookOpen,
+                            color: "text-purple-600",
+                            description: "Materi Pembelajaran",
+                          },
+                        };
+
+                        return (
+                          <>
+                            {/* Kuis Aktif - Always show */}
+                            <AccordionItem
+                              value={`kuis-${subject.id}`}
+                              className="border rounded-lg"
+                            >
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-blue-600" />
+                                  <span className="font-medium">
+                                    Kuis Aktif
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="ml-2 text-xs"
+                                  >
+                                    {subject.kuisAktif?.length || 0}
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                {renderActiveActivities(
+                                  subject.kuisAktif,
+                                  "kuis"
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+
+                            {/* Tugas Aktif - Only EXERCISE type */}
+                            <AccordionItem
+                              value={`tugas-${subject.id}`}
+                              className="border rounded-lg"
+                            >
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                  <File className="h-4 w-4 text-green-600" />
+                                  <span className="font-medium">
+                                    Tugas Aktif
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="ml-2 text-xs"
+                                  >
+                                    {exerciseActivities.length}
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                {renderActiveActivities(
+                                  exerciseActivities,
+                                  "tugas"
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+
+                            {/* Other Types - Separate accordions for each non-exercise type */}
+                            {Object.entries(groupedNonExercise).map(
+                              ([type, activities]) => {
+                                const config = typeConfigs[type];
+                                if (!config) return null;
+
+                                const IconComponent = config.icon;
+
+                                return (
+                                  <AccordionItem
+                                    key={`${type}-${subject.id}`}
+                                    value={`${type}-${subject.id}`}
+                                    className="border rounded-lg"
+                                  >
+                                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                      <div className="flex items-center gap-2">
+                                        <IconComponent
+                                          className={`h-4 w-4 ${config.color}`}
+                                        />
+                                        <span className="font-medium">
+                                          {config.description}
+                                        </span>
+                                        <Badge
+                                          variant="secondary"
+                                          className="ml-2 text-xs"
+                                        >
+                                          {activities.length}
+                                        </Badge>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                      {renderActiveActivities(
+                                        activities,
+                                        type.toLowerCase()
+                                      )}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              }
+                            )}
+
+                            {/* Learning Materials */}
+                            <AccordionItem
+                              value={`materi-${subject.id}`}
+                              className="border rounded-lg"
+                            >
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="h-4 w-4 text-purple-600" />
+                                  <span className="font-medium">
+                                    Materi Pembelajaran
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="ml-2 text-xs"
+                                  >
+                                    {subject.materi?.length || 0}
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                {renderLearningMaterials(subject.materi)}
+                              </AccordionContent>
+                            </AccordionItem>
+                          </>
+                        );
+                      })()}
+                    </Accordion>
+
+
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
+          </Accordion>
+        )}
       </div>
     </div>
   );

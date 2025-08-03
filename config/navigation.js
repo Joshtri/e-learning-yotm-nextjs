@@ -302,7 +302,7 @@ export const navByRole = {
       title: "Pembelajaran",
       items: [
         {
-          title: "Mata Pelajaran",
+          title: "Daftar Mata Pelajaran Saya",
           href: "/siswa/my-subject",
           icon: <FileText className="h-4 w-4" />,
         },
