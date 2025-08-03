@@ -76,17 +76,57 @@ export async function GET(req) {
     return NextResponse.json({ success: true, data: uniqueUsers });
   }
 
-  // Selain TUTOR, tampilkan semua user kecuali dirinya sendiri
-  const users = await prisma.user.findMany({
-    where: {
-      id: { not: user.id },
-    },
-    select: {
-      id: true,
-      nama: true,
-      role: true,
-    },
-  });
+  if (user.role === "STUDENT") {
+    // Siswa hanya boleh chat ke TUTOR dan HOMEROOM_TEACHER
+    const allowedRoles = ["TUTOR", "HOMEROOM_TEACHER"];
+    const users = await prisma.user.findMany({
+      where: {
+        id: { not: user.id },
+        role: { in: allowedRoles },
+      },
+      select: {
+        id: true,
+        nama: true,
+        role: true,
+      },
+    });
 
-  return NextResponse.json({ success: true, data: users });
+    return NextResponse.json({ success: true, data: users });
+  }
+
+  if (user.role === "HOMEROOM_TEACHER") {
+    // Wali kelas hanya boleh chat ke siswa dan sesama tutor
+    const allowedRoles = ["STUDENT", "TUTOR"];
+    const users = await prisma.user.findMany({
+      where: {
+        id: { not: user.id },
+        role: { in: allowedRoles },
+      },
+      select: {
+        id: true,
+        nama: true,
+        role: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, data: users });
+  }
+
+  if (user.role === "ADMIN") {
+    // Admin boleh lihat semua kecuali dirinya sendiri
+    const users = await prisma.user.findMany({
+      where: {
+        id: { not: user.id },
+      },
+      select: {
+        id: true,
+        nama: true,
+        role: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, data: users });
+  }
+
+  return NextResponse.json({ success: true, data: [] });
 }

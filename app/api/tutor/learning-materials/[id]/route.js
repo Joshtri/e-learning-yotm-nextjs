@@ -2,9 +2,9 @@ import prisma from "@/lib/prisma";
 import { deleteFileFromFirebase, uploadFileToFirebase } from "@/lib/firebase";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
- 
+
 export async function GET(_, { params }) {
-  const user = getUserFromCookie();
+  const user = await getUserFromCookie();
 
   if (!user || user.role !== "TUTOR") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -46,7 +46,7 @@ export async function GET(_, { params }) {
 }
 
 export async function PUT(req, { params }) {
-  const user = getUserFromCookie();
+  const user = await getUserFromCookie();
 
   if (!user || user.role !== "TUTOR") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -123,7 +123,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(_, { params }) {
-  const user = getUserFromCookie();
+  const user = await getUserFromCookie();
 
   if (!user || user.role !== "TUTOR") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

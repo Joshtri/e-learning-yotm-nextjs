@@ -9,6 +9,8 @@ import { CalendarCheck, FileText, BookOpen } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 import api from "@/lib/axios";
+import { Skeleton } from "@/components/ui/skeleton";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
 export default function StudentOtherScoresPage() {
   const [data, setData] = useState([]);
@@ -119,11 +121,9 @@ export default function StudentOtherScoresPage() {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <EmptyState
-              title="Belum ada tugas"
-              description="Belum ada nilai tugas yang tersedia."
-              icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-            />
+            <>
+              <SkeletonTable numRows={3} numCols={5} />
+            </>
           )}
         </TabsContent>
 

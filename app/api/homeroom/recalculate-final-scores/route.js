@@ -101,7 +101,7 @@ export async function GET() {
 
 export async function PATCH() {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user) {
       return new Response(

@@ -25,6 +25,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Plus, Trash2, ArrowLeft, ArrowRight, Save, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 const QUESTION_TYPES = [
   { label: "Pilihan Ganda", value: "MULTIPLE_CHOICE" },
@@ -36,6 +37,7 @@ export default function AddQuestionsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     control,
@@ -68,11 +70,16 @@ export default function AddQuestionsPage() {
 
   const onSubmit = async (data) => {
     try {
+      setIsSubmitting(true);
       await api.post(`/tutor/exams/${id}/questions`, data);
       toast.success("Soal berhasil disimpan");
       router.push(`/tutor/exams/${id}`);
     } catch (error) {
-      toast.error("Gagal menyimpan soal");
+      console.error(error);
+      const message = error?.response?.data?.message || "Gagal menyimpan soal";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -115,11 +122,56 @@ export default function AddQuestionsPage() {
 
   const calculateProgress = useCallback(() => {
     if (!watchedQuestions || watchedQuestions.length === 0) return 0;
-    const completedCount = watchedQuestions.filter(
-      (q) => q.teks && (q.jenis !== "ESSAY" ? q.options?.length >= 2 : true)
-    ).length;
+    const completedCount = watchedQuestions.filter((q) => {
+      if (!q.teks) return false;
+      if (q.jenis === "ESSAY") return true;
+      if (q.jenis === "MULTIPLE_CHOICE" || q.jenis === "TRUE_FALSE") {
+        return (
+          q.options?.length >= 2 &&
+          q.options.every((opt) => opt.teks) &&
+          q.options.some((opt) => opt.adalahBenar)
+        );
+      }
+      return false;
+    }).length;
     return (completedCount / watchedQuestions.length) * 100;
   }, [watchedQuestions]);
+
+  // Validasi apakah semua soal sudah terisi dengan benar
+  const isFormValid = () => {
+    return watchedQuestions.every((q) => {
+      if (!q.teks) return false;
+      if (q.jenis === "ESSAY") return true;
+      if (q.jenis === "MULTIPLE_CHOICE" || q.jenis === "TRUE_FALSE") {
+        return (
+          q.options?.length >= 2 &&
+          q.options.every((opt) => opt.teks) &&
+          q.options.some((opt) => opt.adalahBenar)
+        );
+      }
+      return false;
+    });
+  };
+
+  const getConfirmationMessage = () => {
+    const totalQuestions = watchedQuestions.length;
+    const completedQuestions = watchedQuestions.filter((q) => {
+      if (!q.teks) return false;
+      if (q.jenis === "ESSAY") return true;
+      if (q.jenis === "MULTIPLE_CHOICE" || q.jenis === "TRUE_FALSE") {
+        return (
+          q.options?.length >= 2 &&
+          q.options.every((opt) => opt.teks) &&
+          q.options.some((opt) => opt.adalahBenar)
+        );
+      }
+      return false;
+    }).length;
+
+    return `Anda akan menyimpan ${totalQuestions} soal ujian. ${completedQuestions} soal sudah lengkap dan ${
+      totalQuestions - completedQuestions
+    } soal belum lengkap. Apakah Anda yakin ingin menyimpan?`;
+  };
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
@@ -135,6 +187,9 @@ export default function AddQuestionsPage() {
             </div>
             <Progress value={calculateProgress()} className="h-2" />
           </div>
+          <div className="text-sm text-muted-foreground">
+            {watchedQuestions.length} soal dibuat • {Math.round(calculateProgress())}% selesai
+          </div>
         </CardContent>
       </Card>
 
@@ -148,21 +203,32 @@ export default function AddQuestionsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-5 md:grid-cols-3 gap-2">
-                  {fields.map((field, index) => (
-                    <button
-                      key={field.id}
-                      type="button"
-                      onClick={() => setCurrentQuestionIndex(index)}
-                      className={`flex items-center justify-center h-10 w-10 rounded-full border ${
-                        currentQuestionIndex === index
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-gray-300 bg-background"
-                      }`}
-                      aria-label={`Soal ${index + 1}`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
+                  {fields.map((field, index) => {
+                    const question = watchedQuestions[index];
+                    const isComplete = question?.teks && 
+                      (question.jenis === "ESSAY" || 
+                       (question.options?.length >= 2 && 
+                        question.options.every(opt => opt.teks) && 
+                        question.options.some(opt => opt.adalahBenar)));
+                    
+                    return (
+                      <button
+                        key={field.id}
+                        type="button"
+                        onClick={() => setCurrentQuestionIndex(index)}
+                        className={`flex items-center justify-center h-10 w-10 rounded-full border ${
+                          currentQuestionIndex === index
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : isComplete
+                            ? "border-green-500 bg-green-100 text-green-700"
+                            : "border-gray-300 bg-background"
+                        }`}
+                        aria-label={`Soal ${index + 1}`}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={addNewQuestion}
@@ -171,14 +237,36 @@ export default function AddQuestionsPage() {
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-3 w-3 rounded-full bg-green-100 border border-green-500"></div>
+                    <span>Soal lengkap</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-background border border-gray-300"></div>
+                    <span>Soal belum lengkap</span>
+                  </div>
+                </div>
               </CardContent>
               <CardFooter>
-                <Button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  <Save className="h-4 w-4 mr-2" /> Simpan Semua Soal
-                </Button>
+                <ConfirmationDialog
+                  title="Konfirmasi Simpan Soal"
+                  description={getConfirmationMessage()}
+                  confirmText="Ya, simpan"
+                  cancelText="Batal"
+                  loading={isSubmitting}
+                  onConfirm={handleSubmit(onSubmit)}
+                  trigger={
+                    <Button
+                      type="button"
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={isSubmitting || watchedQuestions.length === 0}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {isSubmitting ? "Menyimpan..." : "Simpan Semua Soal"}
+                    </Button>
+                  }
+                />
               </CardFooter>
             </Card>
           </div>
@@ -209,10 +297,15 @@ export default function AddQuestionsPage() {
                     <Label>Teks Soal</Label>
                     <Textarea
                       {...register(`questions.${currentQuestionIndex}.teks`, {
-                        required: true,
+                        required: "Teks soal wajib diisi",
                       })}
                       placeholder="Tulis pertanyaan di sini"
                     />
+                    {errors.questions?.[currentQuestionIndex]?.teks && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.questions[currentQuestionIndex].teks.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,12 +313,23 @@ export default function AddQuestionsPage() {
                       <Label>Jenis Soal</Label>
                       <Select
                         value={watch(`questions.${currentQuestionIndex}.jenis`)}
-                        onValueChange={(val) =>
-                          setValue(
-                            `questions.${currentQuestionIndex}.jenis`,
-                            val
-                          )
-                        }
+                        onValueChange={(val) => {
+                          setValue(`questions.${currentQuestionIndex}.jenis`, val);
+                          // Reset options when changing question type
+                          if (val === "ESSAY") {
+                            setValue(`questions.${currentQuestionIndex}.options`, []);
+                          } else if (val === "TRUE_FALSE") {
+                            setValue(`questions.${currentQuestionIndex}.options`, [
+                              { teks: "Benar", adalahBenar: false },
+                              { teks: "Salah", adalahBenar: false },
+                            ]);
+                          } else {
+                            setValue(`questions.${currentQuestionIndex}.options`, [
+                              { teks: "", adalahBenar: false },
+                              { teks: "", adalahBenar: false },
+                            ]);
+                          }
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih jenis soal" />
@@ -245,57 +349,53 @@ export default function AddQuestionsPage() {
                     </div>
                   </div>
 
-                  {/* Kalau pilihan ganda */}
-                  {(watch(`questions.${currentQuestionIndex}.jenis`) ===
-                    "MULTIPLE_CHOICE" ||
-                    watch(`questions.${currentQuestionIndex}.jenis`) ===
-                      "TRUE_FALSE") && (
+                  {/* Kalau pilihan ganda atau true/false */}
+                  {(watch(`questions.${currentQuestionIndex}.jenis`) === "MULTIPLE_CHOICE" ||
+                    watch(`questions.${currentQuestionIndex}.jenis`) === "TRUE_FALSE") && (
                     <div className="border rounded-md p-4 space-y-2">
                       <Label>Opsi Jawaban</Label>
-                      {watch(`questions.${currentQuestionIndex}.options`)?.map(
-                        (opt, optIdx) => (
-                          <div key={optIdx} className="flex items-center gap-2">
-                            <Controller
-                              control={control}
-                              name={`questions.${currentQuestionIndex}.options.${optIdx}.adalahBenar`}
-                              render={({ field }) => (
-                                <input
-                                  type="radio"
-                                  value={optIdx}
-                                  checked={field.value}
-                                  onChange={() => {
-                                    setValue(
-                                      `questions.${currentQuestionIndex}.options`,
-                                      watch(
-                                        `questions.${currentQuestionIndex}.options`
-                                      ).map((o, i) => ({
+                      {watch(`questions.${currentQuestionIndex}.options`)?.map((opt, optIdx) => (
+                        <div key={optIdx} className="flex items-center gap-2">
+                          <Controller
+                            control={control}
+                            name={`questions.${currentQuestionIndex}.options.${optIdx}.adalahBenar`}
+                            render={({ field }) => (
+                              <input
+                                type="radio"
+                                value={optIdx}
+                                checked={field.value}
+                                onChange={() => {
+                                  setValue(
+                                    `questions.${currentQuestionIndex}.options`,
+                                    watch(`questions.${currentQuestionIndex}.options`).map(
+                                      (o, i) => ({
                                         ...o,
                                         adalahBenar: i === optIdx,
-                                      }))
-                                    );
-                                  }}
-                                />
-                              )}
-                            />
-                            <Input
-                              {...register(
-                                `questions.${currentQuestionIndex}.options.${optIdx}.teks`,
-                                { required: true }
-                              )}
-                              placeholder={`Opsi ${optIdx + 1}`}
-                              className="flex-1"
-                            />
-                            {watch(`questions.${currentQuestionIndex}.options`)
-                              .length > 2 && (
+                                      })
+                                    )
+                                  );
+                                }}
+                              />
+                            )}
+                          />
+                          <Input
+                            {...register(
+                              `questions.${currentQuestionIndex}.options.${optIdx}.teks`,
+                              { required: "Opsi jawaban wajib diisi" }
+                            )}
+                            placeholder={`Opsi ${optIdx + 1}`}
+                            className="flex-1"
+                            disabled={watch(`questions.${currentQuestionIndex}.jenis`) === "TRUE_FALSE"}
+                          />
+                          {watch(`questions.${currentQuestionIndex}.jenis`) === "MULTIPLE_CHOICE" &&
+                            watch(`questions.${currentQuestionIndex}.options`).length > 2 && (
                               <Button
                                 type="button"
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => {
                                   const updatedOptions = [
-                                    ...watch(
-                                      `questions.${currentQuestionIndex}.options`
-                                    ),
+                                    ...watch(`questions.${currentQuestionIndex}.options`),
                                   ];
                                   updatedOptions.splice(optIdx, 1);
                                   setValue(
@@ -307,27 +407,31 @@ export default function AddQuestionsPage() {
                                 <X className="h-4 w-4" />
                               </Button>
                             )}
-                          </div>
-                        )
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setValue(
-                            `questions.${currentQuestionIndex}.options`,
-                            [
-                              ...watch(
-                                `questions.${currentQuestionIndex}.options`
-                              ),
+                        </div>
+                      ))}
+                      {watch(`questions.${currentQuestionIndex}.jenis`) === "MULTIPLE_CHOICE" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setValue(`questions.${currentQuestionIndex}.options`, [
+                              ...watch(`questions.${currentQuestionIndex}.options`),
                               { teks: "", adalahBenar: false },
-                            ]
-                          )
-                        }
-                      >
-                        <Plus className="h-4 w-4 mr-1" /> Tambah Opsi
-                      </Button>
+                            ])
+                          }
+                        >
+                          <Plus className="h-4 w-4 mr-1" /> Tambah Opsi
+                        </Button>
+                      )}
+                      
+                      {/* Warning jika belum ada jawaban benar */}
+                      {watch(`questions.${currentQuestionIndex}.options`) &&
+                        !watch(`questions.${currentQuestionIndex}.options`).some(opt => opt.adalahBenar) && (
+                        <p className="text-sm text-amber-600">
+                          ⚠️ Pilih salah satu opsi sebagai jawaban benar
+                        </p>
+                      )}
                     </div>
                   )}
                 </CardContent>

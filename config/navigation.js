@@ -306,6 +306,12 @@ export const navByRole = {
           href: "/siswa/my-subject",
           icon: <FileText className="h-4 w-4" />,
         },
+
+        {
+          title: "Materi Pembelajaran",
+          href: "/siswa/learning-materials",
+          icon: <BookOpen className="h-4 w-4" />,
+        },
         {
           title: "Tugas",
           href: "/siswa/assignments/list",

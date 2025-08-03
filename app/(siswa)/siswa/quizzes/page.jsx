@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 export default function StudentQuizListPage() {
   const [quizzes, setQuizzes] = useState([]);
 
@@ -34,7 +35,8 @@ export default function StudentQuizListPage() {
       />
 
       {quizzes.length === 0 ? (
-        <p className="text-muted-foreground">Tidak ada kuis aktif saat ini.</p>
+        <SkeletonTable numCols={4} numRows={5} showHeader />
+        // <p className="text-muted-foreground">Tidak ada kuis aktif saat ini.</p>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {quizzes.map((quiz) => (

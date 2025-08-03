@@ -40,11 +40,14 @@ export async function GET() {
         tutor: { include: { user: true } },
         learningMaterials: true,
         assignments: {
-          where: { jenis: "EXERCISE" }, // ✅ FILTER LANGSUNG hanya ambil tugas EXERCISE saja
+          where: { jenis: "EXERCISE" },
           include: {
+            questions: true,
             submissions: {
-              where: {
-                studentId: student.id,
+              where: { studentId: student.id },
+              select: {
+                nilai: true,
+                feedback: true,
               },
             },
           },
@@ -78,17 +81,20 @@ export async function GET() {
         createdAt: m.createdAt,
       })),
 
-      tugasAktif: (item.assignments || []).map((asg) => ({
-        id: asg.id,
-        judul: asg.judul,
-        jenis: asg.jenis,
-        waktuMulai: asg.waktuMulai,
-        waktuSelesai: asg.waktuSelesai,
-        status:
-          asg.submissions.length > 0
-            ? "SUDAH_MENGERJAKAN"
-            : "BELUM_MENGERJAKAN",
-      })),
+      tugasAktif: (item.assignments || []).map((asg) => {
+        const submission = asg.submissions[0]; // Ambil submission pertama (satu siswa = satu submission)
+        return {
+          id: asg.id,
+          judul: asg.judul,
+          jenis: asg.jenis,
+          waktuMulai: asg.waktuMulai,
+          waktuSelesai: asg.waktuSelesai,
+          jumlahSoal: asg.questions?.length || 0,
+          nilai: submission?.nilai ?? null,
+          feedback: submission?.feedback ?? null,
+          status: submission ? "SUDAH_MENGERJAKAN" : "BELUM_MENGERJAKAN",
+        };
+      }),
     }));
 
     const filteredSubjectsWithTasks = mappedSubjects.filter(

@@ -4,7 +4,7 @@ import { getUserFromCookie } from "@/utils/auth";
 
 export async function GET() {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

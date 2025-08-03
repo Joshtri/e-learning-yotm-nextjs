@@ -28,7 +28,7 @@ export default function ProgramPage() {
   });
 
   const [openModal, setOpenModal] = useState(false);
- 
+
   const fetchPrograms = async () => {
     try {
       setIsLoading(true);
@@ -66,7 +66,11 @@ export default function ProgramPage() {
       toast.success("Program berhasil dihapus");
       fetchPrograms(); // refresh data
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Gagal menghapus program");
+      const apiError =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "Gagal menghapus program";
+      toast.error(apiError);
     }
   };
 

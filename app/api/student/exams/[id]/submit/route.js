@@ -6,7 +6,7 @@ export async function GET(_, { params }) {
   const { id } = params;
 
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
@@ -80,7 +80,7 @@ export async function POST(req, { params }) {
   const { id: assignmentId } = params;
 
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "STUDENT") {
       return new Response(JSON.stringify({ message: "Unauthorized" }), {
         status: 401,

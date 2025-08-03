@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { PageHeader } from "@/components/ui/page-header";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,7 +71,8 @@ export default function StudentSubjectsPage() {
     return true;
   });
 
-  if (loading) return <div className="p-6">Memuat...</div>;
+  if (loading)
+    return <SkeletonTable numRows={5} numCols={4} showHeader={true} />;
 
   return (
     <div className="p-6">
@@ -119,64 +121,83 @@ export default function StudentSubjectsPage() {
                   <strong>Jumlah Materi:</strong> {item.jumlahMateri || 0}
                 </p>
 
-                {item.tugasAktif?.length > 0 && (
-                  <div>
-                    <p className="font-medium">Tugas:</p>
-                    {item.tugasAktif.map((tugas) => (
-                      <div
-                        key={tugas.id}
-                        className="flex justify-between items-center gap-4 py-2 border-b last:border-none"
+                {item.tugasAktif.map((tugas) => (
+                  <div
+                    key={tugas.id}
+                    className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4 py-2 border-b last:border-none"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-semibold">{tugas.judul}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(tugas.waktuMulai).toLocaleString("id-ID")} -{" "}
+                        {new Date(tugas.waktuSelesai).toLocaleString("id-ID")}
+                      </p>
+                      <p className="text-xs">
+                        <strong>Jumlah Soal:</strong> {tugas.jumlahSoal}{" "}
+                        {tugas.score !== null && (
+                          <>
+                            | <strong>Nilai:</strong>{" "}
+                            {tugas.nilai ?? "Belum Dinilai"}
+                          </>
+                        )}
+                      </p>
+                      {tugas.feedback && (
+                        <p className="text-xs text-muted-foreground italic">
+                          Feedback: {tugas.feedback}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          tugas.status === "SUDAH_MENGERJAKAN"
+                            ? "success"
+                            : "secondary"
+                        }
                       >
-                        <div>
-                          <p className="font-semibold">{tugas.judul}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(tugas.waktuMulai).toLocaleString("id-ID")}{" "}
-                            -{" "}
-                            {new Date(tugas.waktuSelesai).toLocaleString(
-                              "id-ID"
-                            )}
-                          </p>
-                        </div>
+                        {tugas.status.replace("_", " ")}
+                      </Badge>
 
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              tugas.status === "SUDAH_MENGERJAKAN"
-                                ? "success"
-                                : "secondary"
+                      {tugas.status === "BELUM_MENGERJAKAN" ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/siswa/assignments/${tugas.id}/start`
+                              )
                             }
+                            className="text-sm font-medium text-blue-600 hover:underline"
                           >
-                            {tugas.status.replace("_", " ")}
-                          </Badge>
+                            Kerjakan
+                          </button>
 
-                          {tugas.status === "BELUM_MENGERJAKAN" ? (
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/siswa/assignments/${tugas.id}/start`
-                                )
-                              }
-                              className="text-sm font-medium text-blue-600 hover:underline"
-                            >
-                              Kerjakan
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/siswa/assignments/${tugas.id}/preview`
-                                )
-                              }
-                              className="text-sm font-medium text-gray-600 hover:underline"
-                            >
-                              Lihat Jawaban Anda
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/siswa/assignments/${tugas.id}/lihat-soal`
+                              )
+                            }
+                            className="text-sm font-medium text-gray-600 hover:underline"
+                          >
+                            Lihat Soal
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/siswa/assignments/${tugas.id}/preview`
+                            )
+                          }
+                          className="text-sm font-medium text-gray-600 hover:underline"
+                        >
+                          Lihat Jawaban Anda
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </CardContent>
             </Card>
           ))

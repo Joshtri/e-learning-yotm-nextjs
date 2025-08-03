@@ -12,7 +12,7 @@ export default function MessagesPage() {
         - "Siswa" untuk siswa
         - "Wali Kelas" untuk wali kelas
       */}
-      <ChatLayout currentUserRole="Student" />
+      <ChatLayout currenatUserRole="Student" />
     </div>
   );
 }

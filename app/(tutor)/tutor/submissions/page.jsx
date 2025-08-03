@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const statusMap = {
   NOT_STARTED: "Belum Dimulai",
@@ -169,6 +171,12 @@ export default function SubmissionsPage() {
                         )}
                       </p>
                     )}
+
+                    <Link href={`/tutor/submissions/${sub.id}/review`} passHref>
+                      <Button variant="outline" className="mt-2">
+                        Review
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))

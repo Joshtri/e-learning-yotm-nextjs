@@ -30,17 +30,23 @@ export function ChatSidebar({
     },
   });
 
-  const filteredRooms = React.useMemo(() => {
-    if (!data) return [];
-    return data.filter((room) => {
-      const otherUser = room.users.find((u) => u.id !== selectedUserId);
-      return (
-        !searchQuery ||
-        otherUser?.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        otherUser?.role.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    });
-  }, [data, searchQuery, selectedUserId]);
+const filteredRooms = React.useMemo(() => {
+  if (!data) return [];
+
+  return data.filter((room) => {
+    const otherUser = room.users.find((u) => u.id !== selectedUserId);
+
+    // Jika admin, tampilkan semua room
+    if (currentUserRole === "ADMIN") return true;
+
+    // Jika bukan admin, hanya tampilkan room yang relevan
+    return (
+      !searchQuery ||
+      otherUser?.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      otherUser?.role.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+}, [data, searchQuery, selectedUserId, currentUserRole]);
 
   const handleCreateNewChat = (selectedUser) => {
     onSelectUser(selectedUser.id);

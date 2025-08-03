@@ -97,26 +97,23 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = params;
 
-    // Only admin can delete programs
+    // Cek user role (hanya ADMIN bisa hapus)
     const { user, error, status } = await getAuthUser(request, ["ADMIN"]);
-
     if (error) {
       return createApiResponse(null, error, status);
     }
 
-    // Check if program exists
+    // Cek apakah program ada
     const existingProgram = await prisma.program.findUnique({
       where: { id },
-      include: {
-        classes: true,
-      },
+      include: { classes: true },
     });
 
     if (!existingProgram) {
       return createApiResponse(null, "Program not found", 404);
     }
 
-    // Don't allow deletion if program has classes
+    // Tidak boleh hapus jika masih ada class di dalam program
     if (existingProgram.classes.length > 0) {
       return createApiResponse(
         null,
@@ -125,7 +122,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Delete program
+    // Lanjutkan hapus program
     await prisma.program.delete({
       where: { id },
     });

@@ -1,20 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChatInput } from "./ChatInput";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { ArrowLeft } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChatInput } from "./ChatInput";
 
 export function ChatWindow({ roomId, onBackClick, isMobileView, className }) {
   const [currentUserId, setCurrentUserId] = useState(null);

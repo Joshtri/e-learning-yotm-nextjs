@@ -15,10 +15,10 @@ const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup }) => {
   const isGroupExpanded = expandedGroups[group.title];
 
   return (
-    <div className="mb-2">
+    <div className="mb-3">
       {group.title !== "Dashboard" && (
         <div
-          className="flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground cursor-pointer"
+          className="flex items-center justify-between px-3 py-2 text-xs font-medium text-blue-200 cursor-pointer hover:text-white transition-colors"
           onClick={() => toggleGroup(group.title)}
         >
           <span className={cn(isOpen ? "opacity-100" : "opacity-0 md:hidden")}>
@@ -50,12 +50,17 @@ const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup }) => {
               variant="ghost"
               asChild
               className={cn(
-                "justify-start w-full",
-                isActive && "bg-muted text-primary font-semibold"
+                "justify-start w-full transition-all duration-200 hover:bg-blue-500/20 hover:text-white text-blue-100",
+                isActive &&
+                  "bg-blue-400/30 text-white font-semibold border-r-2 border-blue-300"
               )}
             >
-              <Link href={item.href} className="flex items-center gap-2 w-full">
-                {item.icon}
+              <Link href={item.href} className="flex items-center gap-3 w-full">
+                <span
+                  className={cn("transition-colors", isActive && "text-white")}
+                >
+                  {item.icon}
+                </span>
                 <span
                   className={cn(
                     "transition-opacity",
@@ -100,7 +105,7 @@ export function AppSidebar({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-        <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background">
+        <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-gradient-to-b from-blue-600 to-blue-700">
           <SidebarHeader href={baseHref} onClose={onClose} />
           <SidebarNav
             groups={navigationGroups}
@@ -117,7 +122,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden md:flex md:flex-col md:border-r bg-background transition-all h-screen",
+        "sticky top-0 hidden md:flex md:flex-col bg-gradient-to-b from-blue-600 to-blue-700 transition-all h-screen shadow-xl",
         isOpen ? "md:w-64" : "md:w-16"
       )}
     >
@@ -139,14 +144,16 @@ export function AppSidebar({
 
 function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
   return (
-    <div className="border-b px-3 py-2 h-16 flex items-center justify-between">
-      <Link href="#" className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-          <span className="text-sm font-bold text-primary-foreground">YOT</span>
+    <div className="border-b border-blue-500/30 px-3 py-4 h-16 flex items-center justify-between">
+      <Link href="#" className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg">
+          <span className="text-sm font-bold text-white drop-shadow-sm">
+            YOT
+          </span>
         </div>
         <span
           className={cn(
-            "font-bold transition-opacity",
+            "font-bold text-white drop-shadow-sm transition-opacity",
             isOpen ? "opacity-100" : "opacity-0 md:hidden"
           )}
         >
@@ -154,14 +161,17 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
         </span>
       </Link>
       {onClose && (
-        <button onClick={onClose}>
-          <X className="h-5 w-5" />
+        <button
+          onClick={onClose}
+          className="p-1 rounded-md hover:bg-white/20 transition-colors"
+        >
+          <X className="h-5 w-5 text-white" />
         </button>
       )}
       {onToggleSidebar && (
         <button
           onClick={onToggleSidebar}
-          className="hidden md:flex items-center justify-center w-5 rounded-md border bg-muted text-muted-foreground hover:bg-muted/70 transition"
+          className="hidden md:flex items-center justify-center w-6 h-6 rounded-md bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-200 shadow-sm border border-white/20"
           title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
         >
           {isOpen ? (
@@ -178,7 +188,7 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
 function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
   return (
     <div className="flex-1 overflow-auto">
-      <nav className="flex flex-col px-3 py-2">
+      <nav className="flex flex-col px-3 py-4">
         {groups.map((group) => (
           <NavGroup
             key={group.title}
@@ -193,15 +203,18 @@ function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
   );
 }
 
-
 function SidebarFooter({ role, isOpen }) {
   const base =
     role === "admin" ? "/admin" : role === "tutor" ? "/tutor" : "/siswa";
   return (
-    <div className="border-t p-3">
+    <div className="border-t border-blue-500/30 p-3">
       {role === "admin" && (
-        <Button variant="ghost" asChild className="justify-start w-full">
-          <Link href={`${base}/settings`} className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          asChild
+          className="justify-start w-full mb-1 hover:bg-blue-500/20 hover:text-white text-blue-100"
+        >
+          <Link href={`${base}/settings`} className="flex items-center gap-3">
             <Settings className="h-4 w-4" />
             <span
               className={cn(
@@ -217,9 +230,9 @@ function SidebarFooter({ role, isOpen }) {
       <Button
         variant="ghost"
         asChild
-        className="justify-start w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+        className="justify-start w-full text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-colors"
       >
-        <Link href="/login" className="flex items-center gap-2">
+        <Link href="/login" className="flex items-center gap-3">
           <LogOut className="h-4 w-4" />
           <span
             className={cn(

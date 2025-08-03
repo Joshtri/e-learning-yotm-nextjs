@@ -14,16 +14,20 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 export default function QuizStartPage() {
   const { id } = useParams();
   const router = useRouter();
+
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  // Fetch quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
@@ -36,22 +40,41 @@ export default function QuizStartPage() {
     fetchQuiz();
   }, [id]);
 
-//   useEffect(() => {
-//     if (!quiz?.waktuMulai || !quiz?.durasiMenit) return;
+  // Timer logic (commented out - uncomment if needed)
+  //   useEffect(() => {
+  //     if (!quiz?.waktuMulai || !quiz?.durasiMenit || !quizStarted) return;
 
-//     const mulai = new Date(quiz.waktuMulai).getTime();
-//     const selesai = mulai + quiz.durasiMenit * 60 * 1000;
-//     const now = Date.now();
-//     const selisihDetik = Math.floor((selesai - now) / 1000);
+  //     const mulai = new Date(quiz.waktuMulai).getTime();
+  //     const selesai = mulai + quiz.durasiMenit * 60 * 1000;
+  //     const now = Date.now();
+  //     const selisihDetik = Math.floor((selesai - now) / 1000);
 
-//     if (selisihDetik <= 0) {
-//       toast.warning("Waktu kuis telah habis!");
-//       handleSubmit(); // auto-submit kalau ternyata udah habis
-//       return;
-//     }
+  //     if (selisihDetik <= 0) {
+  //       toast.warning("Waktu kuis telah habis!");
+  //       handleSubmit();
+  //       return;
+  //     }
 
-//     setTimeLeft(selisihDetik);
-//   }, [quiz]);
+  //     setTimeLeft(selisihDetik);
+  //   }, [quiz, quizStarted]);
+
+  //   useEffect(() => {
+  //     if (timeLeft <= 0 || !quizStarted) return;
+
+  //     const timer = setInterval(() => {
+  //       setTimeLeft((prev) => {
+  //         if (prev <= 1) {
+  //           clearInterval(timer);
+  //           handleSubmit();
+  //           toast.warning("Waktu habis! Jawaban dikirim otomatis.");
+  //           return 0;
+  //         }
+  //         return prev - 1;
+  //       });
+  //     }, 1000);
+
+  //     return () => clearInterval(timer);
+  //   }, [timeLeft, quizStarted]);
 
   const handleAnswerChange = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -92,24 +115,13 @@ export default function QuizStartPage() {
     return (answeredCount / quiz.questions.length) * 100;
   };
 
-//   useEffect(() => {
-//     if (timeLeft <= 0) return;
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
 
-//     const timer = setInterval(() => {
-//       setTimeLeft((prev) => {
-//         if (prev <= 1) {
-//           clearInterval(timer);
-//           handleSubmit(); // otomatis submit
-//           toast.warning("Waktu habis! Jawaban dikirim otomatis.");
-//           return 0;
-//         }
-//         return prev - 1;
-//       });
-//     }, 1000);
-
-//     return () => clearInterval(timer);
-//   }, [timeLeft]);
-
+  // Loading state
   if (!quiz) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -118,23 +130,36 @@ export default function QuizStartPage() {
     );
   }
 
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  };
+  // Pre-start screen
+  if (!quizStarted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+        <h1 className="text-2xl font-bold mb-4">Persiapan Kuis</h1>
+        <p className="text-muted-foreground max-w-md mb-6">
+          Anda akan mengerjakan kuis: <strong>{quiz.judul}</strong> untuk mata
+          pelajaran <strong>{quiz.classSubjectTutor?.subject?.nama}</strong>.
+          Pastikan Anda sudah siap sebelum memulai. Waktu akan berjalan begitu
+          Anda memulai.
+        </p>
+        <Button onClick={() => setQuizStarted(true)}>
+          Saya Siap, Mulai Kerjakan
+        </Button>
+      </div>
+    );
+  }
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
+      {/* Header Card */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>{quiz.judul}</CardTitle>
           <div className="text-sm text-muted-foreground">
             {quiz.classSubjectTutor?.subject?.nama || ""}
           </div>
-
+          {/* Uncomment if timer is enabled */}
           {/* <div className="text-sm font-semibold text-red-600">
             Sisa waktu: {formatTime(timeLeft)}
           </div> */}
@@ -230,7 +255,7 @@ export default function QuizStartPage() {
                       >
                         <div
                           className={`flex items-center justify-center h-5 w-5 rounded-full border ${
-                            answers[currentQuestion.id] === opt.tek
+                            answers[currentQuestion.id] === opt.teks
                               ? "border-primary"
                               : "border-gray-400"
                           }`}
@@ -275,14 +300,23 @@ export default function QuizStartPage() {
               </Button>
 
               {currentQuestionIndex === quiz.questions.length - 1 ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Mengirim..." : "Kirim Semua Jawaban"}
-                </Button>
+                <ConfirmationDialog
+                  title="Konfirmasi Pengumpulan"
+                  description="Apakah Anda yakin ingin mengumpulkan jawaban sekarang? Setelah dikumpulkan, Anda tidak dapat mengubah jawaban."
+                  confirmText="Ya, kumpulkan"
+                  cancelText="Kembali"
+                  loading={isSubmitting}
+                  onConfirm={handleSubmit}
+                  trigger={
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={isSubmitting}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {isSubmitting ? "Mengirim..." : "Kirim Semua Jawaban"}
+                    </Button>
+                  }
+                />
               ) : (
                 <Button
                   onClick={goToNextQuestion}

@@ -18,7 +18,7 @@ function getUserFromCookie() {
 
 export async function GET(req) {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -88,7 +88,7 @@ export async function GET(req) {
 // ========== POST: Simpan kuis baru ==========
 export async function POST(req) {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

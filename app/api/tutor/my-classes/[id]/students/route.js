@@ -6,7 +6,7 @@ export async function GET(req, { params }) {
   const { id } = params;
 
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

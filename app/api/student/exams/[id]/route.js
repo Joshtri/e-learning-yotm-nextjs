@@ -6,7 +6,7 @@ export async function GET(_, { params }) {
   const { id: assignmentId } = await params;
 
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -46,11 +46,17 @@ export async function GET(_, { params }) {
     });
 
     if (!exam) {
-      return NextResponse.json({ message: "Ujian tidak ditemukan" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Ujian tidak ditemukan" },
+        { status: 404 }
+      );
     }
 
     if (!allowedCstIds.includes(exam.classSubjectTutorId)) {
-      return NextResponse.json({ message: "Akses tidak diizinkan" }, { status: 403 });
+      return NextResponse.json(
+        { message: "Akses tidak diizinkan" },
+        { status: 403 }
+      );
     }
 
     const existing = await prisma.submission.findFirst({

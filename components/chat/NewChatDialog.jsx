@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-export function NewChatDialog({ open, onOpenChange, onCreateChat }) {
+export function NewChatDialog({ open, onOpenChange, onCreateChat, currentUserRole  = "Tutor" }) {
   const [selectedTab, setSelectedTab] = React.useState("individual");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedUser, setSelectedUser] = React.useState(null);

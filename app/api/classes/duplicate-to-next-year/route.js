@@ -3,7 +3,7 @@ import { getUserFromCookie } from "@/utils/auth";
 
 export async function POST() {
   try {
-    const user = getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "ADMIN") {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),

@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Plus, FileText, Eye, Calendar, Clock, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
 export default function TutorQuizPage() {
   const [data, setData] = useState([]);
@@ -247,13 +248,14 @@ export default function TutorQuizPage() {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <EmptyState
-              title="Belum ada kuis"
-              description="Anda belum membuat kuis. Klik tombol 'Tambah Kuis' untuk mulai membuat kuis baru."
-              icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-              action={() => router.push("/tutor/quizzes/create")}
-              actionLabel="Tambah Kuis"
-            />
+            <SkeletonTable numCols={5} numRows={3} showHeader/>
+            // <EmptyState
+            //   title="Belum ada kuis"
+            //   description="Anda belum membuat kuis. Klik tombol 'Tambah Kuis' untuk mulai membuat kuis baru."
+            //   icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+            //   action={() => router.push("/tutor/quizzes/create")}
+            //   actionLabel="Tambah Kuis"
+            // />
           )}
         </TabsContent>
 

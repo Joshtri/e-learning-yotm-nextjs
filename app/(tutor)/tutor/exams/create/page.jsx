@@ -38,7 +38,14 @@ export default function ExamCreatePage() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      durasiMenit: 60,
+      nilaiMaksimal: 100,
+      acakSoal: false,
+      acakJawaban: false,
+    },
+  });
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -64,7 +71,59 @@ export default function ExamCreatePage() {
     fetchOptions();
   }, []);
 
+  const tersediaDari = watch("waktuMulai");
+  const tersediaHingga = watch("waktuSelesai");
+  const durasiMenit = watch("durasiMenit");
+
+  // ✅ Auto-calculate duration based on waktuMulai and waktuSelesai
+  useEffect(() => {
+    if (tersediaDari && tersediaHingga) {
+      const mulai = new Date(tersediaDari);
+      const selesai = new Date(tersediaHingga);
+
+      if (selesai > mulai) {
+        const durasi = Math.floor((selesai - mulai) / 1000 / 60);
+        setValue("durasiMenit", durasi);
+      } else {
+        setValue("durasiMenit", 0); // reset jika invalid
+      }
+    }
+  }, [tersediaDari, tersediaHingga, setValue]);
+
+  // ✅ Format durasi yang user-friendly
+  let durasiText = "";
+  if (typeof durasiMenit === "number" && durasiMenit > 0) {
+    const totalMenit = durasiMenit;
+    const totalDetik = totalMenit * 60;
+
+    const hari = Math.floor(totalDetik / (60 * 60 * 24));
+    const jam = Math.floor((totalDetik % (60 * 60 * 24)) / (60 * 60));
+    const menit = Math.floor((totalDetik % (60 * 60)) / 60);
+    const detik = totalDetik % 60;
+
+    const parts = [];
+    if (hari > 0) parts.push(`${hari} hari`);
+    if (jam > 0 || hari > 0) parts.push(`${jam} jam`);
+    if (menit > 0 || jam > 0 || hari > 0) parts.push(`${menit} menit`);
+    if (detik > 0 || (hari === 0 && jam === 0 && menit === 0)) {
+      parts.push(`${detik} detik`);
+    }
+
+    durasiText = `Durasi ini setara dengan ${parts.join(" ")}.`;
+  }
+
   const onSubmit = async (data) => {
+    // ✅ Validasi waktu sebelum submit
+    if (data.waktuMulai && data.waktuSelesai) {
+      const mulai = new Date(data.waktuMulai);
+      const selesai = new Date(data.waktuSelesai);
+
+      if (selesai <= mulai) {
+        toast.error("Waktu selesai harus lebih besar dari waktu mulai");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const res = await api.post("/tutor/exams", data);
@@ -80,9 +139,6 @@ export default function ExamCreatePage() {
     }
   };
 
-  const tersediaDari = watch("waktuMulai");
-  const tersediaHingga = watch("waktuSelesai");
-
   return (
     <div className="max-w-3xl mx-auto py-10 space-y-6">
       <PageHeader
@@ -94,12 +150,12 @@ export default function ExamCreatePage() {
         ]}
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 ">
         <div>
           <Label>Judul Ujian</Label>
-          <Input {...register("judul", { required: true })} />
+          <Input {...register("judul", { required: "Judul wajib diisi" })} />
           {errors.judul && (
-            <p className="text-sm text-red-500">Judul wajib diisi</p>
+            <p className="text-sm text-red-500">{errors.judul.message}</p>
           )}
         </div>
 
@@ -165,6 +221,9 @@ export default function ExamCreatePage() {
                 setValue("waktuMulai", val, { shouldValidate: true })
               }
             />
+            {errors.waktuMulai && (
+              <p className="text-sm text-red-500">Waktu mulai wajib diisi</p>
+            )}
           </div>
           <div>
             <Label>Tanggal Selesai</Label>
@@ -174,42 +233,87 @@ export default function ExamCreatePage() {
                 setValue("waktuSelesai", val, { shouldValidate: true })
               }
             />
+            {errors.waktuSelesai && (
+              <p className="text-sm text-red-500">Waktu selesai wajib diisi</p>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Durasi (menit)</Label>
             <Input
               type="number"
-              {...register("durasiMenit", { required: true })}
+              disabled
+              {...register("durasiMenit", {
+                required: "Durasi wajib diisi",
+                min: { value: 1, message: "Durasi minimal 1 menit" },
+              })}
+              className="bg-gray-50"
             />
+            {durasiText && (
+              <p className="text-sm text-muted-foreground italic mt-1">
+                {durasiText}
+              </p>
+            )}
+            {errors.durasiMenit && (
+              <p className="text-sm text-red-500">
+                {errors.durasiMenit.message}
+              </p>
+            )}
           </div>
           <div>
             <Label>Nilai Maksimal</Label>
             <Input
               type="number"
-              {...register("nilaiMaksimal", { required: true })}
+              {...register("nilaiMaksimal", {
+                required: "Nilai maksimal wajib diisi",
+                min: { value: 1, message: "Nilai minimal adalah 1" },
+              })}
             />
+            {errors.nilaiMaksimal && (
+              <p className="text-sm text-red-500">
+                {errors.nilaiMaksimal.message}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <Checkbox
-            id="acakSoal"
-            onCheckedChange={(val) => setValue("acakSoal", val)}
-          />
-          <Label htmlFor="acakSoal">Acak Soal</Label>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="acakSoal"
+              onCheckedChange={(val) => setValue("acakSoal", val)}
+            />
+            <Label htmlFor="acakSoal">Acak Soal</Label>
+          </div>
 
-          <Checkbox
-            id="acakJawaban"
-            onCheckedChange={(val) => setValue("acakJawaban", val)}
-          />
-          <Label htmlFor="acakJawaban">Acak Jawaban</Label>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="acakJawaban"
+              onCheckedChange={(val) => setValue("acakJawaban", val)}
+            />
+            <Label htmlFor="acakJawaban">Acak Jawaban</Label>
+          </div>
         </div>
 
-        <Button type="submit" disabled={loading}>
-          Simpan & Lanjut Tambah Soal
+        {/* Warning jika durasi tidak valid */}
+        {tersediaDari && tersediaHingga && durasiMenit <= 0 && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">
+              ⚠️ Waktu selesai harus lebih besar dari waktu mulai untuk
+              mendapatkan durasi yang valid.
+            </p>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          disabled={
+            loading || !tersediaDari || !tersediaHingga || durasiMenit <= 0
+          }
+        >
+          {loading ? "Menyimpan..." : "Simpan & Lanjut Tambah Soal"}
         </Button>
       </form>
     </div>

@@ -1,36 +1,29 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { toast } from "sonner";
-import api from "@/lib/axios";
-import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataToolbar } from "@/components/ui/data-toolbar";
-import { DataTable } from "@/components/ui/data-table";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import {
-  Plus,
-  FileText,
-  Eye,
-  Calendar,
-  Clock,
-  Filter,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { StatsCard } from "@/components/ui/stats-card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatsCard } from "@/components/ui/stats-card";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import api from "@/lib/axios";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Eye,
+  FileText,
+  Filter,
+  Plus,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { deleteAssignmentById } from "@/services/TutorAssignment";
 
 export default function TutorAssignmentPage() {
   const [data, setData] = useState([]);
@@ -44,18 +37,17 @@ export default function TutorAssignmentPage() {
   });
 
   const [academicYears, setAcademicYears] = useState([]);
-const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
 
-useEffect(() => {
-  const fetchAcademicYears = async () => {
-    const res = await api.get("/academic-years");
-    setAcademicYears(res.data.data.academicYears);
-    const active = res.data.data.academicYears.find((y) => y.isActive);
-    if (active) setSelectedAcademicYearId(active.id); // default aktif
-  };
-  fetchAcademicYears();
-}, []);
-
+  useEffect(() => {
+    const fetchAcademicYears = async () => {
+      const res = await api.get("/academic-years");
+      setAcademicYears(res.data.data.academicYears);
+      const active = res.data.data.academicYears.find((y) => y.isActive);
+      if (active) setSelectedAcademicYearId(active.id); // default aktif
+    };
+    fetchAcademicYears();
+  }, []);
 
   const router = useRouter();
 
@@ -99,13 +91,12 @@ useEffect(() => {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     if (selectedAcademicYearId) {
       fetchData();
     }
   }, [selectedAcademicYearId]);
-  
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
@@ -132,6 +123,20 @@ useEffect(() => {
       return { status: "active", label: "Sedang Berlangsung" };
     } else {
       return { status: "completed", label: "Selesai" };
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteAssignmentById(id);
+      toast.success("Tugas berhasil dihapus");
+      fetchData(); // Refresh daftar tugas
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        "Gagal menghapus tugas. Coba lagi nanti.";
+      toast.error(message);
+      console.error("Gagal hapus tugas:", error);
     }
   };
 
@@ -163,6 +168,16 @@ useEffect(() => {
         </div>
       ),
     },
+    {
+      header: "Jumlah Soal",
+      cell: (row) => (
+        <span className="text-sm font-medium">
+          {row._count?.questions ?? 0} soal
+        </span>
+      ),
+      className: "",
+    },
+
     {
       header: "Waktu",
       cell: (row) => (
@@ -222,11 +237,27 @@ useEffect(() => {
             <FileText className="h-4 w-4 mr-1" />
             Periksa Jawaban
           </Button>
+
+          {/* ✅ Tombol Hapus */}
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan."
+                )
+              ) {
+                handleDelete(row.id);
+              }
+            }}
+          >
+            Hapus
+          </Button>
         </div>
       ),
     },
   ];
-
 
   return (
     <div className="p-6 space-y-6">
@@ -298,10 +329,14 @@ useEffect(() => {
                     icon: <Filter className="h-4 w-4" />,
                     content: (
                       <div className="p-2">
-                        <p className="text-sm font-medium mb-2">Pilih Tahun Ajaran</p>
+                        <p className="text-sm font-medium mb-2">
+                          Pilih Tahun Ajaran
+                        </p>
                         <select
                           value={selectedAcademicYearId || ""}
-                          onChange={(e) => setSelectedAcademicYearId(e.target.value)}
+                          onChange={(e) =>
+                            setSelectedAcademicYearId(e.target.value)
+                          }
                           className="w-full border rounded-md px-2 py-1 text-sm"
                         >
                           {academicYears.map((year) => (
@@ -315,8 +350,6 @@ useEffect(() => {
                     ),
                   },
                 ]}
-                
-                
               />
             </div>
 
@@ -366,7 +399,6 @@ useEffect(() => {
             </TabsContent>
           </Tabs>
         </div>
-
       </div>
     </div>
   );

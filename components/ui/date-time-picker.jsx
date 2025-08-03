@@ -2,7 +2,6 @@
 
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { CalendarIcon } from 'lucide-react'
 
 export function DateTimePicker({ value, onChange }) {
   return (
@@ -17,7 +16,7 @@ export function DateTimePicker({ value, onChange }) {
         placeholderText="Pilih tanggal & waktu"
         className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
       />
-      <CalendarIcon className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+      {/* <CalendarIcon className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" /> */}
     </div>
   )
 }

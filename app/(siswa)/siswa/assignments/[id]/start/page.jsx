@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
 export default function AssignmentStartPage() {
   const { id } = useParams();
@@ -61,7 +62,7 @@ export default function AssignmentStartPage() {
     }
   };
 
-  if (loading) return <div className="p-6">Memuat...</div>;
+  if (loading) return <SkeletonTable numRows={5} numCols={4} showHeader={true} />;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
