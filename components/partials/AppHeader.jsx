@@ -72,18 +72,17 @@ export default function AppHeader({ onMenuClick, role }) {
 
   const avatarFallback =
     role === "student" ? "SI" : role === "tutor" ? "TR" : "AD";
-  // const displayName = role?.charAt(0).toUpperCase() + role?.slice(1) || "User";
   const displayName = user?.nama || "User";
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-blue-300 bg-gradient-to-r from-blue-500 to-blue-600 px-4 md:px-6">
       {/* Left */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={onMenuClick}
-          className="md:hidden"
+          className="md:hidden hover:bg-blue-400 text-white"
         >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle Menu</span>
@@ -105,19 +104,20 @@ export default function AppHeader({ onMenuClick, role }) {
 
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4 pr-1">
-        <Button variant="ghost" size="icon" className="hidden md:flex relative">
-          {/* <Bell className="h-5 w-5" /> */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden md:flex relative hover:bg-blue-400 text-white"
+        >
           <span className="sr-only">Notifikasi</span>
-          {/* <NotificationDropdown userId={user.id} /> */}
           {user && <NotificationDropdown userId={user.id} />}
-
-          {/* <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-primary"></span> */}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="hover:bg-blue-400 text-white"
         >
           {theme === "dark" ? (
             <Sun className="h-5 w-5" />
@@ -130,16 +130,16 @@ export default function AppHeader({ onMenuClick, role }) {
         {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 px-2 hover:bg-blue-400"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg" alt={displayName} />
-                <AvatarFallback>
+                <AvatarFallback className="bg-blue-700 text-white">
                   {user?.nama?.charAt(0).toUpperCase() || avatarFallback}
-                </AvatarFallback>{" "}
+                </AvatarFallback>
               </Avatar>
-              {/* <span className="hidden md:inline">
-                {mode === "homeroom" ? "Wali Kelas" : user?.nama}
-              </span> */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

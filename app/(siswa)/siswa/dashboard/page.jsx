@@ -416,9 +416,9 @@ export default function StudentDashboardPage() {
                     <div
                       key={submission.id}
                       className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/siswa/submissions/${submission.id}`)
-                      }
+                      // onClick={() =>
+                      //   router.push(`/siswa/submissions/${submission.id}`)
+                      // }
                     >
                       <div className="flex-1">
                         <div className="flex justify-between">
@@ -535,7 +535,7 @@ export default function StudentDashboardPage() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => router.push("/siswa/my-subject")}
+                onClick={() => router.push("/siswa/learning-materials")}
               >
                 Lihat Semua Materi
               </Button>
