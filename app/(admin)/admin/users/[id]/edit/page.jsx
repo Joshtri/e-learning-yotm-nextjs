@@ -130,8 +130,8 @@ export default function EditUserPage() {
           label: "Kembali ke detail pengguna",
         }}
         breadcrumbs={[
-          { title: "Pengguna", href: "/admin/users" },
-          { title: "Edit Pengguna" },
+          { label: "Pengguna", href: "/admin/users" },
+          { label: "Edit Pengguna" },
         ]}
       />
 

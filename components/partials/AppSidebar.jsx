@@ -157,7 +157,7 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
             isOpen ? "opacity-100" : "opacity-0 md:hidden"
           )}
         >
-          Obor Timor
+          Obor Timor Ministry
         </span>
       </Link>
       {onClose && (

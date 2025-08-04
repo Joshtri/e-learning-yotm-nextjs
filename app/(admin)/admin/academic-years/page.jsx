@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -116,6 +116,21 @@ export default function AcademicYearPage() {
           </span>
         </div>
       ),
+    },
+
+    {
+      header: "Aksi",
+      cell: (item) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(`/admin/academic-years/${item.id}/edit`)}
+        >
+          <Pencil className="w-4 h-4 mr-1" />
+          Edit
+        </Button>
+      ),
+      className: "w-[120px]",
     },
   ];
 

@@ -126,7 +126,7 @@ export default function SubjectPage() {
       <div className="flex-1">
         <main className="p-6">
           <PageHeader
-            title="Manajemen Mata Pelajaran 3"
+            title="Manajemen Mata Pelajaran"
             actions={
               <>
                 <DataExport

@@ -94,6 +94,8 @@ export async function GET(request) {
           jenisKelamin: true,
           tempatLahir: true,
           tanggalLahir: true,
+          nis: true,
+          noTelepon: true,
           alamat: true,
           fotoUrl: true,
           createdAt: true,

@@ -1,26 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { UserPlus } from "lucide-react";
-import { toast } from "sonner";
 import api from "@/lib/axios";
+import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { PageHeader } from "@/components/ui/page-header";
-import { DataToolbar } from "@/components/ui/data-toolbar";
-import { DataTable } from "@/components/ui/data-table";
-import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { DataExport } from "@/components/ui/data-export";
+import { DataTable } from "@/components/ui/data-table";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { EntityAvatar } from "@/components/ui/entity-avatar";
+import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 
 export default function StudentsPage() {
@@ -164,13 +157,23 @@ export default function StudentsPage() {
       cell: (student) => student.class?.program?.namaPaket || "-",
     },
     {
+      header: "NIS",
+      accessorKey: "nis",
+      cell: (student) => student.nis || "-",
+    },
+    {
+      header: "No Telepon",
+      accessorKey: "noTelepon",
+      cell: (student) => student.noTelepon || "-",
+    },
+    {
       header: "Tanggal Lahir",
       cell: (student) =>
         student.tanggalLahir
           ? new Date(student.tanggalLahir).toLocaleDateString("id-ID")
           : "-",
     },
-    { header: "Alamat", accessorKey: "alamat" },
+    // { header: "  Alamat", accessorKey: "alamat" },
     {
       header: "Aksi",
       cell: (student) => (

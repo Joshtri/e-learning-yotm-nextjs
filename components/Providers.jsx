@@ -10,7 +10,8 @@ export function Providers({ children }) {
       attribute="class"
       defaultTheme="system"
       enableSystem
-      disableTransitionOnChange
+      
+      // disableTransitionOnChange
     >
       <ReactQueryProvider>
         <Toaster richColors position="top-right" />
