@@ -35,17 +35,17 @@ export const navByRole = {
       title: "Pengguna",
       items: [
         {
-          title: "Users",
+          title: "Manajemen Users",
           href: "/admin/users",
           icon: <Users2 className="h-4 w-4" />,
         },
         {
-          title: "Siswa",
+          title: "Manajemen Siswa",
           href: "/admin/students",
           icon: <GraduationCap className="h-4 w-4" />,
         },
         {
-          title: "Tutor",
+          title: "Manajemen Tutor",
           href: "/admin/tutors",
           icon: <Users className="h-4 w-4" />,
         },

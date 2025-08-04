@@ -99,8 +99,8 @@ export default function TutorCreatePage() {
           label: "Kembali ke daftar tutor",
         }}
         breadcrumbs={[
-          { title: "Tutor", href: "/admin/tutors" },
-          { title: "Tambah Tutor" },
+          { label: "Tutor", href: "/admin/tutors" },
+          { label: "Tambah Tutor" },
         ]}
         
       />
