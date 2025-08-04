@@ -11,13 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Bell, Menu, Search, Moon, Sun } from "lucide-react";
 import axios from "axios";
+import { Menu, Search } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
-import { useMemo, useState, useEffect } from "react";
 import { NotificationDropdown } from "../ui/notification-dropdown";
 
 export default function AppHeader({ onMenuClick, role }) {
