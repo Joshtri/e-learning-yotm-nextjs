@@ -113,7 +113,7 @@ export default function AppHeader({ onMenuClick, role }) {
           {user && <NotificationDropdown userId={user.id} />}
         </Button>
 
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -125,7 +125,7 @@ export default function AppHeader({ onMenuClick, role }) {
             <Moon className="h-5 w-5" />
           )}
           <span className="sr-only">Toggle Dark Mode</span>
-        </Button>
+        </Button> */}
 
         {/* User dropdown */}
         <DropdownMenu>
