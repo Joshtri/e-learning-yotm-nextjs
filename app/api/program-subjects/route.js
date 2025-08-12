@@ -3,52 +3,72 @@ import prisma from '@/lib/prisma'
 export async function GET(request) {
   try {
     const url = new URL(request.url)
-    const page = parseInt(url.searchParams.get('page')) || 1
-    const limitParam = url.searchParams.get('limit')
-    let limit = limitParam ? parseInt(limitParam) : 10
 
-    const search = url.searchParams.get('search') || ''
+    // parse & sanitize query
+    let page = Math.max(1, parseInt(url.searchParams.get("page") || "1"))
+    const limitParam = url.searchParams.get("limit")
+    let limit = typeof limitParam === "string" ? parseInt(limitParam) : 10
+    if (Number.isNaN(limit)) limit = 10
+    const searchRaw = url.searchParams.get("search") || ""
+    const search = searchRaw.trim()
 
+    // where (search di program.namaPaket / subject.namaMapel)
+    const where =
+      search.length > 0
+        ? {
+            OR: [
+              { program: { is: { namaPaket: { contains: search, mode: "insensitive" } } } },
+              { subject: { is: { namaMapel: { contains: search, mode: "insensitive" } } } },
+            ],
+          }
+        : undefined
+
+    // total terlebih dulu
+    const total = await prisma.programSubject.count({ where })
+
+    // hitung pages
+    const pages = limit > 0 ? Math.max(1, Math.ceil(total / limit)) : 1
+
+    // jika page > pages, geser ke halaman terakhir yang valid
+    if (limit > 0 && total > 0 && page > pages) page = pages
+
+    // query list
     const findOptions = {
+      where,
       include: {
         program: { select: { id: true, namaPaket: true } },
         subject: { select: { id: true, namaMapel: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     }
 
-    if (limit <= 0) {
-      // ambil semua data tanpa limit dan skip
-    } else {
+    if (limit > 0) {
       findOptions.take = limit
       findOptions.skip = (page - 1) * limit
     }
-
-    if (search) {
-      findOptions.where = {
-        OR: [
-          { program: { namaPaket: { contains: search, mode: 'insensitive' } } },
-          { subject: { namaMapel: { contains: search, mode: 'insensitive' } } },
-        ],
-      }
-    }
+    // limit <= 0 => ambil semua (tanpa take/skip)
 
     const programSubjects = await prisma.programSubject.findMany(findOptions)
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: { programSubjects },
+        data: {
+          programSubjects,
+          pagination: {
+            page,
+            limit,
+            total,
+            pages,
+          },
+        },
       }),
       { status: 200 }
     )
   } catch (error) {
-    console.error('Gagal GET program-subject:', error)
+    console.error("Gagal GET program-subject:", error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        message: 'Gagal memuat data',
-      }),
+      JSON.stringify({ success: false, message: "Gagal memuat data" }),
       { status: 500 }
     )
   }

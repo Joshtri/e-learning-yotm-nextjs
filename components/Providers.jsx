@@ -6,17 +6,17 @@ import { Toaster } from "sonner";
 
 export function Providers({ children }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      
-      // disableTransitionOnChange
-    >
-      <ReactQueryProvider>
-        <Toaster richColors position="top-right" />
-        {children}
-      </ReactQueryProvider>
-    </ThemeProvider>
+    // <ThemeProvider
+    //   attribute="class"
+    //   defaultTheme="light"
+    //   enableSystem
+
+    //   // disableTransitionOnChange
+    // >
+    // </ThemeProvider>
+    <ReactQueryProvider>
+      <Toaster richColors position="top-right" />
+      {children}
+    </ReactQueryProvider>
   );
 }

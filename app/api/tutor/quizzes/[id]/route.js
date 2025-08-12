@@ -94,3 +94,84 @@ export async function GET(_, { params }) {
     );
   }
 }
+
+
+export async function DELETE(req, { params }) {
+  const { id } = params;
+
+  try {
+    const user = getUserFromCookie();
+    if (!user || user.role !== "TUTOR") {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Cari tutor.id dari user.id
+    const tutor = await prisma.tutor.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    if (!tutor) {
+      return NextResponse.json({ success: false, message: "Tutor not found" }, { status: 404 });
+    }
+
+    // Pastikan kuis milik tutor (via relasi ClassSubjectTutor)
+    const quiz = await prisma.quiz.findFirst({
+      where: {
+        id,
+        classSubjectTutor: { tutorId: tutor.id },
+      },
+      select: {
+        id: true,
+        questions: { select: { id: true } },
+        submissions: { select: { id: true } },
+      },
+    });
+
+    if (!quiz) {
+      return NextResponse.json(
+        { success: false, message: "Kuis tidak ditemukan atau Anda tidak memiliki akses" },
+        { status: 404 }
+      );
+    }
+
+    const questionIds = quiz.questions.map((q) => q.id);
+    const submissionIds = quiz.submissions.map((s) => s.id);
+
+    await prisma.$transaction(async (tx) => {
+      // 1) Hapus jawaban (Answer) – terhubung ke Submission dan Question
+      //    (hapus by submissionId; dan aman juga kalau ada Answer lepas via questionId)
+      if (submissionIds.length > 0) {
+        await tx.answer.deleteMany({ where: { submissionId: { in: submissionIds } } });
+      }
+      if (questionIds.length > 0) {
+        await tx.answer.deleteMany({ where: { questionId: { in: questionIds } } });
+      }
+
+      // 2) Hapus opsi jawaban (AnswerOption) milik semua question kuis
+      if (questionIds.length > 0) {
+        await tx.answerOption.deleteMany({ where: { questionId: { in: questionIds } } });
+      }
+
+      // 3) Hapus submissions kuis
+      await tx.submission.deleteMany({ where: { quizId: quiz.id } });
+
+      // 4) Hapus questions kuis
+      await tx.question.deleteMany({ where: { quizId: quiz.id } });
+
+      // 5) Hapus kuis
+      await tx.quiz.delete({ where: { id: quiz.id } });
+    });
+
+    return NextResponse.json({ success: true, message: "Kuis berhasil dihapus" });
+  } catch (error) {
+    console.error("Gagal menghapus kuis:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Gagal menghapus kuis",
+        error: error?.message ?? String(error),
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -1,174 +1,136 @@
 import prisma from "@/lib/prisma";
-import { deleteFileFromFirebase, uploadFileToFirebase } from "@/lib/firebase";
-import { getUserFromCookie } from "@/utils/auth";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
-export async function GET(_, { params }) {
-  const user = await getUserFromCookie();
-
-  if (!user || user.role !== "TUTOR") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  const tutor = await prisma.tutor.findFirst({
-    where: { userId: user.id },
-  });
-
-  if (!tutor) {
-    return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
-  }
-
+function getUserFromCookie() {
+  const token = cookies().get("auth_token")?.value;
+  if (!token) return null;
   try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+// (opsional) GET detail
+export async function GET(req, { params }) {
+  try {
+    const { id } = params;
     const material = await prisma.learningMaterial.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         classSubjectTutor: {
           include: {
-            class: true,
-            subject: true,
+            class: { select: { id: true, namaKelas: true } },
+            subject: { select: { id: true, namaMapel: true } },
+            tutor: { select: { id: true, namaLengkap: true } },
           },
         },
       },
     });
 
-    if (!material || material.classSubjectTutor.tutorId !== tutor.id) {
-      return NextResponse.json({ message: "Akses ditolak" }, { status: 403 });
+    if (!material) {
+      return NextResponse.json(
+        { success: false, message: "Materi tidak ditemukan" },
+        { status: 404 }
+      );
     }
-
     return NextResponse.json({ success: true, data: material });
-  } catch (error) {
-    console.error("Gagal fetch detail materi:", error);
+  } catch (e) {
+    console.error(e);
     return NextResponse.json(
-      { success: false, message: "Server error" },
+      { success: false, message: "Gagal memuat detail materi" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(req, { params }) {
-  const user = await getUserFromCookie();
-
-  if (!user || user.role !== "TUTOR") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  const tutor = await prisma.tutor.findFirst({
-    where: { userId: user.id },
-  });
-
-  if (!tutor) {
-    return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
-  }
-
-  const { id } = params;
-
+// ✅ PATCH edit
+export async function PATCH(req, { params }) {
   try {
-    const formData = await req.formData();
-    const judul = formData.get("judul");
-    const konten = formData.get("konten") || "";
-    const classSubjectTutorId = formData.get("classSubjectTutorId");
-    const file = formData.get("file");
-
-    if (!judul || !classSubjectTutorId) {
+    const user = getUserFromCookie();
+    if (!user || user.role !== "TUTOR") {
       return NextResponse.json(
-        { success: false, message: "Data wajib diisi" },
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+    const body = await req.json();
+
+    const existing = await prisma.learningMaterial.findFirst({
+      where: { id, classSubjectTutor: { tutor: { userId: user.id } } },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Materi tidak ditemukan atau Anda tidak memiliki akses",
+        },
+        { status: 404 }
+      );
+    }
+
+    const judul =
+      typeof body.judul === "string" ? body.judul.trim() : undefined;
+    const konten = typeof body.konten === "string" ? body.konten : undefined;
+    const fileUrl =
+      typeof body.fileUrl === "string" ? body.fileUrl.trim() : undefined;
+
+    if (judul !== undefined && !judul) {
+      return NextResponse.json(
+        { success: false, message: "Judul tidak boleh kosong." },
+        { status: 400 }
+      );
+    }
+    if (judul && judul.length > 200) {
+      return NextResponse.json(
+        { success: false, message: "Judul maksimal 200 karakter." },
+        { status: 400 }
+      );
+    }
+    if (fileUrl && fileUrl.length > 255) {
+      return NextResponse.json(
+        { success: false, message: "fileUrl maksimal 255 karakter." },
         { status: 400 }
       );
     }
 
-    const existing = await prisma.learningMaterial.findUnique({
-      where: { id },
-      include: {
-        classSubjectTutor: true,
-      },
-    });
-
-    if (!existing || existing.classSubjectTutor.tutorId !== tutor.id) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 }
-      );
-    }
-
-    let fileUrl = existing.fileUrl;
-
-    if (file && file.name) {
-      if (fileUrl) await deleteFileFromFirebase(fileUrl);
-      const buffer = Buffer.from(await file.arrayBuffer());
-      fileUrl = await uploadFileToFirebase(buffer, file.name, "materials");
-    }
+    const data = {};
+    if (judul !== undefined) data.judul = judul;
+    if (konten !== undefined) data.konten = konten;
+    if (fileUrl !== undefined) data.fileUrl = fileUrl || null;
 
     const updated = await prisma.learningMaterial.update({
-      where: { id },
-      data: {
-        judul,
-        konten,
-        fileUrl,
-        classSubjectTutorId,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: updated,
-      message: "Materi berhasil diperbarui",
-    });
-  } catch (error) {
-    console.error("Gagal update materi:", error);
-    return NextResponse.json(
-      { success: false, message: "Gagal memperbarui data" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(_, { params }) {
-  const user = await getUserFromCookie();
-
-  if (!user || user.role !== "TUTOR") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  const tutor = await prisma.tutor.findFirst({
-    where: { userId: user.id },
-  });
-
-  if (!tutor) {
-    return NextResponse.json({ message: "Tutor not found" }, { status: 404 });
-  }
-
-  const { id } = params;
-
-  try {
-    const existing = await prisma.learningMaterial.findUnique({
-      where: { id },
+      where: { id: existing.id },
+      data,
       include: {
-        classSubjectTutor: true,
+        classSubjectTutor: {
+          include: {
+            class: { select: { id: true, namaKelas: true } },
+            subject: { select: { id: true, namaMapel: true } },
+            tutor: { select: { id: true, namaLengkap: true } },
+          },
+        },
       },
     });
 
-    if (!existing || existing.classSubjectTutor.tutorId !== tutor.id) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 }
-      );
-    }
-
-    // 🔥 Hapus file dari Firebase Storage
-    if (existing.fileUrl) {
-      await deleteFileFromFirebase(existing.fileUrl);
-    }
-
-    await prisma.learningMaterial.delete({ where: { id } });
-
     return NextResponse.json({
       success: true,
-      message: "Materi berhasil dihapus",
+      message: "Materi berhasil diperbarui",
+      data: updated,
     });
   } catch (error) {
-    console.error("Gagal hapus materi:", error);
+    console.error("PATCH learning-material error:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal menghapus materi" },
+      {
+        success: false,
+        message: "Gagal memperbarui materi",
+        error: error?.message || String(error),
+      },
       { status: 500 }
     );
   }

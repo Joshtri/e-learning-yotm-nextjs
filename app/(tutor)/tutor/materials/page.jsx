@@ -1,34 +1,27 @@
 // /app/tutor/learning-materials/page.tsx
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { toast } from "sonner";
-import api from "@/lib/axios";
-import { PageHeader } from "@/components/ui/page-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataToolbar } from "@/components/ui/data-toolbar";
-import { DataTable } from "@/components/ui/data-table";
-import { Button } from "@/components/ui/button";
-import {
-  Plus,
-  FileText,
-  Trash2,
-  Eye,
-  Download,
-  Upload,
-  Filter,
-} from "lucide-react";
 import LearningMaterialAddModal from "@/components/tutors/learning-materials/LearningMaterialAddModal";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import { DataToolbar } from "@/components/ui/data-toolbar";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatsCard } from "@/components/ui/stats-card";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import api from "@/lib/axios";
+import {
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function TutorMaterialsPage() {
   const [data, setData] = useState([]);
@@ -42,6 +35,35 @@ export default function TutorMaterialsPage() {
   });
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState("");
+  const router = useRouter();
+
+  const extractFirstUrl = (text = "") => {
+    const m = text.match(/https?:\/\/[^\s)]+/i);
+    return m ? m[0] : null;
+  };
+
+  const handlePreview = (row) => {
+    const url = row.fileUrl || extractFirstUrl(row.konten);
+    if (!url) {
+      toast.info("Tidak ada file/tautan untuk pratinjau");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleDownload = (row) => {
+    const url = row.fileUrl || extractFirstUrl(row.konten);
+    if (!url) {
+      toast.error("Tidak ada file/tautan untuk diunduh");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = ""; // biar browser tentukan nama
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   const fetchAcademicYears = async () => {
     try {
@@ -121,9 +143,9 @@ export default function TutorMaterialsPage() {
     }
   };
 
-  const getFileTypeIcon = (filename) => {
-    if (!filename) return <FileText className="h-4 w-4" />;
-    const ext = filename.split(".").pop().toLowerCase();
+  const getFileTypeIcon = (fileUrl) => {
+    if (!fileUrl) return <FileText className="h-4 w-4" />;
+    const ext = (fileUrl.split("?")[0].split(".").pop() || "").toLowerCase();
     const colors = {
       pdf: "text-red-500",
       doc: "text-blue-500",
@@ -143,12 +165,18 @@ export default function TutorMaterialsPage() {
       cell: (row) => (
         <div className="flex items-center gap-3">
           <div className="rounded-md bg-muted p-2">
-            {getFileTypeIcon(row.fileName)}
+            {getFileTypeIcon(row.fileUrl)}
           </div>
           <div>
             <div className="font-medium">{row.judul}</div>
             <div className="text-sm text-muted-foreground">
-              {row.fileName || "No file attached"}
+              {row.fileUrl
+                ? new URL(row.fileUrl).pathname
+                    .split("/")
+                    .pop()
+                    ?.split("%2F")
+                    .pop()
+                : extractFirstUrl(row.konten) || "No file attached"}
             </div>
           </div>
         </div>
@@ -167,7 +195,7 @@ export default function TutorMaterialsPage() {
     },
     {
       header: "Status",
-      cell: () => <StatusBadge status="active" label="Dipublikasikan" />, // update logic here if needed
+      cell: () => <StatusBadge status="active" label="Dipublikasikan" />,
     },
     {
       header: "Dibuat",
@@ -184,17 +212,46 @@ export default function TutorMaterialsPage() {
       header: "Aksi",
       cell: (row) => (
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+          {/* 👁️ Preview */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => handlePreview(row)}
+            title="Pratinjau"
+          >
             <Eye className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+
+          {/* ⬇️ Download */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => handleDownload(row)}
+            title="Unduh"
+          >
             <Download className="h-4 w-4" />
           </Button>
+
+          {/* ✏️ Edit (aku pertahankan rute kamu) */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => router.push(`/tutor/materials/${row.id}/edit`)}
+            title="Edit"
+          >
+            Edit
+          </Button>
+
+          {/* 🗑️ Hapus */}
           <Button
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
             onClick={() => handleDelete(row.id)}
+            title="Hapus"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -244,12 +301,6 @@ export default function TutorMaterialsPage() {
       </div>
 
       <Tabs defaultValue="all" className="space-y-5">
-        <TabsList>
-          <TabsTrigger value="all">Semua Materi</TabsTrigger>
-          <TabsTrigger value="documents">Dokumen</TabsTrigger>
-          <TabsTrigger value="videos">Video</TabsTrigger>
-        </TabsList>
-
         <DataToolbar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}

@@ -1,5 +1,12 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function DataTable({
   data,
@@ -25,13 +32,19 @@ export function DataTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-10 text-muted-foreground">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-10 text-muted-foreground"
+                >
                   {loadingMessage}
                 </TableCell>
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-10 text-muted-foreground">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-10 text-muted-foreground"
+                >
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -40,7 +53,11 @@ export function DataTable({
                 <TableRow key={keyExtractor ? keyExtractor(item) : index}>
                   {columns.map((column, columnIndex) => (
                     <TableCell key={columnIndex}>
-                      {column.cell ? column.cell(item, index) : column.accessorKey ? item[column.accessorKey] : null}
+                      {column.cell
+                        ? column.cell(item, index)
+                        : column.accessorKey
+                        ? item[column.accessorKey]
+                        : null}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -50,6 +67,5 @@ export function DataTable({
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }
-

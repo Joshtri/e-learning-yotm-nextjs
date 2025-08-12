@@ -9,7 +9,7 @@ import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Plus, FileText, Eye, Calendar, Clock, Filter } from "lucide-react";
+import { Plus, FileText, Calendar, Clock, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
@@ -20,6 +20,7 @@ export default function TutorQuizPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const router = useRouter();
 
@@ -44,25 +45,27 @@ export default function TutorQuizPage() {
 
   useEffect(() => {
     const fetchYears = async () => {
-      const res = await api.get("/academic-years");
-      setAcademicYears(res.data.data.academicYears);
-      const active = res.data.data.academicYears.find((y) => y.isActive);
-      if (active) setSelectedAcademicYearId(active.id);
+      try {
+        const res = await api.get("/academic-years");
+        setAcademicYears(res.data.data.academicYears || []);
+        const active = res.data.data.academicYears.find((y) => y.isActive);
+        if (active) setSelectedAcademicYearId(active.id);
+      } catch (e) {
+        console.error(e);
+        toast.error("Gagal memuat tahun ajaran");
+      }
     };
     fetchYears();
   }, []);
 
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
+    const q = searchQuery.toLowerCase();
     return data.filter(
       (item) =>
-        item.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.classSubjectTutor.class.namaKelas
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        item.classSubjectTutor.subject.namaMapel
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
+        item.judul.toLowerCase().includes(q) ||
+        item.classSubjectTutor.class.namaKelas.toLowerCase().includes(q) ||
+        item.classSubjectTutor.subject.namaMapel.toLowerCase().includes(q)
     );
   }, [data, searchQuery]);
 
@@ -80,6 +83,45 @@ export default function TutorQuizPage() {
     }
   };
 
+  async function handleDelete(id) {
+    const ok = window.confirm(
+      "Yakin ingin menghapus kuis ini? Tindakan ini tidak dapat dibatalkan."
+    );
+    if (!ok) return;
+
+    try {
+      setDeletingId(id);
+      // Optimistik: hapus dulu di UI
+      setData((prev) => prev.filter((x) => x.id !== id));
+
+      const res = await api.delete(`/tutor/quizzes/${id}`);
+      if (res.data?.success) {
+        toast.success("Kuis berhasil dihapus");
+        // Optional: refetch untuk sinkron (kalau perlu)
+        // const ref = await api.get("/tutor/quizzes", { params: { academicYearId: selectedAcademicYearId }});
+        // setData(ref.data.data || []);
+      } else {
+        // rollback kalau gagal
+        toast.error(res.data?.message || "Gagal menghapus kuis");
+        // refetch untuk rollback data
+        const ref = await api.get("/tutor/quizzes", {
+          params: { academicYearId: selectedAcademicYearId },
+        });
+        setData(ref.data.data || []);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal menghapus kuis");
+      // rollback data
+      const ref = await api.get("/tutor/quizzes", {
+        params: { academicYearId: selectedAcademicYearId },
+      });
+      setData(ref.data.data || []);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const columns = [
     {
       header: "No",
@@ -92,7 +134,7 @@ export default function TutorQuizPage() {
         <div>
           <div className="font-medium">{row.judul}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {row._count.questions || 0} soal
+            {row._count?.questions || 0} soal
           </div>
         </div>
       ),
@@ -172,6 +214,16 @@ export default function TutorQuizPage() {
           >
             Detail
           </Button>
+
+          {/* ✅ Tombol Hapus */}
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={deletingId === row.id}
+            onClick={() => handleDelete(row.id)}
+          >
+            {deletingId === row.id ? "Menghapus..." : "Hapus"}
+          </Button>
         </div>
       ),
     },
@@ -238,24 +290,25 @@ export default function TutorQuizPage() {
         </div>
 
         <TabsContent value="all" className="space-y-4">
-          {filteredData.length > 0 ? (
+          {isLoading ? (
+            <SkeletonTable numCols={5} numRows={5} showHeader />
+          ) : filteredData.length > 0 ? (
             <DataTable
               data={filteredData}
               columns={columns}
-              isLoading={isLoading}
+              isLoading={false}
               loadingMessage="Memuat kuis..."
               emptyMessage="Belum ada kuis"
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <SkeletonTable numCols={5} numRows={3} showHeader/>
-            // <EmptyState
-            //   title="Belum ada kuis"
-            //   description="Anda belum membuat kuis. Klik tombol 'Tambah Kuis' untuk mulai membuat kuis baru."
-            //   icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-            //   action={() => router.push("/tutor/quizzes/create")}
-            //   actionLabel="Tambah Kuis"
-            // />
+            <EmptyState
+              title="Belum ada kuis"
+              description="Anda belum membuat kuis. Klik tombol 'Tambah Kuis' untuk mulai membuat kuis baru."
+              icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+              action={() => router.push("/tutor/quizzes/create")}
+              actionLabel="Tambah Kuis"
+            />
           )}
         </TabsContent>
 
