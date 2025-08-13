@@ -39,12 +39,12 @@ export default function StudentLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
+        {/* <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-        >
+        > */}
           <div className="flex min-h-screen bg-background">
             <AppSidebar
               role="student"
@@ -59,7 +59,7 @@ export default function StudentLayout({ children }) {
               <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
             </div>
           </div>
-        </ThemeProvider>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );
