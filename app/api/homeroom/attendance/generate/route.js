@@ -49,6 +49,27 @@ export async function POST(req) {
     }
 
     const daysInMonth = new Date(tahun, bulan, 0).getDate();
+
+    const existingSession = await prisma.attendanceSession.findFirst({
+      where: {
+        classId: kelas.id,
+        academicYearId: kelas.academicYearId,
+        tanggal: {
+          gte: new Date(tahun, bulan - 1, 1),
+          lte: new Date(tahun, bulan - 1, daysInMonth),
+        },
+      },
+    });
+
+    if (existingSession) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Presensi bulan ini sudah pernah digenerate.",
+        }),
+        { status: 400 }
+      );
+    }
     const liburDates = new Set();
 
     // 1. HolidayRange
