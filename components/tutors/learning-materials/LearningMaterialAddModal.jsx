@@ -26,6 +26,7 @@ export default function LearningMaterialAddModal({
   } = useForm({
     defaultValues: {
       judul: "",
+      pertemuan: "",
       konten: "",
       file: null,
       classSubjectTutorId: defaultClassSubjectTutorId || "",
@@ -99,6 +100,7 @@ export default function LearningMaterialAddModal({
 
       const payload = {
         judul: data.judul,
+        pertemuan: data.pertemuan || "1", // Default ke "1" jika tidak ada
         konten: data.konten,
         fileUrl,
         classSubjectTutorId:
@@ -138,6 +140,16 @@ export default function LearningMaterialAddModal({
         placeholder="Contoh: Pengantar Matematika"
         {...register("judul", { required: "Judul wajib diisi" })}
         error={errors.judul?.message}
+      />
+
+      <FormField
+        label="Pertemuan"
+        name="pertemuan"
+        type="text"
+        control={control}
+        placeholder="Contoh: Pertemuan 1"
+        {...register("pertemuan", { required: "Pertemuan wajib diisi" })}
+        error={errors.pertemuan?.message}
       />
 
       <FormField
