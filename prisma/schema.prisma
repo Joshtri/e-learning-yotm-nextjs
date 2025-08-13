@@ -128,8 +128,8 @@ model Student {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   status       StudentStatus @default(ACTIVE)
-  noTelepon     String?       @db.VarChar(20)
-  nis         String?       @db.VarChar(20) // Nomor Induk Siswa Nasional
+  noTelepon    String?       @db.VarChar(20)
+  nis          String?       @db.VarChar(20) // Nomor Induk Siswa Nasional
 
   naikKelas    Boolean @default(false) // usulan dari homeroom untuk naik kelas
   diprosesNaik Boolean @default(false) // apakah sudah diproses oleh admin
@@ -287,6 +287,7 @@ model ClassSubjectTutor {
 model LearningMaterial {
   id                  String   @id @default(dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
   judul               String   @db.VarChar(200)
+  pertemuan           String?  @db.VarChar(10) @default("1") // Untuk materi pertemuan tertentu
   konten              String   @db.Text
   fileUrl             String?  @db.VarChar(255)
   classSubjectTutorId String
