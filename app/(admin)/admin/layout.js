@@ -38,12 +38,12 @@ export default function AdminLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
+        {/* <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-        >
+        > */}
           <div className="flex h-full overflow-hidden bg-background">
             {/* Sidebar */}
             <AppSidebar
@@ -65,7 +65,7 @@ export default function AdminLayout({ children }) {
               </main>
             </div>
           </div>
-        </ThemeProvider>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );
