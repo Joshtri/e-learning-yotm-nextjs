@@ -45,7 +45,7 @@ export async function GET(_, { params }) {
         },
       },
       orderBy: {
-        tanggal: "desc",
+        tanggal: "asc",
       },
     });
 
