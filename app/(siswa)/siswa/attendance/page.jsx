@@ -8,17 +8,71 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CalendarCheck } from "lucide-react";
+import {
+  CalendarCheck,
+  Check, // ✅ Hadir
+  Thermometer, // 🤒 Sakit
+  FileText, // 📄 Izin
+  X, // ❌ Absent
+} from "lucide-react";
+import GreetingWidget from "@/components/GreetingWidget";
 
 export default function StudentAttendancePage() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("table"); // table or calendar
 
+  // ---------- ICONS ----------
+  const StatusIcon = ({ status, className = "h-4 w-4" }) => {
+    switch (status) {
+      case "PRESENT":
+        return (
+          <Check className={`${className} text-green-600`} aria-label="Hadir" />
+        );
+      case "SICK":
+        return (
+          <Thermometer
+            className={`${className} text-yellow-600`}
+            aria-label="Sakit"
+          />
+        );
+      case "EXCUSED":
+        return (
+          <FileText
+            className={`${className} text-blue-600`}
+            aria-label="Izin"
+          />
+        );
+      case "ABSENT":
+        return (
+          <X className={`${className} text-rose-500`} aria-label="Alpha" />
+        );
+      default:
+        return <span>-</span>;
+    }
+  };
+
+  const isSameDay = (a, b) => {
+    const da = new Date(a);
+    da.setHours(0, 0, 0, 0);
+    const db = new Date(b);
+    db.setHours(0, 0, 0, 0);
+    return da.getTime() === db.getTime();
+  };
+
   const fetchSessions = async () => {
     try {
       const res = await api.get("/student/attendance/sessions");
-      setSessions(res.data.data || []);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // ✅ hanya sesi HARI INI
+      const onlyToday = (res.data?.data || []).filter((s) =>
+        isSameDay(s.tanggal, today)
+      );
+
+      setSessions(onlyToday);
     } catch (error) {
       console.error("Gagal memuat sesi presensi:", error);
       toast.error("Gagal memuat sesi presensi");
@@ -31,28 +85,16 @@ export default function StudentAttendancePage() {
     fetchSessions();
   }, []);
 
-  const statusLabel = (status) => {
-    switch (status) {
-      case "PRESENT":
-        return "✅";
-      case "SICK":
-        return "🤒";
-      case "EXCUSED":
-        return "📄";
-      case "ABSENT":
-        return "❌";
-      default:
-        return "-";
-    }
-  };
-
   const handleSubmitAttendance = async (sessionId, status) => {
     try {
-      await api.post(`/student/attendance/${sessionId}`, { status });
-      toast.success("Presensi berhasil!");
+      const res = await api.post(`/student/attendance/${sessionId}`, {
+        status,
+      });
+      toast.success(res.data.message || "Presensi berhasil!");
       fetchSessions();
     } catch (error) {
-      toast.error("Gagal mengisi presensi");
+      const msg = error.response?.data?.message || "Gagal mengisi presensi";
+      toast.error(msg);
     }
   };
 
@@ -68,45 +110,51 @@ export default function StudentAttendancePage() {
     },
     {
       header: "Status Presensi",
-      cell: (row) => {
-        if (row.attendanceStatus) {
-          return <span>{statusLabel(row.attendanceStatus)}</span>;
-        }
-        return "-";
-      },
+      cell: (row) =>
+        row.attendanceStatus ? (
+          <StatusIcon status={row.attendanceStatus} />
+        ) : (
+          "-"
+        ),
     },
     {
       header: "Aksi",
-      cell: (row) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            disabled={!!row.attendanceStatus}
-            onClick={() => handleSubmitAttendance(row.id, "PRESENT")}
-          >
-            Hadir
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!!row.attendanceStatus}
-            onClick={() => handleSubmitAttendance(row.id, "SICK")}
-          >
-            Sakit
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={!!row.attendanceStatus}
-            onClick={() => handleSubmitAttendance(row.id, "EXCUSED")}
-          >
-            Izin
-          </Button>
-        </div>
-      ),
+      cell: (row) => {
+        const alreadyFinal =
+          !!row.attendanceStatus && row.attendanceStatus !== "ABSENT"; // hanya disable jika sudah final
+
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              disabled={alreadyFinal}
+              onClick={() => handleSubmitAttendance(row.id, "PRESENT")}
+            >
+              Hadir
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={alreadyFinal}
+              onClick={() => handleSubmitAttendance(row.id, "SICK")}
+            >
+              Sakit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={alreadyFinal}
+              onClick={() => handleSubmitAttendance(row.id, "EXCUSED")}
+            >
+              Izin
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
+  // Kalender tetap ada: dengan data “onlyToday”, yang ditandai cuma tanggal hari ini
   const markedDates = sessions.reduce((acc, s) => {
     acc[new Date(s.tanggal).toDateString()] = s.attendanceStatus;
     return acc;
@@ -115,7 +163,7 @@ export default function StudentAttendancePage() {
   const tileContent = ({ date, view }) => {
     if (view !== "month") return null;
     const status = markedDates[date.toDateString()];
-    return status ? <span>{statusLabel(status)}</span> : null;
+    return status ? <StatusIcon status={status} className="h-3 w-3" /> : null;
   };
 
   return (
@@ -129,6 +177,7 @@ export default function StudentAttendancePage() {
         ]}
         icon={<CalendarCheck className="h-6 w-6" />}
       />
+      <GreetingWidget />
 
       <div className="flex justify-end">
         <Button
@@ -146,18 +195,30 @@ export default function StudentAttendancePage() {
           columns={columns}
           isLoading={isLoading}
           loadingMessage="Memuat sesi presensi..."
-          emptyMessage="Tidak ada sesi presensi."
+          emptyMessage="Tidak ada sesi presensi hari ini."
           keyExtractor={(item) => item.id}
         />
       ) : (
         <div className="rounded border p-4">
           <Calendar
             tileContent={tileContent}
-            calendarType="iso8601" // ✅ Benar (pakai huruf kecil semua)
+            calendarType="iso8601"
             locale="id-ID"
-          />{" "}
+          />
           <div className="mt-4 text-sm text-muted-foreground">
-            <strong>Keterangan:</strong> ✅ Hadir, 🤒 Sakit, 📄 Izin, ❌ Alpha
+            <strong>Keterangan:</strong>{" "}
+            <span className="inline-flex items-center gap-1 mr-3">
+              <Check className="h-4 w-4 text-green-600" /> Hadir
+            </span>
+            <span className="inline-flex items-center gap-1 mr-3">
+              <Thermometer className="h-4 w-4 text-yellow-600" /> Sakit
+            </span>
+            <span className="inline-flex items-center gap-1 mr-3">
+              <FileText className="h-4 w-4 text-blue-600" /> Izin
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <X className="h-4 w-4 text-rose-500" /> Alpha
+            </span>
           </div>
         </div>
       )}
