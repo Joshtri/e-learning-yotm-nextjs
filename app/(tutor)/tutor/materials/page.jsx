@@ -183,6 +183,10 @@ export default function TutorMaterialsPage() {
       ),
     },
     {
+      header: "Pertemuan",
+      cell: (row) => <div>{row.pertemuan || "-"}</div>,
+    },
+    {
       header: "Kelas & Mapel",
       cell: (row) => (
         <div>
