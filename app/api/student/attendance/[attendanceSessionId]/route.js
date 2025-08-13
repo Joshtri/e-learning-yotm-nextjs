@@ -1,4 +1,3 @@
-// app/api/student/attendance/[attendanceSessionId]/route.js
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
@@ -18,49 +17,43 @@ export async function POST(request, { params }) {
       select: { id: true, classId: true },
     });
 
-    if (!student) {
+    if (!student?.classId) {
       return NextResponse.json(
-        { success: false, message: "Student not found" },
-        { status: 404 }
-      );
-    }
-
-    const { status } = await request.json();
-
-    if (!["PRESENT", "SICK", "EXCUSED"].includes(status)) {
-      return NextResponse.json(
-        { success: false, message: "Status tidak valid" },
+        { success: false, message: "Data siswa tidak valid" },
         { status: 400 }
       );
     }
 
-    // Pastikan sesi presensi ada
-    const attendanceSession = await prisma.attendanceSession.findUnique({
+    const { status } = await request.json();
+    if (!["PRESENT", "SICK", "EXCUSED"].includes(status)) {
+      return NextResponse.json(
+        { success: false, message: "Status presensi tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    const session = await prisma.attendanceSession.findUnique({
       where: { id: params.attendanceSessionId },
-      select: { academicYearId: true, tanggal: true },
+      select: { id: true, academicYearId: true, tanggal: true, classId: true },
     });
 
-    if (!attendanceSession) {
+    if (!session) {
       return NextResponse.json(
         { success: false, message: "Sesi presensi tidak ditemukan" },
         { status: 404 }
       );
     }
 
-    // ✅ Tambahkan validasi tanggal
+    // Validasi: hanya hari yang sama
     const today = new Date();
-    const sessionDate = new Date(attendanceSession.tanggal);
-
-    const isSameDate =
-      today.getFullYear() === sessionDate.getFullYear() &&
-      today.getMonth() === sessionDate.getMonth() &&
-      today.getDate() === sessionDate.getDate();
-
-    if (!isSameDate) {
+    today.setHours(0, 0, 0, 0);
+    const sessionDate = new Date(session.tanggal);
+    sessionDate.setHours(0, 0, 0, 0);
+    if (today.getTime() !== sessionDate.getTime()) {
       return NextResponse.json(
         {
           success: false,
-          message: `Presensi hanya dapat dilakukan pada tanggal ${sessionDate.toLocaleDateString(
+          message: `Presensi hanya pada ${sessionDate.toLocaleDateString(
             "id-ID"
           )}`,
         },
@@ -68,37 +61,41 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Cek apakah sudah pernah absen
+    // Cek existing
     const existing = await prisma.attendance.findFirst({
-      where: {
-        studentId: student.id,
-        attendanceSessionId: params.attendanceSessionId,
-      },
-      select: {
-        status: true,
-        date: true,
-      },
+      where: { studentId: student.id, attendanceSessionId: session.id },
+      select: { id: true, status: true },
     });
 
     if (existing) {
+      // ✅ Izinkan update sekali dari ABSENT → final status
+      if (existing.status === "ABSENT") {
+        await prisma.attendance.update({
+          where: { id: existing.id },
+          data: { status },
+        });
+        return NextResponse.json({
+          success: true,
+          message: "Presensi diperbarui",
+        });
+      }
+      // Jika sudah final, tolak
       return NextResponse.json(
         {
           success: false,
-          message: `Anda sudah mengisi presensi sebagai "${
-            existing.status
-          }" pada ${new Date(existing.date).toLocaleDateString("id-ID")}`,
+          message: `Anda sudah mengisi presensi sebagai "${existing.status}"`,
         },
         { status: 400 }
       );
     }
 
-    // ✅ Fix: Tambah presensi
+    // Jika belum ada record sama sekali, buat baru
     await prisma.attendance.create({
       data: {
-        student: { connect: { id: student.id } },
-        class: { connect: { id: student.classId } },
-        academicYear: { connect: { id: attendanceSession.academicYearId } },
-        AttendanceSession: { connect: { id: params.attendanceSessionId } },
+        studentId: student.id,
+        classId: student.classId,
+        academicYearId: session.academicYearId,
+        attendanceSessionId: session.id,
         status,
         date: new Date(),
       },
@@ -106,7 +103,7 @@ export async function POST(request, { params }) {
 
     return NextResponse.json({ success: true, message: "Presensi berhasil" });
   } catch (error) {
-    console.error("Gagal submit presensi:", error);
+    console.error("POST /student/attendance/:id error:", error);
     return NextResponse.json(
       { success: false, message: "Gagal submit presensi" },
       { status: 500 }
