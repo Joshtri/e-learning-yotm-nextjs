@@ -1,5 +1,6 @@
 "use client";
 
+import HeaderDateTimeWidget from "@/components/HeaderDateTimeWidget";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,10 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import axios from "axios";
-import { Menu, Search } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -22,7 +21,6 @@ import { NotificationDropdown } from "../ui/notification-dropdown";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const [mode, setMode] = useState("default");
   const [user, setUser] = useState(null);
 
@@ -88,17 +86,9 @@ export default function AppHeader({ onMenuClick, role }) {
           <span className="sr-only">Toggle Menu</span>
         </Button>
 
-        <div className="hidden md:block w-[300px] lg:w-[400px]">
-          <form>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Cari..."
-                className="w-full bg-background pl-9"
-              />
-            </div>
-          </form>
+        {/* ✅ GANTI DENGAN WIDGET */}
+        <div className="hidden md:block">
+          <HeaderDateTimeWidget />
         </div>
       </div>
 
@@ -112,20 +102,6 @@ export default function AppHeader({ onMenuClick, role }) {
           <span className="sr-only">Notifikasi</span>
           {user && <NotificationDropdown userId={user.id} />}
         </Button>
-
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="hover:bg-blue-400 text-white"
-        >
-          {theme === "dark" ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
-          <span className="sr-only">Toggle Dark Mode</span>
-        </Button> */}
 
         {/* User dropdown */}
         <DropdownMenu>
