@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import PaginationBar from "@/components/ui/PaginationBar";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -138,7 +139,7 @@ export default function StudentsPage() {
           {/* <EntityAvatar name={student.user?.nama || "-"} />
           <div className="font-medium">{student.user?.nama || "-"}</div> */}
           <EntityAvatar name={student.namaLengkap || "-"} />
-          <div className="font-medium">{student.namaLengkap|| "-"}</div>
+          <div className="font-medium">{student.namaLengkap || "-"}</div>
         </div>
       ),
     },
@@ -227,7 +228,6 @@ export default function StudentsPage() {
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Siswa" },
             ]}
-            
           />
 
           <Tabs defaultValue="all" className="space-y-6">
@@ -263,15 +263,75 @@ export default function StudentsPage() {
                 loadingMessage="Memuat data siswa..."
                 emptyMessage="Tidak ada data siswa ditemukan"
                 keyExtractor={(student) => student.id}
-                pagination={{
-                  currentPage: pagination.page,
-                  totalPages: pagination.pages,
-                  onPageChange: (newPage) =>
-                    setPagination((prev) => ({ ...prev, page: newPage })),
-                  totalItems: pagination.total,
-                  itemsPerPage: pagination.limit,
-                }}
               />
+
+              {/* Pagination footer */}
+              {/* Footer: info + page size + shadcn pagination */}
+              <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Range info */}
+                <div className="text-sm text-muted-foreground">
+                  {pagination.total > 0 ? (
+                    <>
+                      Menampilkan{" "}
+                      <span className="font-medium">
+                        {Math.min(
+                          (pagination.page - 1) * pagination.limit + 1,
+                          pagination.total
+                        )}
+                      </span>{" "}
+                      –{" "}
+                      <span className="font-medium">
+                        {Math.min(
+                          pagination.page * pagination.limit,
+                          pagination.total
+                        )}
+                      </span>{" "}
+                      dari{" "}
+                      <span className="font-medium">{pagination.total}</span>{" "}
+                      data
+                    </>
+                  ) : (
+                    "Tidak ada data"
+                  )}
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-4">
+                  {/* Page size */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Baris per halaman
+                    </span>
+                    <select
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      value={pagination.limit}
+                      onChange={(e) =>
+                        setPagination((prev) => ({
+                          ...prev,
+                          limit: Number(e.target.value),
+                          page: 1, // reset ke halaman 1
+                        }))
+                      }
+                    >
+                      {[10, 20, 50, 100].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* shadcn Pagination */}
+                  <PaginationBar
+                    page={pagination.page}
+                    pages={Math.max(1, pagination.pages ?? 1)}
+                    disabled={isLoading}
+                    onPageChange={(newPage) =>
+                      setPagination((prev) => ({ ...prev, page: newPage }))
+                    }
+                  />
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </main>
