@@ -1,3 +1,4 @@
+// app/(tutor)/tutor/learning-materials/[id]/edit/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
-// Firebase (same flow as create modal)
+// Firebase
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -24,9 +25,10 @@ export default function EditLearningMaterialPage() {
   const [saving, setSaving] = useState(false);
 
   const [judul, setJudul] = useState("");
+  const [pertemuan, setPertemuan] = useState(""); // <- state pertemuan
   const [konten, setKonten] = useState("");
-  const [fileUrl, setFileUrl] = useState(null); // current file url (nullable)
-  const [selectedFile, setSelectedFile] = useState(null); // new file (if chosen)
+  const [fileUrl, setFileUrl] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const [meta, setMeta] = useState({ kelas: "", mapel: "", tutor: "" });
 
@@ -40,6 +42,16 @@ export default function EditLearningMaterialPage() {
       setJudul(m.judul || "");
       setKonten(m.konten || "");
       setFileUrl(m.fileUrl || null);
+
+      // ✅ pertemuan bisa "1" (string) atau null → selalu tampilkan sebagai string di input
+      const normalizedPertemuan =
+        m.pertemuan === null ||
+        m.pertemuan === undefined ||
+        String(m.pertemuan).trim() === ""
+          ? ""
+          : String(m.pertemuan);
+      setPertemuan(normalizedPertemuan);
+
       setMeta({
         kelas: m.classSubjectTutor?.class?.namaKelas || "",
         mapel: m.classSubjectTutor?.subject?.namaMapel || "",
@@ -81,16 +93,27 @@ export default function EditLearningMaterialPage() {
 
       let finalFileUrl;
       if (selectedFile) {
-        // upload new file to Firebase
         finalFileUrl = await maybeUploadToFirebase(selectedFile);
       } else {
-        // keep current (can be null if removed)
         finalFileUrl = fileUrl ?? null;
+      }
+
+      // normalisasi pertemuan → number/null
+      let pertemuanToSend;
+      if (pertemuan === "" || pertemuan === null) {
+        pertemuanToSend = null;
+      } else {
+        const parsed = Number(pertemuan);
+        if (!Number.isFinite(parsed) || parsed < 1) {
+          throw new Error("Pertemuan harus berupa angka ≥ 1");
+        }
+        pertemuanToSend = parsed;
       }
 
       const payload = {
         judul,
         konten,
+        pertemuan: pertemuanToSend, // ✅ kirim angka / null
         fileUrl: finalFileUrl,
       };
 
@@ -110,8 +133,8 @@ export default function EditLearningMaterialPage() {
   }
 
   function handleRemoveFile() {
-    setFileUrl(null); // mark to remove on save
-    setSelectedFile(null); // clear any chosen file
+    setFileUrl(null);
+    setSelectedFile(null);
     toast.message("Lampiran file akan dihapus saat disimpan");
   }
 
@@ -167,6 +190,22 @@ export default function EditLearningMaterialPage() {
                   className="mt-1"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Pertemuan</label>
+                <Input
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={pertemuan}
+                  onChange={(e) => setPertemuan(e.target.value)}
+                  placeholder="Contoh: 1"
+                  className="mt-1"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Isi nomor pertemuan (opsional). Hanya angka ≥ 1.
+                </p>
               </div>
 
               <div>
