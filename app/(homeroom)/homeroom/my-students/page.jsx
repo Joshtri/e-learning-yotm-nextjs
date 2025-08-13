@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/axios"; // pastikan sudah ada
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
 export default function MyStudentsPage() {
   const [students, setStudents] = useState([]);
@@ -89,11 +90,7 @@ export default function MyStudentsPage() {
           keyExtractor={(item) => item.id}
         />
       ) : (
-        <EmptyState
-          title="Belum ada siswa"
-          description="Saat ini belum ada siswa di kelas Anda."
-          icon={<GraduationCap className="h-8 w-8 text-muted-foreground" />}
-        />
+        <SkeletonTable numCols={7} numRows={8} showHeader/>
       )}
     </div>
   );
