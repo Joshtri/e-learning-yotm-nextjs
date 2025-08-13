@@ -30,6 +30,14 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import {
+  Loader2,
+  Check, // Hadir
+  Thermometer, // Sakit
+  FileText, // Izin
+  X, // Alpha
+  Minus, // Kosong
+} from "lucide-react";
 
 export default function HomeroomAttendancePage() {
   const [students, setStudents] = useState([]);
@@ -38,6 +46,8 @@ export default function HomeroomAttendancePage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [daysInMonth, setDaysInMonth] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchAttendance();
@@ -66,6 +76,7 @@ export default function HomeroomAttendancePage() {
 
   const handleGenerate = async () => {
     try {
+      setIsGenerating(true);
       await api.post("/homeroom/attendance/generate", {
         bulan: currentMonth,
         tahun: currentYear,
@@ -74,12 +85,17 @@ export default function HomeroomAttendancePage() {
       fetchAttendance();
     } catch (error) {
       console.error(error);
-      toast.error("Gagal generate presensi");
+      const message =
+        error.response?.data?.message || "Gagal generate presensi";
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const handleDeleteAttendance = async () => {
     try {
+      setIsDeleting(true);
       await api.delete(
         `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`
       );
@@ -89,21 +105,52 @@ export default function HomeroomAttendancePage() {
     } catch (error) {
       console.error(error);
       toast.error("Gagal menghapus presensi");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const statusToIcon = (status) => {
+  // ---------- STATUS ICON ----------
+  const StatusIcon = ({ status, className = "h-4 w-4" }) => {
+    const base = "inline-flex items-center justify-center";
     switch (status) {
       case "PRESENT":
-        return "✔️";
+        return (
+          <Check
+            className={`${className} text-green-600 ${base}`}
+            aria-label="Hadir"
+          />
+        );
       case "SICK":
-        return "🤒";
+        return (
+          <Thermometer
+            className={`${className} text-amber-600 ${base}`}
+            aria-label="Sakit"
+          />
+        );
       case "EXCUSED":
-        return "📄";
+        return (
+          <FileText
+            className={`${className} text-blue-600 ${base}`}
+            aria-label="Izin"
+          />
+        );
       case "ABSENT":
-        return "❌";
+        return (
+          <span
+            className="inline-flex items-center justify-center rounded-full bg-red-100 p-1"
+            title="Alpha"
+          >
+            <X className={`${className} text-red-600`} aria-label="Alpha" />
+          </span>
+        );
       default:
-        return "-";
+        return (
+          <Minus
+            className={`${className} text-muted-foreground ${base}`}
+            aria-label="Tidak ada data"
+          />
+        );
     }
   };
 
@@ -159,7 +206,10 @@ export default function HomeroomAttendancePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleGenerate}>Generate Presensi Bulan Ini</Button>
+          <Button onClick={handleGenerate} disabled={isGenerating}>
+            {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isGenerating ? "Mengenerate..." : "Generate Presensi Bulan Ini"}
+          </Button>
 
           <AlertDialog open={modalOpen} onOpenChange={setModalOpen}>
             <AlertDialogTrigger asChild>
@@ -176,8 +226,15 @@ export default function HomeroomAttendancePage() {
                 <Button variant="ghost" onClick={() => setModalOpen(false)}>
                   Batal
                 </Button>
-                <Button variant="destructive" onClick={handleDeleteAttendance}>
-                  Hapus
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAttendance}
+                  disabled={isDeleting}
+                >
+                  {isDeleting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isDeleting ? "Menghapus..." : "Hapus"}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -185,10 +242,10 @@ export default function HomeroomAttendancePage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               <TableHead className="w-12">No</TableHead>
               <TableHead>Nama</TableHead>
               {daysInMonth.map((day) => (
@@ -210,7 +267,7 @@ export default function HomeroomAttendancePage() {
               <TableRow>
                 <TableCell
                   colSpan={daysInMonth.length + 2}
-                  className="text-center"
+                  className="text-center text-muted-foreground"
                 >
                   Tidak ada data siswa
                 </TableCell>
@@ -218,8 +275,12 @@ export default function HomeroomAttendancePage() {
             ) : (
               students.map((student, index) => (
                 <TableRow key={student.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{student.namaLengkap}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {student.namaLengkap}
+                  </TableCell>
                   {daysInMonth.map((day) => {
                     const tanggal = dayjs(
                       new Date(currentYear, currentMonth - 1, day)
@@ -229,7 +290,7 @@ export default function HomeroomAttendancePage() {
                     );
                     return (
                       <TableCell key={day} className="text-center">
-                        {attendance ? statusToIcon(attendance.status) : "-"}
+                        <StatusIcon status={attendance?.status} />
                       </TableCell>
                     );
                   })}
@@ -238,31 +299,31 @@ export default function HomeroomAttendancePage() {
             )}
           </TableBody>
         </Table>
-        <hr/>
-        {/* Keterangan Presensi */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-2">Keterangan Presensi:</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <span>✔️</span>
-              <span>Hadir</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>🤒</span>
-              <span>Sakit</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>📄</span>
-              <span>Izin</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>❌</span>
-              <span>Alpha (Tidak Hadir)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>-</span>
-              <span>Tidak ada data</span>
-            </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">Keterangan Presensi:</h3>
+        <div className="flex flex-wrap gap-4">
+          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5">
+            <Check className="h-4 w-4 text-green-600" />
+            <span>Hadir</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5">
+            <Thermometer className="h-4 w-4 text-amber-600" />
+            <span>Sakit</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5">
+            <FileText className="h-4 w-4 text-blue-600" />
+            <span>Izin</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5">
+            <X className="h-4 w-4 text-rose-600" />
+            <span>Alpha (Tidak Hadir)</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5">
+            <Minus className="h-4 w-4 text-muted-foreground" />
+            <span>Tidak ada data</span>
           </div>
         </div>
       </div>
