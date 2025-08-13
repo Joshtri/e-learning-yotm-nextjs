@@ -79,7 +79,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { judul, konten = "", fileUrl = null, classSubjectTutorId } = body;
+    const { judul, pertemuan, konten = "", fileUrl = null, classSubjectTutorId } = body;
 
     if (!judul || !classSubjectTutorId) {
       return NextResponse.json(
@@ -114,6 +114,7 @@ export async function POST(req) {
     const created = await prisma.learningMaterial.create({
       data: {
         judul,
+        pertemuan: pertemuan || "1", // Default ke "1" jika tidak ada
         konten,
         fileUrl,
         classSubjectTutorId,
