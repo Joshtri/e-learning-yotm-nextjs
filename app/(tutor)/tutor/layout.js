@@ -23,7 +23,7 @@ export default function TutorLayout({ children }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => { 
+    const handleResize = () => {
       if (window.innerWidth < 768) {
         setIsSidebarOpen(false);
       } else {
@@ -41,36 +41,36 @@ export default function TutorLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
+        {/* <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-        >
-          <div className="flex min-h-screen bg-background">
-            {/* Sidebar (desktop & mobile) */}
-            <AppSidebar
-              role="tutor" // ✅ sidebar isi berdasarkan role tutor
-              isOpen={isSidebarOpen}
-              isMobileOpen={isMobileSidebarOpen}
-              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-              onToggleMobileSidebar={() =>
-                setIsMobileSidebarOpen(!isMobileSidebarOpen)
-              }
+        > */}
+        <div className="flex min-h-screen bg-background">
+          {/* Sidebar (desktop & mobile) */}
+          <AppSidebar
+            role="tutor" // ✅ sidebar isi berdasarkan role tutor
+            isOpen={isSidebarOpen}
+            isMobileOpen={isMobileSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            onToggleMobileSidebar={() =>
+              setIsMobileSidebarOpen(!isMobileSidebarOpen)
+            }
+          />
+
+          {/* Main Content */}
+          <div className="flex flex-1 flex-col">
+            <AppHeader
+              role="tutor"
+              onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             />
 
-            {/* Main Content */}
-            <div className="flex flex-1 flex-col">
-              <AppHeader
-                role="tutor"
-                onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              />
-
-              <div className="flex-1 p-6">{children}</div>
-            </div>
+            <div className="flex-1 p-6">{children}</div>
           </div>
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+        </div>
+        <Toaster richColors position="top-right" />
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );
