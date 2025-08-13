@@ -34,6 +34,7 @@ export default function StudentsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [classOptions, setClassOptions] = useState([]);
   const [isSelectingClass, setIsSelectingClass] = useState(false);
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" atau "desc"
 
   const router = useRouter();
 
@@ -96,13 +97,26 @@ export default function StudentsPage() {
   }, [pagination.page, pagination.limit, searchQuery, selectedAcademicYear]);
 
   const filteredStudents = useMemo(() => {
-    if (!searchQuery) return students;
-    return students.filter((student) =>
-      [student.user?.nama, student.nisn, student.user?.email].some((val) =>
-        val?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  }, [students, searchQuery]);
+    let result = students;
+
+    // Filter by search
+    if (searchQuery) {
+      result = result.filter((student) =>
+        [student.user?.nama, student.nisn, student.user?.email].some((val) =>
+          val?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+
+    // Sort by namaLengkap
+    return result.slice().sort((a, b) => {
+      const nameA = a.namaLengkap?.toLowerCase() || "";
+      const nameB = b.namaLengkap?.toLowerCase() || "";
+      return sortOrder === "asc"
+        ? nameA.localeCompare(nameB, "id")
+        : nameB.localeCompare(nameA, "id");
+    });
+  }, [students, searchQuery, sortOrder]);
 
   const handleAddClass = async (studentId) => {
     setSelectedStudentId(studentId);
@@ -250,6 +264,22 @@ export default function StudentsPage() {
                         setPagination((prev) => ({ ...prev, page: 1 }));
                       }}
                     />
+                  ),
+                },
+                {
+                  label: "Urut Nama",
+                  content: (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setSortOrder((prev) =>
+                          prev === "asc" ? "desc" : "asc"
+                        )
+                      }
+                    >
+                      {sortOrder === "asc" ? "A-Z" : "Z-A"}
+                    </Button>
                   ),
                 },
               ]}
