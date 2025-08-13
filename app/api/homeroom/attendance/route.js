@@ -92,8 +92,8 @@ export async function DELETE(req) {
     }
 
     const { searchParams } = new URL(req.url);
-    const bulan = parseInt(searchParams.get("bulan"));
-    const tahun = parseInt(searchParams.get("tahun"));
+    const bulan = parseInt(searchParams.get("bulan") || "");
+    const tahun = parseInt(searchParams.get("tahun") || "");
 
     if (!bulan || !tahun) {
       return new Response(
@@ -105,6 +105,7 @@ export async function DELETE(req) {
       );
     }
 
+    // Cari tutor dari user
     const tutor = await prisma.tutor.findUnique({
       where: { userId: user.id },
     });
@@ -119,10 +120,7 @@ export async function DELETE(req) {
       );
     }
 
-    // const kelas = await prisma.class.findFirst({
-    //   where: { homeroomTeacherId: tutor.id },
-    // });
-
+    // Cari kelas aktif yang dipegang wali kelas
     const kelas = await prisma.class.findFirst({
       where: {
         homeroomTeacherId: tutor.id,
@@ -141,13 +139,30 @@ export async function DELETE(req) {
     }
 
     const studentIds = kelas.students.map((s) => s.id);
+    const startDate = new Date(tahun, bulan - 1, 1);
+    const endDate = new Date(tahun, bulan, 0); // hari terakhir bulan tsb
 
-    const deleted = await prisma.attendance.deleteMany({
+    // Hapus attendance lewat filter di AttendanceSession.tanggal
+    const deletedAttendances = await prisma.attendance.deleteMany({
       where: {
         studentId: { in: studentIds },
-        date: {
-          gte: new Date(tahun, bulan - 1, 1),
-          lte: new Date(tahun, bulan - 1, 31),
+        AttendanceSession: { // relasi sesuai schema (huruf besar)
+          tanggal: {
+            gte: startDate,
+            lte: endDate,
+          },
+          classId: kelas.id,
+        },
+      },
+    });
+
+    // Hapus session presensi juga
+    const deletedSessions = await prisma.attendanceSession.deleteMany({
+      where: {
+        classId: kelas.id,
+        tanggal: {
+          gte: startDate,
+          lte: endDate,
         },
       },
     });
@@ -155,12 +170,12 @@ export async function DELETE(req) {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Berhasil menghapus ${deleted.count} presensi di bulan ${bulan}/${tahun}`,
+        message: `Berhasil menghapus ${deletedAttendances.count} presensi dan ${deletedSessions.count} sesi di bulan ${bulan}/${tahun}`,
       }),
       { status: 200 }
     );
   } catch (error) {
-    console.error(error);
+    console.error("DELETE /homeroom/attendance error:", error);
     return new Response(
       JSON.stringify({
         success: false,
