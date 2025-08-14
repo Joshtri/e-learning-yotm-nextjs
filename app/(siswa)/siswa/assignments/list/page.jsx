@@ -64,6 +64,16 @@ export default function StudentSubjectsPage() {
     fetchData();
   }, []);
 
+  const getAssignmentWindowState = (tugas) => {
+    const now = new Date();
+    const start = new Date(tugas.waktuMulai);
+    const end = new Date(tugas.waktuSelesai);
+
+    if (now < start) return "not_open"; // belum mulai
+    if (now > end) return "closed"; // sudah selesai
+    return "open"; // sedang berjalan
+  };
+
   const filteredSubjects = subjects.filter((s) => {
     if (selectedAcademicYearId && s.academicYearId !== selectedAcademicYearId)
       return false;
@@ -121,83 +131,117 @@ export default function StudentSubjectsPage() {
                   <strong>Jumlah Materi:</strong> {item.jumlahMateri || 0}
                 </p>
 
-                {item.tugasAktif.map((tugas) => (
-                  <div
-                    key={tugas.id}
-                    className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4 py-2 border-b last:border-none"
-                  >
-                    <div className="space-y-1">
-                      <p className="font-semibold">{tugas.judul}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(tugas.waktuMulai).toLocaleString("id-ID")} -{" "}
-                        {new Date(tugas.waktuSelesai).toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-xs">
-                        <strong>Jumlah Soal:</strong> {tugas.jumlahSoal}{" "}
-                        {tugas.score !== null && (
-                          <>
-                            | <strong>Nilai:</strong>{" "}
-                            {tugas.nilai ?? "Belum Dinilai"}
-                          </>
-                        )}
-                      </p>
-                      {tugas.feedback && (
-                        <p className="text-xs text-muted-foreground italic">
-                          Feedback: {tugas.feedback}
+                {item.tugasAktif.map((tugas) => {
+                  const windowState = getAssignmentWindowState(tugas);
+                  const canWork =
+                    tugas.status === "BELUM_MENGERJAKAN" &&
+                    windowState === "open";
+
+                  return (
+                    <div
+                      key={tugas.id}
+                      className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4 py-2 border-b last:border-none"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-semibold">{tugas.judul}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(tugas.waktuMulai).toLocaleString("id-ID")} -{" "}
+                          {new Date(tugas.waktuSelesai).toLocaleString("id-ID")}
                         </p>
-                      )}
-                    </div>
+                        <p className="text-xs">
+                          <strong>Jumlah Soal:</strong> {tugas.jumlahSoal}{" "}
+                          {tugas.score !== null && (
+                            <>
+                              | <strong>Nilai:</strong>{" "}
+                              {tugas.nilai ?? "Belum Dinilai"}
+                            </>
+                          )}
+                        </p>
+                        {tugas.feedback && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Feedback: {tugas.feedback}
+                          </p>
+                        )}
 
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          tugas.status === "SUDAH_MENGERJAKAN"
-                            ? "success"
-                            : "secondary"
-                        }
-                      >
-                        {tugas.status.replace("_", " ")}
-                      </Badge>
+                        {/* Info status waktu */}
+                        {windowState === "not_open" && (
+                          <span className="text-[11px] text-amber-600">
+                            Belum dibuka
+                          </span>
+                        )}
+                        {windowState === "closed" && (
+                          <span className="text-[11px] text-red-600">
+                            Waktu habis
+                          </span>
+                        )}
+                      </div>
 
-                      {tugas.status === "BELUM_MENGERJAKAN" ? (
-                        <>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            tugas.status === "SUDAH_MENGERJAKAN"
+                              ? "success"
+                              : "secondary"
+                          }
+                        >
+                          {tugas.status.replace("_", " ")}
+                        </Badge>
+
+                        {tugas.status === "BELUM_MENGERJAKAN" ? (
+                          <>
+                            {/* Kerjakan hanya aktif saat window open */}
+                            <button
+                              onClick={() =>
+                                canWork &&
+                                router.push(
+                                  `/siswa/assignments/${tugas.id}/start`
+                                )
+                              }
+                              disabled={!canWork}
+                              className={`text-sm font-medium underline-offset-2 ${
+                                canWork
+                                  ? "text-blue-600 hover:underline"
+                                  : "text-gray-400 cursor-not-allowed"
+                              }`}
+                              title={
+                                canWork
+                                  ? "Mulai kerjakan"
+                                  : windowState === "not_open"
+                                  ? "Tugas belum dibuka"
+                                  : "Waktu pengerjaan telah berakhir"
+                              }
+                            >
+                              Kerjakan
+                            </button>
+
+                            {/* Lihat Soal boleh tetap ada (opsional). Kalau mau ikut dibatasi, kamu bisa disable saat not_open/closed */}
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/siswa/assignments/${tugas.id}/lihat-soal`
+                                )
+                              }
+                              className="text-sm font-medium text-gray-600 hover:underline"
+                            >
+                              Lihat Soal
+                            </button>
+                          </>
+                        ) : (
                           <button
                             onClick={() =>
                               router.push(
-                                `/siswa/assignments/${tugas.id}/start`
-                              )
-                            }
-                            className="text-sm font-medium text-blue-600 hover:underline"
-                          >
-                            Kerjakan
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/siswa/assignments/${tugas.id}/lihat-soal`
+                                `/siswa/assignments/${tugas.id}/preview`
                               )
                             }
                             className="text-sm font-medium text-gray-600 hover:underline"
                           >
-                            Lihat Soal
+                            Lihat Jawaban Anda
                           </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/siswa/assignments/${tugas.id}/preview`
-                            )
-                          }
-                          className="text-sm font-medium text-gray-600 hover:underline"
-                        >
-                          Lihat Jawaban Anda
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           ))
