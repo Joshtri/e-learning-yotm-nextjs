@@ -86,7 +86,9 @@ export async function GET(request, { params }) {
           student: {
             id: student.id,
             namaLengkap: student.namaLengkap,
+            noTelepon: student.noTelepon,
             nisn: student.nisn,
+            nis: student.nis,
             jenisKelamin: student.jenisKelamin,
             tempatLahir: student.tempatLahir,
             tanggalLahir: student.tanggalLahir,
@@ -123,10 +125,12 @@ export async function PATCH(req, { params }) {
     const { id } = params;
     const data = await req.json();
 
-    // Validasi dan prepare payload
+    // Validasi da3n prepare payload
     const updatePayload = {
       namaLengkap: data.namaLengkap,
       nisn: data.nisn,
+      noTelepon: data.noTelepon,
+      nis: data.nis,
       jenisKelamin: data.jenisKelamin,
       tempatLahir: data.tempatLahir,
       tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : null,
