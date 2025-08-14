@@ -30,6 +30,24 @@ export default function ClassDetailPage() {
     }
   };
 
+  const mapGender = (raw) => {
+    if (raw == null) return "-";
+    const s = String(raw).trim().toLowerCase();
+
+    // laki-laki
+    if (
+      ["male", "m", "l", "pria", "laki-laki", "laki_laki", "laki"].includes(s)
+    ) {
+      return "Laki-laki";
+    }
+    // perempuan
+    if (["female", "woman", "f", "p", "wanita", "perempuan"].includes(s)) {
+      return "Perempuan";
+    }
+    // enum uppercase (MALE/FEMALE) juga ter-handle oleh toLowerCase di atas
+    return "-";
+  };
+
   useEffect(() => {
     if (id) fetchClassDetail();
   }, [id]);
@@ -38,9 +56,17 @@ export default function ClassDetailPage() {
     { header: "No", cell: (_, i) => i + 1, className: "w-[50px]" },
     { header: "Nama Lengkap", cell: (row) => row.namaLengkap },
     { header: "NISN", cell: (row) => row.nisn },
-    { header: "Jenis Kelamin", cell: (row) => row.jenisKelamin || "-" },
+    {
+      header: "Jenis Kelamin",
+      cell: (row) =>
+        mapGender(
+          row.jenisKelamin ??
+            row.gender ??
+            row.user?.jenisKelamin ??
+            row.user?.gender
+        ),
+    },
     { header: "Email", cell: (row) => row.user?.email || "-" },
-
   ];
 
   return (
