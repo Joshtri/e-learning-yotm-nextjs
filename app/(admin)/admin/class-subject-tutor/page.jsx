@@ -26,6 +26,7 @@ export default function ClassSubjectTutorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const router = useRouter();
+  const [deletingId, setDeletingId] = useState(null);
 
   // Fetch Academic Years
   const fetchAcademicYears = async () => {
@@ -43,6 +44,22 @@ export default function ClassSubjectTutorPage() {
       }
     } catch (err) {
       toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus data ini?")) return;
+    try {
+      setDeletingId(id);
+      await api.delete(`/class-subject-tutors/${id}`);
+      toast.success("Data berhasil dihapus");
+      await fetchData();
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message || "Gagal menghapus data jadwal belajar";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -118,15 +135,25 @@ export default function ClassSubjectTutorPage() {
       header: "Aksi",
       className: "w-[120px]",
       cell: (row) => (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            router.push(`/admin/class-subject-tutor/${row.id}/edit`)
-          }
-        >
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              router.push(`/admin/class-subject-tutor/${row.id}/edit`)
+            }
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDelete(row.id)}
+            disabled={deletingId === row.id}
+          >
+            {deletingId === row.id ? "Menghapus..." : "Hapus"}
+          </Button>
+        </div>
       ),
     },
   ];
