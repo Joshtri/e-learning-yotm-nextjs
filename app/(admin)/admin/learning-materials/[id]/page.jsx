@@ -7,6 +7,20 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
+function linkifyText(text) {
+  if (!text) return "";
+
+  // Regex untuk mendeteksi URL
+  const urlRegex = /(\bhttps?:\/\/[^\s<]+)/gi;
+
+  // Ganti URL dengan anchor tag
+  return text.replace(
+    urlRegex,
+    (url) =>
+      `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${url}</a>`
+  );
+}
+
 export default function LearningMaterialDetailPage() {
   const { id } = useParams();
   const [material, setMaterial] = useState(null);
@@ -84,7 +98,7 @@ export default function LearningMaterialDetailPage() {
           <CardTitle>Konten Materi</CardTitle>
         </CardHeader>
         <CardContent className="prose max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: material?.konten || "" }} />
+          <div dangerouslySetInnerHTML={{ __html: linkifyText(material?.konten || "") }} />
         </CardContent>
       </Card>
     </main>
