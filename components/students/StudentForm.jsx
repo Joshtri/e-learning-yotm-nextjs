@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { Form, useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -71,6 +71,39 @@ export default function StudentForm({
           },
         }}
       />
+      <FormField
+        label="No Telepon"
+        name="noTelepon"
+        control={control}
+        required
+        placeholder="Contoh: 08123456789"
+        error={errors.noTelepon?.message}
+        rules={{
+          required: "No telepon wajib diisi",
+          pattern: {
+            value: /^[0-9]{10,12}$/,
+            message: "No telepon harus 10-12 digit angka",
+          },
+        }}
+      />
+
+      <FormField
+        label="NIS"
+        name="nis"
+        control={control}
+        required
+        placeholder="Contoh: 1234567890"
+        error={errors.nis?.message}
+        rules={{
+          required: "NIS wajib diisi",
+          pattern: {
+            value: /^[0-9]{10}$/,
+            message: "NIS harus 10 digit angka",
+          },
+        }}
+      />
+
+      
 
       <FormField
         label="Jenis Kelamin"
