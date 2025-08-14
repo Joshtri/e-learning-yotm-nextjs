@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import { deleteFileFromFirebase } from "@/lib/firebase";
 
 function getUserFromCookie() {
   const token = cookies().get("auth_token")?.value;
@@ -169,6 +170,73 @@ export async function PATCH(req, { params }) {
         message: "Gagal memperbarui materi",
         error: error?.message || String(error),
       },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE hapus materi + file di Firebase (jika ada)
+export async function DELETE(_req, { params }) {
+  try {
+    const user = getUserFromCookie();
+    if (!user || user.role !== "TUTOR") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+
+    // Ambil dulu materi untuk cek kepemilikan + ambil fileUrl
+    const existing = await prisma.learningMaterial.findFirst({
+      where: { id, classSubjectTutor: { tutor: { userId: user.id } } },
+      select: { id: true, fileUrl: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Materi tidak ditemukan atau Anda tidak memiliki akses",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Coba hapus file di Firebase (jika ada); jangan blokir proses DB jika gagal
+    await deleteFileFromFirebase(existing.fileUrl);
+
+    // Hapus record di database
+    await prisma.learningMaterial.delete({ where: { id: existing.id } });
+
+    return NextResponse.json({
+      success: true,
+      message: "Materi berhasil dihapus",
+      data: null,
+    });
+  } catch (error) {
+    console.error("DELETE learning-material error:", error);
+    const code = error?.code;
+
+    if (code === "P2025") {
+      return NextResponse.json(
+        { success: false, message: "Materi tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+    if (code === "P2003") {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Materi tidak dapat dihapus karena masih digunakan pada entitas lain.",
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus materi" },
       { status: 500 }
     );
   }
