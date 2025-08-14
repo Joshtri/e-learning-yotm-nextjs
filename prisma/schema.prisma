@@ -290,6 +290,7 @@ model LearningMaterial {
   pertemuan           String?  @db.VarChar(10) @default("1") // Untuk materi pertemuan tertentu
   konten              String   @db.Text
   fileUrl             String?  @db.VarChar(255)
+  tipeMateri          LearningMaterialType? @default(FILE)
   classSubjectTutorId String
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -599,4 +600,11 @@ enum ChatRoomType {
   PRIVATE
   GROUP
   FORUM
+}
+
+
+
+enum LearningMaterialType {
+  LINK_YOUTUBE
+  FILE
 }
