@@ -7,11 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import api from "@/lib/axios";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function ClassDetailPage() {
   const { id } = useParams();
   const [classData, setClassData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const router = useRouter();
 
   const fetchClassDetail = async () => {
     try {
@@ -36,6 +40,7 @@ export default function ClassDetailPage() {
     { header: "NISN", cell: (row) => row.nisn },
     { header: "Jenis Kelamin", cell: (row) => row.jenisKelamin || "-" },
     { header: "Email", cell: (row) => row.user?.email || "-" },
+
   ];
 
   return (

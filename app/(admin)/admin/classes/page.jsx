@@ -81,13 +81,13 @@ export default function ClassesPage() {
       className: "w-[120px]",
       cell: (row) => (
         <>
-          {/* <Button
+          <Button
             size="sm"
             variant="outline"
             onClick={() => router.push(`/admin/classes/${row.id}/edit`)}
           >
             Edit
-          </Button> */}
+          </Button>
 
           <Button
             size="sm"

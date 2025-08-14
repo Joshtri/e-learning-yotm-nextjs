@@ -25,7 +25,7 @@ export default function EditClassPage() {
     namaKelas: "",
     programId: "",
     academicYearId: "",
-    homeroomTeacherId: "",
+    homeroomTeacherId: "", // akan dipakai "none" di UI
   });
 
   const [programs, setPrograms] = useState([]);
@@ -40,13 +40,17 @@ export default function EditClassPage() {
     const fetchData = async () => {
       try {
         const res = await getClassById(id);
-        if (res.success) {
+        if (res?.success) {
           const cls = res.data;
           setForm({
-            namaKelas: cls.namaKelas || "",
-            programId: cls.programId || "",
-            academicYearId: cls.academicYearId || "",
-            homeroomTeacherId: cls.homeroomTeacherId || "",
+            namaKelas: cls?.namaKelas ?? "",
+            programId: cls?.programId ? String(cls.programId) : "",
+            academicYearId: cls?.academicYearId
+              ? String(cls.academicYearId)
+              : "",
+            homeroomTeacherId: cls?.homeroomTeacherId
+              ? String(cls.homeroomTeacherId)
+              : "none",
           });
         } else {
           toast.error("Kelas tidak ditemukan");
@@ -70,10 +74,38 @@ export default function EditClassPage() {
         api.get("/academic-years"),
         api.get("/tutors"),
       ]);
-      setPrograms(prog.data.data || []);
-      setAcademicYears(years.data.data || []);
-      setTutors(tutorsRes.data.data || []);
+
+      const programsArr = Array.isArray(prog?.data?.data?.programs)
+        ? prog.data.data.programs
+        : [];
+      const yearsArr = Array.isArray(years?.data?.data?.academicYears)
+        ? years.data.data.academicYears
+        : [];
+      const tutorsArr = Array.isArray(tutorsRes?.data?.data?.tutors)
+        ? tutorsRes.data.data.tutors
+        : [];
+
+      setPrograms(
+        programsArr.map((p) => ({
+          id: String(p.id),
+          label: p.namaPaket ?? p.nama ?? String(p.id),
+        }))
+      );
+      setAcademicYears(
+        yearsArr.map((y) => ({
+          id: String(y.id),
+          label: `${y.tahunMulai}/${y.tahunSelesai}`,
+          isActive: !!y.isActive,
+        }))
+      );
+      setTutors(
+        tutorsArr.map((t) => ({
+          id: String(t.id),
+          label: t.user?.nama ?? t.namaLengkap ?? String(t.id),
+        }))
+      );
     } catch (err) {
+      console.error(err);
       toast.error("Gagal memuat data referensi");
     }
   };
@@ -84,7 +116,11 @@ export default function EditClassPage() {
   };
 
   const handleSelect = (name, value) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // paksa string (atau "none")
+    setForm((prev) => ({
+      ...prev,
+      [name]: value != null ? String(value) : "",
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -92,12 +128,21 @@ export default function EditClassPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await updateClass(id, form);
-      if (res.success) {
+      // ubah "none" jadi null untuk dikirim ke backend
+      const payload = {
+        ...form,
+        homeroomTeacherId:
+          form.homeroomTeacherId && form.homeroomTeacherId !== "none"
+            ? form.homeroomTeacherId
+            : null,
+      };
+
+      const res = await updateClass(id, payload);
+      if (res?.success) {
         toast.success("Kelas berhasil diperbarui");
         router.push("/admin/classes");
       } else {
-        toast.error(res.message || "Gagal memperbarui kelas");
+        toast.error(res?.message || "Gagal memperbarui kelas");
       }
     } catch (err) {
       toast.error("Terjadi kesalahan saat menyimpan");
@@ -141,11 +186,17 @@ export default function EditClassPage() {
                   <SelectValue placeholder="Pilih Program" />
                 </SelectTrigger>
                 <SelectContent>
-                  {programs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.namaPaket}
-                    </SelectItem>
-                  ))}
+                  {programs.length ? (
+                    programs.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada data program
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -160,11 +211,17 @@ export default function EditClassPage() {
                   <SelectValue placeholder="Pilih Tahun Ajaran" />
                 </SelectTrigger>
                 <SelectContent>
-                  {academicYears.map((y) => (
-                    <SelectItem key={y.id} value={y.id}>
-                      {y.tahunMulai}/{y.tahunSelesai}
-                    </SelectItem>
-                  ))}
+                  {academicYears.length ? (
+                    academicYears.map((y) => (
+                      <SelectItem key={y.id} value={y.id}>
+                        {y.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada data tahun ajaran
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -173,20 +230,24 @@ export default function EditClassPage() {
               <label className="block text-sm font-medium">Wali Kelas</label>
               <Select
                 value={form.homeroomTeacherId || "none"}
-                onValueChange={(val) =>
-                  handleSelect("homeroomTeacherId", val === "none" ? null : val)
-                }
+                onValueChange={(val) => handleSelect("homeroomTeacherId", val)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Wali Kelas (opsional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">- Tidak ada wali kelas -</SelectItem>
-                  {tutors.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.user?.nama || t.id}
-                    </SelectItem>
-                  ))}
+                  {tutors.length ? (
+                    tutors.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada data tutor
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
