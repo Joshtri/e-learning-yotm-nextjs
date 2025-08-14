@@ -59,6 +59,24 @@ export default function StudentsPage() {
     }
   };
 
+  const mapGender = (raw) => {
+    if (raw == null) return "-";
+    const s = String(raw).trim().toLowerCase();
+
+    // laki-laki
+    if (
+      ["male", "m", "l", "pria", "laki-laki", "laki_laki", "laki"].includes(s)
+    ) {
+      return "Laki-laki";
+    }
+    // perempuan
+    if (["female", "woman", "f", "p", "wanita", "perempuan"].includes(s)) {
+      return "Perempuan";
+    }
+    // enum uppercase (MALE/FEMALE) juga kepangkas oleh toLowerCase di atas
+    return "-";
+  };
+
   // Set default selected year
   useEffect(() => {
     fetchAcademicYears();
@@ -159,7 +177,16 @@ export default function StudentsPage() {
     },
     { header: "Email", cell: (student) => student.user?.email || "-" },
     { header: "NISN", accessorKey: "nisn" },
-    { header: "Jenis Kelamin", accessorKey: "jenisKelamin" },
+    {
+      header: "Jenis Kelamin",
+      cell: (student) =>
+        mapGender(
+          student.jenisKelamin ??
+            student.gender ??
+            student.user?.jenisKelamin ??
+            student.user?.gender
+        ),
+    },
     {
       header: "Kelas",
       cell: (student) =>
