@@ -16,6 +16,7 @@ import {
   BarChart3,
   VenusAndMarsIcon,
   Volleyball,
+  Calendar,
 } from "lucide-react";
 
 export const navByRole = {
@@ -162,6 +163,11 @@ export const navByRole = {
           href: "/admin/holidays",
           icon: <Volleyball className="h-4 w-4" />,
         },
+        {
+          title: "Kalender Hari Libur",
+          href: "/admin/holidays/calendar",
+          icon: <Calendar className="h-4 w-4" />,
+        }
       ],
     },
     {
