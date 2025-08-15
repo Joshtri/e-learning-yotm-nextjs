@@ -209,23 +209,25 @@ function SidebarFooter({ role, isOpen }) {
   return (
     <div className="border-t border-blue-500/30 p-3">
       {role === "admin" && (
-        <Button
-          variant="ghost"
-          asChild
-          className="justify-start w-full mb-1 hover:bg-blue-500/20 hover:text-white text-blue-100"
-        >
-          <Link href={`${base}/settings`} className="flex items-center gap-3">
-            <Settings className="h-4 w-4" />
-            <span
-              className={cn(
-                "transition-opacity",
-                isOpen ? "opacity-100" : "opacity-0"
-              )}
-            >
-              Pengaturan
-            </span>
-          </Link>
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   asChild
+        //   className="justify-start w-full mb-1 hover:bg-blue-500/20 hover:text-white text-blue-100"
+        // >
+        //   <Link href={`${base}/settings`} className="flex items-center gap-3">
+        //     <Settings className="h-4 w-4" />
+        //     <span
+        //       className={cn(
+        //         "transition-opacity",
+        //         isOpen ? "opacity-100" : "opacity-0"
+        //       )}
+        //     >
+        //       Pengaturan
+        //     </span>
+        //   </Link>
+        // </Button>
+        <>
+        </>
       )}
       <Button
         variant="ghost"

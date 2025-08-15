@@ -1,22 +1,21 @@
 // /config/navigation.js
 import {
-  Layout,
-  Users2,
-  Users,
-  BookOpen,
-  FileText,
-  ClipboardList,
-  GraduationCap,
-  FileCheck2,
-  NotebookPen,
-  ChartBar,
-  MessagesSquare,
-  CalendarCheck,
-  FileSearch,
   BarChart3,
-  VenusAndMarsIcon,
-  Volleyball,
+  BookOpen,
   Calendar,
+  CalendarCheck,
+  ChartBar,
+  ClipboardList,
+  FileCheck2,
+  FileSearch,
+  FileText,
+  GraduationCap,
+  Layout,
+  MessagesSquare,
+  NotebookPen,
+  Users,
+  Users2,
+  Volleyball
 } from "lucide-react";
 
 export const navByRole = {
@@ -143,16 +142,16 @@ export const navByRole = {
           href: "/admin/students-scores-recap",
           icon: <ChartBar className="h-4 w-4" />,
         },
-        {
-          title: "Presensi Seluruh Siswa",
-          href: "/admin/attendances",
-          icon: <ClipboardList className="h-4 w-4" />,
-        },
-        {
-          title: "Rekapitulasi Nilai",
-          href: "/admin/recap-scores",
-          icon: <BarChart3 className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Presensi Seluruh Siswa",
+        //   href: "/admin/attendances",
+        //   icon: <ClipboardList className="h-4 w-4" />,
+        // },
+        // {
+        //   title: "Rekapitulasi Nilai",
+        //   href: "/admin/recap-scores",
+        //   icon: <BarChart3 className="h-4 w-4" />,
+        // },
       ],
     },
     {
