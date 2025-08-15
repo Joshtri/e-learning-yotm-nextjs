@@ -23,16 +23,63 @@ function getGreeting(hour) {
   return { text: "Malam", Icon: Moon };
 }
 
-export default function HeaderDateTimeWidget({
-  locale = "id-ID",
-  tzLabel = "WIB",
-}) {
+function getIndonesianTimezone() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Map timezone ke label Indonesia
+  const timezoneMap = {
+    // WIB (UTC+7)
+    "Asia/Jakarta": "WIB",
+    "Asia/Pontianak": "WIB",
+    "Asia/Palembang": "WIB",
+    "Asia/Bandung": "WIB",
+    "Asia/Medan": "WIB",
+    "Asia/Yogyakarta": "WIB",
+
+    // WITA (UTC+8)
+    "Asia/Makassar": "WITA",
+    "Asia/Denpasar": "WITA",
+    "Asia/Balikpapan": "WITA",
+    "Asia/Banjarmasin": "WITA",
+    "Asia/Manado": "WITA",
+
+    // WIT (UTC+9)
+    "Asia/Jayapura": "WIT",
+    "Asia/Sorong": "WIT",
+    "Asia/Ambon": "WIT",
+  };
+
+  // Jika timezone ada di map, return labelnya
+  if (timezoneMap[timezone]) {
+    return timezoneMap[timezone];
+  }
+
+  // Fallback: deteksi berdasarkan UTC offset
+  const now = new Date();
+  const utcOffset = -now.getTimezoneOffset() / 60; // dalam jam
+
+  if (utcOffset === 7) return "WIB";
+  if (utcOffset === 8) return "WITA";
+  if (utcOffset === 9) return "WIT";
+
+  // Jika bukan timezone Indonesia, tampilkan singkatan generik
+  const shortTimezone = timezone.split("/").pop() || "LOCAL";
+  return shortTimezone.length > 4 ? "LOCAL" : shortTimezone;
+}
+
+export default function HeaderDateTimeWidget({ locale = "id-ID" }) {
   const [now, setNow] = useState(new Date());
+  const [timezoneLabel, setTimezoneLabel] = useState("WIB");
 
   // realtime tick
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  // detect timezone on mount
+  useEffect(() => {
+    setTimezoneLabel(getIndonesianTimezone());
   }, []);
 
   const dateStr = useMemo(() => formatDate(now, locale), [now, locale]);
@@ -66,7 +113,7 @@ export default function HeaderDateTimeWidget({
       <span className="inline-flex items-center gap-1.5 text-sm tabular-nums">
         <Clock className="h-4 w-4 opacity-90" />
         <span className="font-semibold">{timeStr}</span>
-        <span className="text-white/80 text-xs">{tzLabel}</span>
+        <span className="text-white/80 text-xs">{timezoneLabel}</span>
       </span>
     </div>
   );
