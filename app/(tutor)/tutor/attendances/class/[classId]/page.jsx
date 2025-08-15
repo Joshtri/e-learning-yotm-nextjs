@@ -24,6 +24,29 @@ import {
   Info,
 } from "lucide-react";
 
+// helpers
+const pad2 = (n) => String(n).padStart(2, "0");
+const startOfDay = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+const isSameDay = (a, b) => startOfDay(a).getTime() === startOfDay(b).getTime();
+const toLocalISO = (d) => {
+  const x = new Date(d);
+  return `${x.getFullYear()}-${pad2(x.getMonth() + 1)}-${pad2(x.getDate())}`;
+};
+const formatID = (iso) => {
+  const d = new Date(`${iso}T00:00:00`);
+  const date = d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const dow = d.toLocaleDateString("id-ID", { weekday: "long" });
+  return `${date} (${dow})`;
+};
+
 export default function AttendancePerClassPage() {
   const { classId } = useParams();
   const router = useRouter();
@@ -31,14 +54,12 @@ export default function AttendancePerClassPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // helper: normalisasi tanggal ke 00:00
-  const startOfDay = (d) => {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
-  };
-  const isSameDay = (a, b) =>
-    startOfDay(a).getTime() === startOfDay(b).getTime();
+  // holidays (sekilas list bulan ini)
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1..12
+  const [holidayList, setHolidayList] = useState([]);
+  const [loadingHolidays, setLoadingHolidays] = useState(true);
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -54,15 +75,45 @@ export default function AttendancePerClassPage() {
     fetchSessions();
   }, [classId]);
 
+  // fetch libur untuk bulan berjalan
+  useEffect(() => {
+    const loadHolidays = async () => {
+      try {
+        setLoadingHolidays(true);
+        const res = await fetch(
+          `/api/holidays/combined?year=${currentYear}&month=${currentMonth}`,
+          { cache: "no-store" }
+        );
+        const json = await res.json();
+        if (json?.success) {
+          // sort by tanggal + nama
+          const sorted = (json.data || []).sort(
+            (a, b) =>
+              a.date.localeCompare(b.date) ||
+              String(a.name || "").localeCompare(String(b.name || ""))
+          );
+          setHolidayList(sorted);
+        } else {
+          setHolidayList([]);
+        }
+      } catch (e) {
+        setHolidayList([]);
+      } finally {
+        setLoadingHolidays(false);
+      }
+    };
+    loadHolidays();
+  }, [currentYear, currentMonth]);
+
   // ====== WIDGET DATA ======
   const today = useMemo(() => startOfDay(new Date()), []);
   const monthName = useMemo(
     () =>
-      new Date().toLocaleDateString("id-ID", {
+      now.toLocaleDateString("id-ID", {
         month: "long",
         year: "numeric",
       }),
-    []
+    [now]
   );
 
   const sessionsToday = useMemo(
@@ -99,6 +150,64 @@ export default function AttendancePerClassPage() {
           { label: "Presensi Kelas" },
         ]}
       />
+
+      {/* ====== SEKILAS LIBUR BULAN INI ====== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Libur Bulan Ini</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingHolidays ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ) : holidayList.length === 0 ? (
+            <div className="text-sm text-muted-foreground">
+              Tidak ada libur pada bulan ini.
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {holidayList.map((h, idx) => (
+                <li
+                  key={`${h.date}-${h.name}-${idx}`}
+                  className="flex items-center justify-between gap-3 border rounded-md px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{h.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatID(h.date)}
+                    </div>
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${
+                      h.source === "national"
+                        ? "bg-rose-50 border-rose-200 text-rose-700"
+                        : h.source === "range"
+                        ? "bg-amber-50 border-amber-200 text-amber-700"
+                        : h.source === "day"
+                        ? "bg-blue-50 border-blue-200 text-blue-700"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    }`}
+                  >
+                    {h.source === "national"
+                      ? "Nasional"
+                      : h.source === "range"
+                      ? "Rentang"
+                      : h.source === "day"
+                      ? "Harian"
+                      : "Mingguan"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-2 text-xs text-muted-foreground">
+            Sumber: date-holidays & libur tambahan sistem.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ====== WIDGET STRIP ====== */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -180,7 +289,7 @@ export default function AttendancePerClassPage() {
                   <TableHead className="min-w-[120px]">Tanggal</TableHead>
                   <TableHead className="min-w-[140px]">Tahun Ajaran</TableHead>
                   <TableHead className="min-w-[220px]">Keterangan</TableHead>
-                  <TableHead className="w-[120px]">Aksi</TableHead>
+                  <TableHead className="w-[160px]">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -202,6 +311,7 @@ export default function AttendancePerClassPage() {
                 ) : (
                   sessions.map((session) => {
                     const isTodayRow = isSameDay(session.tanggal, today);
+
                     return (
                       <TableRow
                         key={session.id}
@@ -277,8 +387,7 @@ export default function AttendancePerClassPage() {
           <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <Info className="h-4 w-4" />
             <span>
-              Baris dengan label <strong>“Hari ini”</strong> menandakan sesi
-              presensi yang aktif hari ini.
+              Daftar libur di atas hanya menampilkan libur bulan berjalan.
             </span>
           </div>
         </CardContent>
