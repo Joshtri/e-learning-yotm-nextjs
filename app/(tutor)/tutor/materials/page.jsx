@@ -22,6 +22,12 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Youtube } from "lucide-react"; // di import list kamu
+
+const extractFirstUrl = (text = "") => {
+  const m = text.match(/https?:\/\/[^\s)]+/i);
+  return m ? m[0] : null;
+};
 
 export default function TutorMaterialsPage() {
   const [data, setData] = useState([]);
@@ -43,27 +49,29 @@ export default function TutorMaterialsPage() {
   };
 
   const handlePreview = (row) => {
-    const url = row.fileUrl || extractFirstUrl(row.konten);
-    if (!url) {
-      toast.info("Tidak ada file/tautan untuk pratinjau");
-      return;
-    }
+    const url =
+      row.tipeMateri === "LINK_YOUTUBE"
+        ? row.fileUrl || extractFirstUrl(row.konten)
+        : row.fileUrl || extractFirstUrl(row.konten);
+    if (!url) return toast.info("Tidak ada tautan/file untuk pratinjau");
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleDownload = (row) => {
-    const url = row.fileUrl || extractFirstUrl(row.konten);
+    if (row.tipeMateri === "LINK_YOUTUBE") return; // tidak ada download untuk link
+    const url = row.fileUrl;
     if (!url) {
-      toast.error("Tidak ada file/tautan untuk diunduh");
+      toast.error("Tidak ada file untuk diunduh");
       return;
     }
     const a = document.createElement("a");
     a.href = url;
-    a.download = ""; // biar browser tentukan nama
+    a.download = "";
     document.body.appendChild(a);
     a.click();
     a.remove();
   };
+  1;
 
   const fetchAcademicYears = async () => {
     try {
@@ -143,8 +151,11 @@ export default function TutorMaterialsPage() {
     }
   };
 
-  const getFileTypeIcon = (fileUrl) => {
-    if (!fileUrl) return <FileText className="h-4 w-4" />;
+  const getFileTypeIcon = (row) => {
+    if (row.tipeMateri === "LINK_YOUTUBE") {
+      return <Youtube className="h-4 w-4 text-red-500" />;
+    }
+    const fileUrl = row.fileUrl || "";
     const ext = (fileUrl.split("?")[0].split(".").pop() || "").toLowerCase();
     const colors = {
       pdf: "text-red-500",
@@ -164,13 +175,13 @@ export default function TutorMaterialsPage() {
       header: "Materi",
       cell: (row) => (
         <div className="flex items-center gap-3">
-          <div className="rounded-md bg-muted p-2">
-            {getFileTypeIcon(row.fileUrl)}
-          </div>
+          <div className="rounded-md bg-muted p-2">{getFileTypeIcon(row)}</div>
           <div>
             <div className="font-medium">{row.judul}</div>
             <div className="text-sm text-muted-foreground">
-              {row.fileUrl
+              {row.tipeMateri === "LINK_YOUTUBE"
+                ? row.fileUrl || extractFirstUrl(row.konten) || "YouTube link"
+                : row.fileUrl
                 ? new URL(row.fileUrl).pathname
                     .split("/")
                     .pop()
@@ -183,9 +194,12 @@ export default function TutorMaterialsPage() {
       ),
     },
     {
-      header: "Pertemuan",
-      cell: (row) => <div>{row.pertemuan || "-"}</div>,
+      header: "Tipe",
+      cell: (row) =>
+        row.tipeMateri === "LINK_YOUTUBE" ? "Link YouTube" : "File",
+      className: "w-[130px]",
     },
+    { header: "Pertemuan", cell: (row) => <div>{row.pertemuan || "-"}</div> },
     {
       header: "Kelas & Mapel",
       cell: (row) => (
@@ -216,7 +230,6 @@ export default function TutorMaterialsPage() {
       header: "Aksi",
       cell: (row) => (
         <div className="flex gap-2">
-          {/* 👁️ Preview */}
           <Button
             variant="outline"
             size="sm"
@@ -227,18 +240,19 @@ export default function TutorMaterialsPage() {
             <Eye className="h-4 w-4" />
           </Button>
 
-          {/* ⬇️ Download */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => handleDownload(row)}
-            title="Unduh"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
+          {/* Download hanya jika FILE */}
+          {row.tipeMateri !== "LINK_YOUTUBE" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => handleDownload(row)}
+              title="Unduh"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
 
-          {/* ✏️ Edit (aku pertahankan rute kamu) */}
           <Button
             variant="outline"
             size="sm"
@@ -249,7 +263,6 @@ export default function TutorMaterialsPage() {
             Edit
           </Button>
 
-          {/* 🗑️ Hapus */}
           <Button
             variant="outline"
             size="sm"
