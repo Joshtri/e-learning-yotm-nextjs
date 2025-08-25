@@ -15,6 +15,8 @@ import {
 import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
+import { CountdownTimer } from "@/components/ui/countdown-timer";
+import { LoadingOverlay } from "@/components/ui/loading";
 
 export default function QuizStartPage() {
   const { id } = useParams();
@@ -25,7 +27,7 @@ export default function QuizStartPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeUp, setTimeUp] = useState(false);
 
   // Fetch quiz data
   useEffect(() => {
@@ -80,13 +82,21 @@ export default function QuizStartPage() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  const handleTimeUp = () => {
+    setTimeUp(true);
+    toast.warning("Waktu habis! Jawaban akan dikumpulkan otomatis");
+    handleSubmit();
+  };
+
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     try {
       setIsSubmitting(true);
       await api.post(`/student/quizzes/${id}/submit`, { answers });
       toast.success("Jawaban berhasil dikirim");
       router.push("/siswa/quizzes");
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengirim jawaban");
     } finally {
       setIsSubmitting(false);
@@ -152,6 +162,11 @@ export default function QuizStartPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
+      <LoadingOverlay
+        isVisible={isSubmitting}
+        message="Mengirim jawaban kuis..."
+      />
+
       {/* Header Card */}
       <Card className="mb-6">
         <CardHeader>
@@ -159,12 +174,18 @@ export default function QuizStartPage() {
           <div className="text-sm text-muted-foreground">
             {quiz.classSubjectTutor?.subject?.nama || ""}
           </div>
-          {/* Uncomment if timer is enabled */}
-          {/* <div className="text-sm font-semibold text-red-600">
-            Sisa waktu: {formatTime(timeLeft)}
-          </div> */}
         </CardHeader>
         <CardContent>
+          {/* Countdown Timer */}
+          {quiz?.durasiMenit && (
+            <div className="mb-4">
+              <CountdownTimer
+                totalMinutes={quiz.durasiMenit}
+                onTimeUp={handleTimeUp}
+              />
+            </div>
+          )}
+
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
               <span>Progres</span>
@@ -310,7 +331,7 @@ export default function QuizStartPage() {
                   trigger={
                     <Button
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || timeUp}
                     >
                       <Send className="h-4 w-4 mr-2" />
                       {isSubmitting ? "Mengirim..." : "Kirim Semua Jawaban"}
@@ -320,7 +341,9 @@ export default function QuizStartPage() {
               ) : (
                 <Button
                   onClick={goToNextQuestion}
-                  disabled={currentQuestionIndex === quiz.questions.length - 1}
+                  disabled={
+                    currentQuestionIndex === quiz.questions.length - 1 || timeUp
+                  }
                 >
                   Selanjutnya <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
