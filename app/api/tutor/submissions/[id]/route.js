@@ -32,6 +32,16 @@ export async function GET(req, { params }) {
             },
           },
         },
+        quiz: {
+          include: {
+            classSubjectTutor: {
+              include: {
+                class: true,
+                subject: true,
+              },
+            },
+          },
+        },
         answers: {
           include: {
             question: true,
@@ -55,18 +65,41 @@ export async function GET(req, { params }) {
         nilai: submission.nilai,
         feedback: submission.feedback,
         waktuKumpul: submission.waktuKumpul,
+        waktuMulai: submission.waktuMulai,
+        createdAt: submission.createdAt,
+        answerPdf: submission.answerPdf, // Include answerPdf for review
         student: {
           id: submission.student.id,
-          nama: submission.student.user.nama,
+          nama:
+            submission.student.namaLengkap ||
+            submission.student.user?.nama ||
+            "Unknown",
+          email: submission.student.user?.email || "",
         },
-        assignment: {
-          id: submission.assignment.id,
-          judul: submission.assignment.judul,
-          classSubjectTutor: submission.assignment.classSubjectTutor,
-        },
+        assignment: submission.assignment
+          ? {
+              id: submission.assignment.id,
+              judul: submission.assignment.judul,
+              deskripsi: submission.assignment.deskripsi,
+              waktuMulai: submission.assignment.waktuMulai,
+              waktuSelesai: submission.assignment.waktuSelesai,
+              classSubjectTutor: submission.assignment.classSubjectTutor,
+            }
+          : null,
+        quiz: submission.quiz
+          ? {
+              id: submission.quiz.id,
+              judul: submission.quiz.judul,
+              deskripsi: submission.quiz.deskripsi,
+              waktuMulai: submission.quiz.waktuMulai,
+              waktuSelesai: submission.quiz.waktuSelesai,
+              classSubjectTutor: submission.quiz.classSubjectTutor,
+            }
+          : null,
         answers: submission.answers.map((ans) => ({
           id: ans.id,
           jawaban: ans.jawaban,
+          isCorrect: ans.isCorrect,
           question: {
             id: ans.question.id,
             teks: ans.question.teks,
@@ -75,8 +108,7 @@ export async function GET(req, { params }) {
         })),
       },
     });
-  } catch (error) {
-    console.error("Gagal mengambil detail submission:", error);
+  } catch {
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }
@@ -116,8 +148,7 @@ export async function PATCH(req, { params }) {
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    console.error("Gagal memberikan nilai:", error);
+  } catch {
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan server" },
       { status: 500 }
