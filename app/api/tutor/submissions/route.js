@@ -32,7 +32,10 @@ export async function GET(request) {
       academicYearId = activeYear?.id || null;
     }
 
-    // 4. Query data submissions berdasarkan class.academicYearId
+    // 4. Get subjectId filter from query params
+    const subjectId = searchParams.get("subjectId");
+
+    // 5. Query data submissions berdasarkan class.academicYearId dan optional subjectId
     const submissions = await prisma.submission.findMany({
       where: {
         OR: [
@@ -42,6 +45,7 @@ export async function GET(request) {
               classSubjectTutor: {
                 tutorId: tutor.id,
                 class: academicYearId ? { academicYearId } : undefined,
+                ...(subjectId && { subjectId }),
               },
             },
           },
@@ -51,12 +55,25 @@ export async function GET(request) {
               classSubjectTutor: {
                 tutorId: tutor.id,
                 class: academicYearId ? { academicYearId } : undefined,
+                ...(subjectId && { subjectId }),
               },
             },
           },
         ],
       },
-      include: {
+      select: {
+        id: true,
+        studentId: true,
+        assignmentId: true,
+        quizId: true,
+        status: true,
+        waktuMulai: true,
+        waktuKumpul: true,
+        nilai: true,
+        waktuDinilai: true,
+        feedback: true,
+        createdAt: true,
+        // Exclude answerPdf for performance - only load it in detail view
         student: {
           select: {
             id: true,
@@ -71,6 +88,7 @@ export async function GET(request) {
             jenis: true,
             classSubjectTutor: {
               select: {
+                id: true,
                 class: {
                   select: {
                     namaKelas: true,
@@ -78,7 +96,10 @@ export async function GET(request) {
                   },
                 },
                 subject: {
-                  select: { namaMapel: true },
+                  select: {
+                    id: true,
+                    namaMapel: true,
+                  },
                 },
               },
             },
@@ -90,6 +111,7 @@ export async function GET(request) {
             judul: true,
             classSubjectTutor: {
               select: {
+                id: true,
                 class: {
                   select: {
                     namaKelas: true,
@@ -97,7 +119,10 @@ export async function GET(request) {
                   },
                 },
                 subject: {
-                  select: { namaMapel: true },
+                  select: {
+                    id: true,
+                    namaMapel: true,
+                  },
                 },
               },
             },
@@ -109,9 +134,59 @@ export async function GET(request) {
       },
     });
 
-    return NextResponse.json({ success: true, data: submissions });
-  } catch (error) {
-    console.error("Gagal ambil submissions:", error);
+    // 6. Get available subjects for filtering
+    const availableSubjects = await prisma.subject.findMany({
+      where: {
+        classSubjectTutors: {
+          some: {
+            tutorId: tutor.id,
+            class: academicYearId ? { academicYearId } : undefined,
+          },
+        },
+      },
+      select: {
+        id: true,
+        namaMapel: true,
+      },
+      orderBy: {
+        namaMapel: "asc",
+      },
+    });
+
+    // 7. Group submissions by subject and type
+    const groupedSubmissions = {};
+
+    submissions.forEach((submission) => {
+      const subject =
+        submission.assignment?.classSubjectTutor?.subject ||
+        submission.quiz?.classSubjectTutor?.subject;
+
+      if (!subject) return;
+
+      const subjectKey = subject.namaMapel;
+      if (!groupedSubmissions[subjectKey]) {
+        groupedSubmissions[subjectKey] = {
+          subjectId: subject.id,
+          subjectName: subject.namaMapel,
+          assignments: [],
+          quizzes: [],
+        };
+      }
+
+      if (submission.assignment) {
+        groupedSubmissions[subjectKey].assignments.push(submission);
+      } else if (submission.quiz) {
+        groupedSubmissions[subjectKey].quizzes.push(submission);
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: subjectId ? submissions : groupedSubmissions,
+      availableSubjects,
+      isFiltered: !!subjectId,
+    });
+  } catch {
     return NextResponse.json(
       { success: false, message: "Gagal ambil submissions" },
       { status: 500 }
