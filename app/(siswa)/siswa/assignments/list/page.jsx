@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { PageHeader } from "@/components/ui/page-header";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
+import { PDFViewerButton } from "@/components/ui/pdf-viewer";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -215,16 +216,27 @@ export default function StudentSubjectsPage() {
                             </button>
 
                             {/* Lihat Soal boleh tetap ada (opsional). Kalau mau ikut dibatasi, kamu bisa disable saat not_open/closed */}
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/siswa/assignments/${tugas.id}/lihat-soal`
-                                )
-                              }
-                              className="text-sm font-medium text-gray-600 hover:underline"
-                            >
-                              Lihat Soal
-                            </button>
+                            {tugas.questionsFromPdf ? (
+                              <PDFViewerButton
+                                pdfData={tugas.questionsFromPdf}
+                                title={`Soal - ${tugas.judul}`}
+                                downloadFileName={`Soal_${tugas.judul}.pdf`}
+                                variant="ghost"
+                                size="sm"
+                                className="text-sm font-medium text-gray-600 hover:underline p-0 h-auto"
+                              />
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  router.push(
+                                    `/siswa/assignments/${tugas.id}/lihat-soal`
+                                  )
+                                }
+                                className="text-sm font-medium text-gray-600 hover:underline"
+                              >
+                                Lihat Soal
+                              </button>
+                            )}
                           </>
                         ) : (
                           <button
