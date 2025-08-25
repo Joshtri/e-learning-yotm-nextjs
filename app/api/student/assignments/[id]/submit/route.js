@@ -14,9 +14,16 @@ export async function POST(req, { params }) {
     }
 
     const assignmentId = params.id;
-    const { answers } = await req.json(); // answers: [{ questionId, jawaban }]
+    const { answers, answerPdf } = await req.json(); // answers: [{ questionId, jawaban }] or answerPdf: base64
 
-    if (!assignmentId || !Array.isArray(answers) || answers.length === 0) {
+    if (!assignmentId || (!Array.isArray(answers) && !answerPdf)) {
+      return NextResponse.json(
+        { success: false, message: "Data tidak lengkap" },
+        { status: 400 }
+      );
+    }
+
+    if (Array.isArray(answers) && answers.length === 0 && !answerPdf) {
       return NextResponse.json(
         { success: false, message: "Data tidak lengkap" },
         { status: 400 }
@@ -54,24 +61,35 @@ export async function POST(req, { params }) {
       });
     }
 
-    // Simpan semua jawaban
-    const createdAnswers = await prisma.$transaction(
-      answers.map((ans) =>
-        prisma.answer.create({
-          data: {
-            submissionId: submission.id,
-            questionId: ans.questionId,
-            jawaban: ans.jawaban,
-          },
-        })
-      )
-    );
-
-    // Hitung status apakah terlambat
+    // Check if this is a PDF-based assignment
     const assignment = await prisma.assignment.findUnique({
       where: { id: assignmentId },
     });
 
+    if (assignment.questionsFromPdf && answerPdf) {
+      // Handle PDF submission
+      await prisma.submission.update({
+        where: { id: submission.id },
+        data: {
+          answerPdf: answerPdf,
+        },
+      });
+    } else if (answers && Array.isArray(answers)) {
+      // Handle traditional question-based submission
+      await prisma.$transaction(
+        answers.map((ans) =>
+          prisma.answer.create({
+            data: {
+              submissionId: submission.id,
+              questionId: ans.questionId,
+              jawaban: ans.jawaban,
+            },
+          })
+        )
+      );
+    }
+
+    // Hitung status apakah terlambat
     const isLate = new Date() > new Date(assignment.waktuSelesai);
 
     // Update submission jadi submitted
@@ -88,7 +106,6 @@ export async function POST(req, { params }) {
       message: "Jawaban berhasil dikirim",
     });
   } catch (error) {
-    console.error("Gagal submit jawaban:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }
