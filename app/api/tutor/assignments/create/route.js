@@ -34,6 +34,7 @@ export async function POST(req) {
       batasWaktuMenit,
       nilaiMaksimal,
       jenis,
+      questionsFromPdf,
     } = await req.json();
 
     if (!judul || !classSubjectTutorId || !waktuMulai || !waktuSelesai) {
@@ -80,6 +81,7 @@ export async function POST(req) {
         waktuSelesai: new Date(waktuSelesai),
         batasWaktuMenit: batasWaktuMenit ? Number(batasWaktuMenit) : undefined,
         nilaiMaksimal: nilaiMaksimal ? Number(nilaiMaksimal) : undefined,
+        questionsFromPdf: questionsFromPdf || null, // Store PDF as base64
       },
     });
 
