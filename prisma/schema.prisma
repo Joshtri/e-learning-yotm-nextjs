@@ -285,15 +285,15 @@ model ClassSubjectTutor {
 }
 
 model LearningMaterial {
-  id                  String   @id @default(dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
-  judul               String   @db.VarChar(200)
-  pertemuan           String?  @db.VarChar(10) @default("1") // Untuk materi pertemuan tertentu
-  konten              String   @db.Text
-  fileUrl             String?  @db.VarChar(255)
+  id                  String                @id @default(dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
+  judul               String                @db.VarChar(200)
+  pertemuan           String?               @default("1") @db.VarChar(10) // Untuk materi pertemuan tertentu
+  konten              String                @db.Text
+  fileUrl             String?               @db.VarChar(255)
   tipeMateri          LearningMaterialType? @default(FILE)
   classSubjectTutorId String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
 }
@@ -308,6 +308,7 @@ model Assignment {
   waktuSelesai        DateTime
   batasWaktuMenit     Int?
   nilaiMaksimal       Int?
+  questionsFromPdf    String?        @db.Text // Store base64 PDF
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
@@ -373,6 +374,7 @@ model Submission {
   nilai        Float?
   waktuDinilai DateTime?
   feedback     String?          @db.Text
+  answerPdf    String?          @db.Text // Store base64 PDF for assignment answers
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
@@ -601,8 +603,6 @@ enum ChatRoomType {
   GROUP
   FORUM
 }
-
-
 
 enum LearningMaterialType {
   LINK_YOUTUBE
