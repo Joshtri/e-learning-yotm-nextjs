@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, AlertCircle } from "lucide-react";
+import { EnhancedPDFViewer } from "@/components/ui/enhanced-pdf-viewer";
+import { FileText, AlertCircle, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -31,21 +32,21 @@ export default function SubmissionReviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchSubmission = async () => {
-    try {
-      const res = await api.get(`/tutor/submissions/${id}`);
-      const fetched = res.data.data;
-      setData(fetched);
-      setNilai(fetched.nilai ?? "");
-      setFeedback(fetched.feedback ?? "");
-    } catch {
-      toast.error("Gagal memuat submission");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchSubmission = async () => {
+      try {
+        const res = await api.get(`/tutor/submissions/${id}`);
+        const fetched = res.data.data;
+        setData(fetched);
+        setNilai(fetched.nilai ?? "");
+        setFeedback(fetched.feedback ?? "");
+      } catch {
+        toast.error("Gagal memuat submission");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSubmission();
   }, [id]);
 
@@ -157,6 +158,82 @@ export default function SubmissionReviewPage() {
                 </TabsList>
 
                 <TabsContent value="answers" className="space-y-4">
+                  {/* PDF Answer Section */}
+                  {data.answerPdf && (
+                    <div className="border rounded-lg p-4 bg-card mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-100 text-blue-800"
+                        >
+                          Jawaban PDF
+                        </Badge>
+                      </div>
+                      <div className="flex gap-3">
+                        <EnhancedPDFViewer
+                          pdfData={data.answerPdf}
+                          title={`Jawaban PDF - ${data.student?.nama}`}
+                          downloadFileName={`jawaban_${data.student?.nama?.replace(
+                            /\s+/g,
+                            "_"
+                          )}.pdf`}
+                        >
+                          <Button variant="outline" size="sm">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Lihat Jawaban PDF
+                          </Button>
+                        </EnhancedPDFViewer>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            try {
+                              if (!data.answerPdf) return;
+
+                              let base64Data = data.answerPdf;
+                              if (
+                                data.answerPdf.startsWith(
+                                  "data:application/pdf;base64,"
+                                )
+                              ) {
+                                base64Data = data.answerPdf.split(",")[1];
+                              }
+
+                              const byteCharacters = atob(base64Data);
+                              const byteNumbers = new Array(
+                                byteCharacters.length
+                              );
+                              for (let i = 0; i < byteCharacters.length; i++) {
+                                byteNumbers[i] = byteCharacters.charCodeAt(i);
+                              }
+                              const byteArray = new Uint8Array(byteNumbers);
+                              const blob = new Blob([byteArray], {
+                                type: "application/pdf",
+                              });
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = `jawaban_${data.student?.nama?.replace(
+                                /\s+/g,
+                                "_"
+                              )}.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              toast.error("Gagal mengunduh file PDF");
+                            }
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Unduh PDF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regular Answers Section */}
                   {data.answers && data.answers.length > 0 ? (
                     data.answers.map((ans, i) => (
                       <div
@@ -195,14 +272,14 @@ export default function SubmissionReviewPage() {
                         </div>
                       </div>
                     ))
-                  ) : (
+                  ) : !data.answerPdf ? (
                     <div className="text-center py-8 border rounded-lg border-dashed">
                       <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                       <p className="italic text-muted-foreground">
                         Belum ada jawaban.
                       </p>
                     </div>
-                  )}
+                  ) : null}
                 </TabsContent>
 
                 <TabsContent value="assignment">
