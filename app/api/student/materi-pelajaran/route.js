@@ -41,7 +41,8 @@ export async function GET() {
       materi: (item.learningMaterials || []).map((m) => ({
         id: m.id,
         judul: m.judul,
-        tipe: m.tipe, // opsional: PDF, Video, dll
+        pertemuan: m.pertemuan || "1", // Show meeting number
+        tipeMateri: m.tipeMateri, // Fixed: was 'tipe', should be 'tipeMateri'
         fileUrl: m.fileUrl,
         createdAt: m.createdAt,
       })),
