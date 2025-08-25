@@ -90,6 +90,7 @@ export async function GET() {
           waktuMulai: asg.waktuMulai,
           waktuSelesai: asg.waktuSelesai,
           jumlahSoal: asg.questions?.length || 0,
+          questionsFromPdf: asg.questionsFromPdf,
           nilai: submission?.nilai ?? null,
           feedback: submission?.feedback ?? null,
           status: submission ? "SUDAH_MENGERJAKAN" : "BELUM_MENGERJAKAN",
