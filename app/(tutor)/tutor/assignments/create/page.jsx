@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import api from "@/lib/axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -21,11 +21,13 @@ import { formatISO } from "date-fns";
 
 export default function AssignmentCreatePage() {
   const [classOptions, setClassOptions] = useState([]);
+  const [questionFile, setQuestionFile] = useState(null);
   const router = useRouter();
   const {
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -37,8 +39,13 @@ export default function AssignmentCreatePage() {
         0,
         16
       ),
+      batasWaktuMenit: 0,
     },
   });
+
+  const batasWaktuMenit = useWatch({ control, name: "batasWaktuMenit" });
+
+  // batasWaktuMenit should be set manually by the tutor as the time limit for students
 
   const fetchClassOptions = async () => {
     try {
@@ -59,23 +66,51 @@ export default function AssignmentCreatePage() {
 
   const onSubmit = async (data) => {
     try {
+      // Convert PDF to base64 if file is selected
+      let questionsFromPdf = null;
+      if (questionFile) {
+        const base64 = await convertFileToBase64(questionFile);
+        questionsFromPdf = base64;
+      }
+
       const res = await api.post("/tutor/assignments/create", {
         ...data,
         jenis: "EXERCISE",
-        nilaiMaksimal: Number(data.nilaiMaksimal),
+        nilaiMaksimal: Number(data.nilaiMaksimal) || 100,
         batasWaktuMenit: Number(data.batasWaktuMenit),
+        questionsFromPdf,
       });
 
       toast.success("Tugas berhasil dibuat");
 
       const assignmentId = res.data.data?.id;
-      if (assignmentId) {
+      if (assignmentId && !questionFile) {
+        // Only redirect to questions if no PDF was uploaded
         router.push(`/tutor/assignments/${assignmentId}/questions`);
       } else {
         router.push("/tutor/assignments");
       }
     } catch {
       toast.error("Gagal membuat tugas");
+    }
+  };
+
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === "application/pdf") {
+      setQuestionFile(file);
+    } else {
+      toast.error("Hanya file PDF yang diperbolehkan");
+      e.target.value = "";
     }
   };
 
@@ -205,50 +240,64 @@ export default function AssignmentCreatePage() {
           </div>
         </div>
 
-        {/* Batas Waktu dan Nilai Maksimal */}
+        {/* Batas Waktu and Duration Display */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label className="text-gray-700 font-medium">
-              Batas Waktu (menit) <span className="text-red-500">*</span>
+              Batas Waktu Pengerjaan (menit){" "}
+              <span className="text-red-500">*</span>
             </Label>
             <Input
               type="number"
               {...register("batasWaktuMenit", {
                 required: "Batas waktu wajib diisi",
-                min: 1,
+                min: { value: 1, message: "Minimal 1 menit" },
+                max: { value: 480, message: "Maksimal 8 jam (480 menit)" },
               })}
               className={`mt-1 border ${
                 errors.batasWaktuMenit ? "border-red-500" : "border-gray-300"
               } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
-              placeholder="Masukkan batas waktu dalam menit"
+              placeholder="Contoh: 120 untuk 2 jam"
             />
             {errors.batasWaktuMenit && (
               <p className="mt-1 text-sm text-red-500">
                 {errors.batasWaktuMenit.message}
               </p>
             )}
+            <p className="mt-1 text-xs text-gray-500">
+              Waktu yang diberikan kepada siswa untuk mengerjakan tugas ini
+            </p>
           </div>
-          <div>
-            <Label className="text-gray-700 font-medium">
-              Nilai Maksimal <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="number"
-              {...register("nilaiMaksimal", {
-                required: "Nilai maksimal wajib diisi",
-                min: 1,
-              })}
-              className={`mt-1 border ${
-                errors.nilaiMaksimal ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
-              placeholder="Masukkan nilai maksimal"
-            />
-            {errors.nilaiMaksimal && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.nilaiMaksimal.message}
+          <div className="flex items-end">
+            {batasWaktuMenit > 0 && (
+              <p className="text-sm text-gray-500 italic">
+                Durasi: {Math.floor(batasWaktuMenit / 60)} jam{" "}
+                {batasWaktuMenit % 60} menit
               </p>
             )}
           </div>
+        </div>
+
+        {/* Questions PDF Upload */}
+        <div>
+          <Label className="text-gray-700 font-medium">
+            Upload Soal (PDF) - Opsional
+          </Label>
+          <Input
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            className="mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Upload file PDF berisi soal-soal tugas. Jika tidak diupload, Anda
+            akan diarahkan ke halaman pembuatan soal.
+          </p>
+          {questionFile && (
+            <p className="mt-1 text-sm text-green-600">
+              File terpilih: {questionFile.name}
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}
