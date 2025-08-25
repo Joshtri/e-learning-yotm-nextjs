@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PDFViewerButton } from "@/components/ui/pdf-viewer";
 import api from "@/lib/axios";
 import {
   AlertCircle,
@@ -217,16 +218,25 @@ export default function TutorAssignmentPage() {
       header: "Aksi",
       cell: (row) => (
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              router.push(`/tutor/assignments/${row.id}/questions/list`)
-            }
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Soal
-          </Button>
+          {row.questionsFromPdf ? (
+            <PDFViewerButton
+              pdfData={row.questionsFromPdf}
+              title={`Soal - ${row.judul}`}
+              downloadFileName={`Soal_${row.judul}.pdf`}
+            />
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                router.push(`/tutor/assignments/${row.id}/questions/list`)
+              }
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Soal
+            </Button>
+          )}
+
           <Button
             size="sm"
             variant="default"
