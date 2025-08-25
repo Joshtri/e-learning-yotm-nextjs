@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/card";
 import FormField from "@/components/ui/form-field";
 import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send } from "lucide-react";
+import { CountdownTimer } from "@/components/ui/countdown-timer";
+import { LoadingOverlay } from "@/components/ui/loading";
 
 export default function StudentExamStartPage() {
   const { id: examId } = useParams();
@@ -25,6 +27,7 @@ export default function StudentExamStartPage() {
   const [examInfo, setExamInfo] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeUp, setTimeUp] = useState(false);
 
   const {
     register,
@@ -45,6 +48,12 @@ export default function StudentExamStartPage() {
     setValue(`answers.${questionId}`, value);
   };
 
+  const handleTimeUp = () => {
+    setTimeUp(true);
+    toast.warning("Waktu habis! Jawaban akan dikumpulkan otomatis");
+    handleSubmit(watch()); // Submit current form data
+  };
+
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -63,11 +72,13 @@ export default function StudentExamStartPage() {
   }, [examId]);
 
   const onSubmit = async (data) => {
+    if (isSubmitting) return;
+
     try {
       await api.post(`/student/exams/${examId}/submit`, data);
       toast.success("Jawaban berhasil dikumpulkan!");
       router.push("/siswa/exams");
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengirim jawaban");
     }
   };
@@ -116,6 +127,11 @@ export default function StudentExamStartPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
+      <LoadingOverlay
+        isVisible={isSubmitting}
+        message="Mengirim jawaban ujian..."
+      />
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>{examInfo?.judul || "Ujian"}</CardTitle>
@@ -124,6 +140,16 @@ export default function StudentExamStartPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Countdown Timer */}
+          {examInfo?.durasiMenit && (
+            <div className="mb-4">
+              <CountdownTimer
+                totalMinutes={examInfo.durasiMenit}
+                onTimeUp={handleTimeUp}
+              />
+            </div>
+          )}
+
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
               <span>Progres</span>
@@ -287,7 +313,7 @@ export default function StudentExamStartPage() {
                 {currentIndex === questions.length - 1 ? (
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || timeUp}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <Send className="h-4 w-4 mr-2" />
@@ -297,7 +323,7 @@ export default function StudentExamStartPage() {
                   <Button
                     type="button"
                     onClick={goToNextQuestion}
-                    disabled={currentIndex === questions.length - 1}
+                    disabled={currentIndex === questions.length - 1 || timeUp}
                   >
                     Selanjutnya <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
