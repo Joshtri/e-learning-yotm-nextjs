@@ -83,6 +83,7 @@ export default function LearningMaterialsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Pertemuan</TableHead>
                           <TableHead>Judul Materi</TableHead>
                           <TableHead>Tipe</TableHead>
                           <TableHead>Aksi</TableHead>
@@ -99,6 +100,10 @@ export default function LearningMaterialsPage() {
 
                           return (
                             <TableRow key={materi.id}>
+                              <TableCell className="font-medium">
+                                Pertemuan {materi.pertemuan || "1"}
+                              </TableCell>
+
                               <TableCell className="max-w-[360px]">
                                 <div className="truncate">{materi.judul}</div>
                               </TableCell>
