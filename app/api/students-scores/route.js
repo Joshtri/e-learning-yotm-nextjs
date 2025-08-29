@@ -8,29 +8,70 @@ export async function GET(request) {
     const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
 
-    // Get filter conditions
-    const studentFilter = {};
-    if (classId) studentFilter.classId = classId;
-
+    // Build where conditions for better performance
+    const whereConditions = {};
+    if (classId) whereConditions.classId = classId;
     if (academicYearId) {
-      studentFilter.class = {
-        academicYearId: academicYearId,
-      };
+      whereConditions.class = { academicYearId };
     }
 
-    // Get all quizzes and assignments for the selected subject
-    const classSubjectFilter = subjectId ? { subjectId } : {};
+    // Get students with minimal data first
+    const students = await prisma.student.findMany({
+      where: whereConditions,
+      select: {
+        id: true,
+        namaLengkap: true,
+        classId: true,
+        class: {
+          select: {
+            namaKelas: true,
+            academicYear: {
+              select: {
+                tahunMulai: true,
+                tahunSelesai: true,
+              },
+            },
+            program: {
+              select: {
+                namaPaket: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
+    if (students.length === 0) {
+      return NextResponse.json({
+        quizzes: [],
+        assignments: [],
+        students: [],
+        filterOptions: {
+          subjects: [],
+          classes: [],
+          academicYears: [],
+        },
+      });
+    }
+
+    const studentIds = students.map((s) => s.id);
+
+    // Build class subject tutor filter
+    const classSubjectFilter = {};
+    if (subjectId) classSubjectFilter.subjectId = subjectId;
+    if (classId) classSubjectFilter.classId = classId;
+
+    // Get quizzes with better filtering
     const allQuizzes = await prisma.quiz.findMany({
       where: {
         classSubjectTutor: classSubjectFilter,
       },
-      orderBy: { createdAt: "asc" },
       select: {
         id: true,
         judul: true,
         classSubjectTutor: {
           select: {
+            subjectId: true,
             subject: {
               select: {
                 id: true,
@@ -40,20 +81,22 @@ export async function GET(request) {
           },
         },
       },
+      orderBy: { createdAt: "asc" },
     });
 
-    const allAssignmentsRaw = await prisma.assignment.findMany({
+    // Get assignments with better filtering
+    const allAssignments = await prisma.assignment.findMany({
       where: {
         jenis: { in: ["EXERCISE", "MIDTERM", "FINAL_EXAM"] },
         classSubjectTutor: classSubjectFilter,
       },
-      orderBy: { createdAt: "asc" },
       select: {
         id: true,
         judul: true,
         jenis: true,
         classSubjectTutor: {
           select: {
+            subjectId: true,
             subject: {
               select: {
                 id: true,
@@ -63,111 +106,98 @@ export async function GET(request) {
           },
         },
       },
+      orderBy: { createdAt: "asc" },
     });
 
-    // Filter assignments
-    const tugasList = allAssignmentsRaw.filter((a) => a.jenis === "EXERCISE");
+    const tugasList = allAssignments.filter((a) => a.jenis === "EXERCISE");
+    const utsAssignments = allAssignments.filter((a) => a.jenis === "MIDTERM");
+    const uasAssignments = allAssignments.filter(
+      (a) => a.jenis === "FINAL_EXAM"
+    );
 
-    const students = await prisma.student.findMany({
-      where: studentFilter,
-      include: {
-        user: true,
-        class: {
-          include: {
-            academicYear: true,
-            program: true,
+    // Get all submissions in one query with proper indexing
+    const allSubmissions = await prisma.submission.findMany({
+      where: {
+        studentId: { in: studentIds },
+        OR: [
+          {
+            quizId: { in: allQuizzes.map((q) => q.id) },
           },
-        },
-        submissions: {
-          include: {
-            assignment: {
-              include: {
-                classSubjectTutor: {
-                  include: {
-                    subject: true,
-                  },
-                },
-              },
-            },
-            quiz: {
-              include: {
-                classSubjectTutor: {
-                  include: {
-                    subject: true,
-                  },
-                },
-              },
-            },
+          {
+            assignmentId: { in: allAssignments.map((a) => a.id) },
           },
-        },
+        ],
+      },
+      select: {
+        id: true,
+        studentId: true,
+        quizId: true,
+        assignmentId: true,
+        nilai: true,
       },
     });
 
+    // Create lookup maps for O(1) access
+    const submissionsByStudent = {};
+    allSubmissions.forEach((sub) => {
+      if (!submissionsByStudent[sub.studentId]) {
+        submissionsByStudent[sub.studentId] = [];
+      }
+      submissionsByStudent[sub.studentId].push(sub);
+    });
+
+    // Process results efficiently
     const result = students.map((student) => {
+      const studentSubmissions = submissionsByStudent[student.id] || [];
+
+      // Calculate quiz scores
       const kuisNilai = allQuizzes.map((quiz) => {
-        const s = student.submissions.find((sub) => sub.quizId === quiz.id);
+        const submission = studentSubmissions.find(
+          (sub) => sub.quizId === quiz.id
+        );
         return {
           id: quiz.id,
           judul: quiz.judul,
           mataPelajaran: quiz.classSubjectTutor.subject.namaMapel,
-          nilai: s ? s.nilai : null,
+          nilai: submission?.nilai || null,
         };
       });
 
-      const tugasNilai = tugasList.map((asn) => {
-        const s = student.submissions.find(
-          (sub) => sub.assignmentId === asn.id
+      // Calculate assignment scores
+      const tugasNilai = tugasList.map((assignment) => {
+        const submission = studentSubmissions.find(
+          (sub) => sub.assignmentId === assignment.id
         );
         return {
-          id: asn.id,
-          judul: asn.judul,
-          mataPelajaran: asn.classSubjectTutor.subject.namaMapel,
-          nilai: s ? s.nilai : null,
+          id: assignment.id,
+          judul: assignment.judul,
+          mataPelajaran: assignment.classSubjectTutor.subject.namaMapel,
+          nilai: submission?.nilai || null,
         };
       });
 
+      // Calculate UTS/UAS scores
       const nilaiUTS =
-        student.submissions.find(
-          (s) =>
-            s.assignment &&
-            s.assignment.jenis === "MIDTERM" &&
-            (subjectId
-              ? s.assignment.classSubjectTutor.subjectId === subjectId
-              : true)
-        )?.nilai ?? null;
+        utsAssignments.length > 0
+          ? studentSubmissions.find((sub) =>
+              utsAssignments.some((uts) => uts.id === sub.assignmentId)
+            )?.nilai || null
+          : null;
 
       const nilaiUAS =
-        student.submissions.find(
-          (s) =>
-            s.assignment &&
-            s.assignment.jenis === "FINAL_EXAM" &&
-            (subjectId
-              ? s.assignment.classSubjectTutor.subjectId === subjectId
-              : true)
-        )?.nilai ?? null;
+        uasAssignments.length > 0
+          ? studentSubmissions.find((sub) =>
+              uasAssignments.some((uas) => uas.id === sub.assignmentId)
+            )?.nilai || null
+          : null;
 
-      // Filter nilai based on subject if selected
+      // Calculate total average
       const nilaiList = [
-        ...(subjectId
-          ? kuisNilai
-              .filter(
-                (k) =>
-                  k.mataPelajaran ===
-                  allQuizzes[0]?.classSubjectTutor?.subject?.namaMapel
-              )
-              .map((k) => k.nilai)
-          : kuisNilai.map((k) => k.nilai)),
-        ...(subjectId
-          ? tugasNilai
-              .filter(
-                (t) =>
-                  t.mataPelajaran ===
-                  tugasList[0]?.classSubjectTutor?.subject?.namaMapel
-              )
-              .map((t) => t.nilai)
-          : tugasNilai.map((t) => t.nilai)),
-        ...(subjectId ? [nilaiUTS, nilaiUAS] : []),
-      ].filter((n) => n !== null);
+        ...kuisNilai.map((k) => k.nilai),
+        ...tugasNilai.map((t) => t.nilai),
+        nilaiUTS,
+        nilaiUAS,
+      ].filter((n) => n !== null && n !== undefined);
 
       const totalNilai =
         nilaiList.length > 0
@@ -181,15 +211,11 @@ export async function GET(request) {
       return {
         studentId: student.id,
         nama: student.namaLengkap,
-        kelas: student.class ? student.class.namaKelas : "-",
-        program:
-          student.class && student.class.program
-            ? student.class.program.namaPaket
-            : "-",
-        tahunAjaran:
-          student.class && student.class.academicYear
-            ? `${student.class.academicYear.tahunMulai}/${student.class.academicYear.tahunSelesai}`
-            : "-",
+        kelas: student.class?.namaKelas || "-",
+        program: student.class?.program?.namaPaket || "-",
+        tahunAjaran: student.class?.academicYear
+          ? `${student.class.academicYear.tahunMulai}/${student.class.academicYear.tahunSelesai}`
+          : "-",
         kuis: kuisNilai,
         tugas: tugasNilai,
         nilaiUTS,
@@ -198,28 +224,31 @@ export async function GET(request) {
       };
     });
 
-    // Get distinct subjects, classes, and academic years for filter options
-    const subjects = await prisma.subject.findMany({
-      select: { id: true, namaMapel: true },
-    });
-
-    const classes = await prisma.class.findMany({
-      select: {
-        id: true,
-        namaKelas: true,
-        academicYear: {
-          select: {
-            id: true,
-            tahunMulai: true,
-            tahunSelesai: true,
+    // Get filter options efficiently
+    const [subjects, classes, academicYears] = await Promise.all([
+      prisma.subject.findMany({
+        select: { id: true, namaMapel: true },
+        orderBy: { namaMapel: "asc" },
+      }),
+      prisma.class.findMany({
+        select: {
+          id: true,
+          namaKelas: true,
+          academicYear: {
+            select: {
+              id: true,
+              tahunMulai: true,
+              tahunSelesai: true,
+            },
           },
         },
-      },
-    });
-
-    const academicYears = await prisma.academicYear.findMany({
-      select: { id: true, tahunMulai: true, tahunSelesai: true },
-    });
+        orderBy: { namaKelas: "asc" },
+      }),
+      prisma.academicYear.findMany({
+        select: { id: true, tahunMulai: true, tahunSelesai: true },
+        orderBy: { tahunMulai: "desc" },
+      }),
+    ]);
 
     return NextResponse.json({
       quizzes: allQuizzes,
@@ -231,8 +260,8 @@ export async function GET(request) {
         academicYears,
       },
     });
-  } catch (error) {
-    console.error("[ERROR_GET_STUDENT_SCORES]", error);
+  } catch {
+    // Remove console.error for production
     return NextResponse.json(
       { message: "Gagal ambil data nilai." },
       { status: 500 }
