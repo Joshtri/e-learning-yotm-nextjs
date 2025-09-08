@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import "dayjs/locale/id";
 import {
   Loader2,
   Check, // Hadir
@@ -48,6 +49,9 @@ export default function HomeroomAttendancePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Set locale Indonesia untuk dayjs
+  dayjs.locale('id');
 
   useEffect(() => {
     fetchAttendance();
@@ -248,11 +252,23 @@ export default function HomeroomAttendancePage() {
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-12">No</TableHead>
               <TableHead>Nama</TableHead>
-              {daysInMonth.map((day) => (
-                <TableHead key={day} className="text-center">
-                  {day}
-                </TableHead>
-              ))}
+              {daysInMonth.map((day) => {
+                const date = dayjs(new Date(currentYear, currentMonth - 1, day));
+                const dayName = date.format('ddd'); // Nama hari singkat (Sen, Sel, Rab, etc.)
+                const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
+                
+                return (
+                  <TableHead 
+                    key={day} 
+                    className={`text-center min-w-[60px] ${isWeekend ? 'bg-red-50 text-red-700' : ''}`}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs font-medium">{dayName}</span>
+                      <span className="text-sm">{day}</span>
+                    </div>
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
 
@@ -282,14 +298,17 @@ export default function HomeroomAttendancePage() {
                     {student.namaLengkap}
                   </TableCell>
                   {daysInMonth.map((day) => {
-                    const tanggal = dayjs(
-                      new Date(currentYear, currentMonth - 1, day)
-                    ).format("YYYY-MM-DD");
+                    const date = dayjs(new Date(currentYear, currentMonth - 1, day));
+                    const tanggal = date.format("YYYY-MM-DD");
+                    const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
                     const attendance = student.Attendance.find(
                       (a) => dayjs(a.date).format("YYYY-MM-DD") === tanggal
                     );
                     return (
-                      <TableCell key={day} className="text-center">
+                      <TableCell 
+                        key={day} 
+                        className={`text-center ${isWeekend ? 'bg-red-50' : ''}`}
+                      >
                         <StatusIcon status={attendance?.status} />
                       </TableCell>
                     );
