@@ -265,9 +265,28 @@ export default function AttendancePerClassPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Sesi terakhir</p>
                 <p className="text-sm font-medium">
-                  {lastSession
-                    ? new Date(lastSession.tanggal).toLocaleDateString("id-ID")
-                    : "-"}
+                  {lastSession ? (
+                    <>
+                      <div>
+                        {new Date(lastSession.tanggal).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-normal">
+                        {new Date(lastSession.tanggal).toLocaleDateString(
+                          "id-ID",
+                          { weekday: "long" }
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    "-"
+                  )}
                 </p>
               </div>
               <CalendarClock className="h-5 w-5 text-muted-foreground" />
@@ -323,11 +342,24 @@ export default function AttendancePerClassPage() {
                       >
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            <span>
-                              {new Date(session.tanggal).toLocaleDateString(
-                                "id-ID"
-                              )}
-                            </span>
+                            <div className="flex flex-col">
+                              <span>
+                                {new Date(session.tanggal).toLocaleDateString(
+                                  "id-ID",
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  }
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(session.tanggal).toLocaleDateString(
+                                  "id-ID", 
+                                  { weekday: "long" }
+                                )}
+                              </span>
+                            </div>
                             {isTodayRow && (
                               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                                 Hari ini
