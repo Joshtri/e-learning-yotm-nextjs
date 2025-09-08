@@ -434,27 +434,27 @@ export const navByRole = {
         },
       ],
     },
-    {
-      title: "Pengelolaan",
-      items: [
-        {
-          title: "Catatan & Pengumpulan",
-          href: "/homeroom/submissions",
-          icon: <NotebookPen className="h-4 w-4" />,
-        },
+    // {
+    //   title: "Pengelolaan",
+    //   items: [
+    //     {
+    //       title: "Catatan & Pengumpulan",
+    //       href: "/homeroom/submissions",
+    //       icon: <NotebookPen className="h-4 w-4" />,
+    //     },
  
-      ],
-    },
-    {
-      title: "Komunikasi",
-      items: [
-        {
-          title: "Pesan",
-          href: "/homeroom/messages",
-          icon: <MessagesSquare className="h-4 w-4" />,
-          badge: 0,
-        },
-      ],
-    },
+    //   ],
+    // },
+    // {
+    //   title: "Komunikasi",
+    //   items: [
+    //     {
+    //       title: "Pesan",
+    //       href: "/homeroom/messages",
+    //       icon: <MessagesSquare className="h-4 w-4" />,
+    //       badge: 0,
+    //     },
+    //   ],
+    // },
   ],
 };
