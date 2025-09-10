@@ -139,6 +139,36 @@ export default function TutorMaterialsPage() {
     );
   }, [data, searchQuery]);
 
+  const groupedMaterials = useMemo(() => {
+    const groups = {};
+    
+    filteredData.forEach((material) => {
+      const className = material.classSubjectTutor?.class?.namaKelas || 'Kelas Tidak Diketahui';
+      const subjectName = material.classSubjectTutor?.subject?.namaMapel || 'Mata Pelajaran Tidak Diketahui';
+      const groupKey = `${className} - ${subjectName}`;
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          className,
+          subjectName,
+          materials: []
+        };
+      }
+      
+      groups[groupKey].materials.push(material);
+    });
+    
+    return Object.entries(groups).map(([key, group]) => ({
+      key,
+      ...group
+    })).sort((a, b) => {
+      if (a.className !== b.className) {
+        return a.className.localeCompare(b.className);
+      }
+      return a.subjectName.localeCompare(b.subjectName);
+    });
+  }, [filteredData]);
+
   const handleDelete = async (id) => {
     if (!confirm("Yakin ingin menghapus materi ini?")) return;
 
@@ -200,17 +230,6 @@ export default function TutorMaterialsPage() {
       className: "w-[130px]",
     },
     { header: "Pertemuan", cell: (row) => <div>{row.pertemuan || "-"}</div> },
-    {
-      header: "Kelas & Mapel",
-      cell: (row) => (
-        <div>
-          <div>{row.classSubjectTutor?.class?.namaKelas || "-"}</div>
-          <div className="text-sm text-muted-foreground">
-            {row.classSubjectTutor?.subject?.namaMapel || "-"}
-          </div>
-        </div>
-      ),
-    },
     {
       header: "Status",
       cell: () => <StatusBadge status="active" label="Dipublikasikan" />,
@@ -345,14 +364,42 @@ export default function TutorMaterialsPage() {
         />
 
         <TabsContent value="all">
-          <DataTable
-            data={filteredData}
-            columns={columns}
-            isLoading={isLoading}
-            loadingMessage="Memuat materi..."
-            emptyMessage="Belum ada materi"
-            keyExtractor={(item) => item.id}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Memuat materi...</div>
+            </div>
+          ) : groupedMaterials.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Belum ada materi
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedMaterials.map((group) => (
+                <div key={group.key} className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted/50 px-4 py-3 border-b">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{group.className}</h3>
+                        <p className="text-sm text-muted-foreground">{group.subjectName}</p>
+                      </div>
+                      <div className="text-sm text-muted-foreground bg-background px-2 py-1 rounded">
+                        {group.materials.length} materi
+                      </div>
+                    </div>
+                  </div>
+                  <DataTable
+                    data={group.materials}
+                    columns={columns}
+                    isLoading={false}
+                    loadingMessage=""
+                    emptyMessage=""
+                    keyExtractor={(item) => item.id}
+                    className="border-0"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
