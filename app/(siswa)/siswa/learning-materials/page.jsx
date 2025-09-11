@@ -2,6 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUpDown, ArrowUp, ArrowDown, BookOpen, FileText, Play } from "lucide-react";
+import { useState } from "react";
 
 // Helpers
 const extractFirstUrl = (text = "") => {
@@ -39,6 +41,8 @@ const getTypeLabel = (m) =>
   getType(m) === "LINK_YOUTUBE" ? "Link YouTube" : "File";
 
 export default function LearningMaterialsPage() {
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
   const { data, isLoading, isError } = useQuery({
     queryKey: ["siswa-materi-pelajaran"],
     queryFn: async () => {
@@ -46,6 +50,34 @@ export default function LearningMaterialsPage() {
       return res.data.data;
     },
   });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedMateri = (materi) => {
+    if (!sortConfig.key) return materi;
+    
+    return [...materi].sort((a, b) => {
+      if (sortConfig.key === 'pertemuan') {
+        const aVal = parseInt(a.pertemuan) || 1;
+        const bVal = parseInt(b.pertemuan) || 1;
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="w-4 h-4" />;
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="w-4 h-4" /> 
+      : <ArrowDown className="w-4 h-4" />;
+  };
 
   return (
     <>
@@ -70,20 +102,37 @@ export default function LearningMaterialsPage() {
         {!isLoading &&
           (data?.length ? (
             data.map((mapel) => (
-              <Card key={mapel.mapelId}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{mapel.namaMapel}</CardTitle>
+              <Card key={mapel.mapelId} className="shadow-sm border-l-4 border-l-primary/20 hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    {mapel.namaMapel}
+                    <Badge variant="outline" className="ml-auto">
+                      {mapel.materi?.length || 0} materi
+                    </Badge>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
                   {mapel.materi?.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      Belum ada materi.
-                    </p>
+                    <div className="text-center py-8">
+                      <BookOpen className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">
+                        Belum ada materi tersedia.
+                      </p>
+                    </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Pertemuan</TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
+                            onClick={() => handleSort('pertemuan')}
+                          >
+                            <div className="flex items-center gap-2">
+                              Pertemuan
+                              {getSortIcon('pertemuan')}
+                            </div>
+                          </TableHead>
                           <TableHead>Judul Materi</TableHead>
                           <TableHead>Tipe</TableHead>
                           <TableHead>Aksi</TableHead>
@@ -91,7 +140,7 @@ export default function LearningMaterialsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mapel.materi.map((materi) => {
+                        {getSortedMateri(mapel.materi).map((materi) => {
                           const tipe = getType(materi);
                           const url =
                             materi.fileUrl ||
@@ -99,64 +148,95 @@ export default function LearningMaterialsPage() {
                             null;
 
                           return (
-                            <TableRow key={materi.id}>
+                            <TableRow key={materi.id} className="hover:bg-muted/30 transition-colors">
                               <TableCell className="font-medium">
-                                Pertemuan {materi.pertemuan || "1"}
+                                <Badge variant="secondary" className="font-normal">
+                                  Pertemuan {materi.pertemuan || "1"}
+                                </Badge>
                               </TableCell>
 
                               <TableCell className="max-w-[360px]">
-                                <div className="truncate">{materi.judul}</div>
+                                <div className="truncate font-medium">{materi.judul}</div>
                               </TableCell>
 
-                              <TableCell>{getTypeLabel(materi)}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={tipe === "LINK_YOUTUBE" ? "destructive" : "default"}
+                                  className="flex items-center gap-1 w-fit"
+                                >
+                                  {tipe === "LINK_YOUTUBE" ? <Play className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                  {getTypeLabel(materi)}
+                                </Badge>
+                              </TableCell>
 
                               <TableCell>
                                 {url ? (
                                   tipe === "LINK_YOUTUBE" ? (
-                                    // Link YouTube → hanya Buka
-                                    <a
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline text-sm"
+                                    <Badge 
+                                      variant="destructive" 
+                                      className="cursor-pointer hover:bg-destructive/90 transition-colors"
+                                      asChild
                                     >
-                                      Buka
-                                    </a>
-                                  ) : (
-                                    // File → Lihat + Unduh
-                                    <div className="flex items-center gap-3">
                                       <a
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline text-sm"
+                                        className="flex items-center gap-1"
                                       >
-                                        Lihat
+                                        <Play className="w-3 h-3" />
+                                        Buka
                                       </a>
-                                      <a
-                                        href={url}
-                                        download
-                                        className="text-gray-600 hover:underline text-sm"
+                                    </Badge>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant="outline" 
+                                        className="cursor-pointer hover:bg-muted transition-colors"
+                                        asChild
                                       >
-                                        Unduh
-                                      </a>
+                                        <a
+                                          href={url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1"
+                                        >
+                                          <FileText className="w-3 h-3" />
+                                          Lihat
+                                        </a>
+                                      </Badge>
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                                        asChild
+                                      >
+                                        <a
+                                          href={url}
+                                          download
+                                          className="flex items-center gap-1"
+                                        >
+                                          <ArrowDown className="w-3 h-3" />
+                                          Unduh
+                                        </a>
+                                      </Badge>
                                     </div>
                                   )
                                 ) : (
-                                  "-"
+                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
 
                               <TableCell>
-                                {materi.createdAt
-                                  ? new Date(
-                                      materi.createdAt
-                                    ).toLocaleDateString("id-ID", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "-"}
+                                <div className="text-sm text-muted-foreground">
+                                  {materi.createdAt
+                                    ? new Date(
+                                        materi.createdAt
+                                      ).toLocaleDateString("id-ID", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      })
+                                    : "-"}
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -169,10 +249,16 @@ export default function LearningMaterialsPage() {
             ))
           ) : (
             <Card>
-              <CardContent className="py-8">
-                <p className="text-muted-foreground text-sm">
-                  Tidak ada mata pelajaran ditemukan.
-                </p>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <BookOpen className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    Tidak ada mata pelajaran
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    Belum ada mata pelajaran yang tersedia untuk saat ini.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           ))}
