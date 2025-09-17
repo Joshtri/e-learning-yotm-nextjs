@@ -151,12 +151,19 @@ export default function TutorQuizPage() {
       ),
     },
     {
-      header: "Waktu",
+      header: "Tanggal Mulai",
       cell: (row) => (
         <div className="space-y-1">
           <div className="flex items-center text-sm">
             <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
-            <span>{new Date(row.waktuMulai).toLocaleDateString("id-ID")}</span>
+            <span>
+              {new Date(row.waktuMulai).toLocaleDateString("id-ID", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
           </div>
           <div className="flex items-center text-sm">
             <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
@@ -164,8 +171,30 @@ export default function TutorQuizPage() {
               {new Date(row.waktuMulai).toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",
-              })}{" "}
-              -{" "}
+              })}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Tanggal Selesai",
+      cell: (row) => (
+        <div className="space-y-1">
+          <div className="flex items-center text-sm">
+            <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
+            <span>
+              {new Date(row.waktuSelesai).toLocaleDateString("id-ID", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
+            <span>
               {new Date(row.waktuSelesai).toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",

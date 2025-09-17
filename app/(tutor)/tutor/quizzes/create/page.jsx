@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/ui/form-field";
@@ -25,8 +26,10 @@ export default function QuizCreatePage() {
       judul: "",
       deskripsi: "",
       classSubjectTutorId: "",
-      waktuMulai: "",
-      waktuSelesai: "",
+      tanggalMulai: format(new Date(), "yyyy-MM-dd"),
+      jamMulai: "",
+      tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
+      jamSelesai: "",
       durasiMenit: 60,
       nilaiMaksimal: 100,
       acakSoal: false,
@@ -46,36 +49,45 @@ export default function QuizCreatePage() {
     fetchClassSubjects();
   }, []);
 
-  const waktuMulai = useWatch({ control, name: "waktuMulai" });
-  const waktuSelesai = useWatch({ control, name: "waktuSelesai" });
+  const tanggalMulai = useWatch({ control, name: "tanggalMulai" });
+  const jamMulai = useWatch({ control, name: "jamMulai" });
+  const tanggalSelesai = useWatch({ control, name: "tanggalSelesai" });
+  const jamSelesai = useWatch({ control, name: "jamSelesai" });
 
   useEffect(() => {
-    if (waktuMulai && waktuSelesai) {
-      const mulai = new Date(waktuMulai);
-      const selesai = new Date(waktuSelesai);
+    if (tanggalMulai && jamMulai && tanggalSelesai && jamSelesai) {
+      const mulai = new Date(`${tanggalMulai}T${jamMulai}`);
+      const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
 
       if (selesai > mulai) {
         const durasi = Math.floor((selesai - mulai) / 1000 / 60);
         setValue("durasiMenit", durasi);
       } else {
-        setValue("durasiMenit", 0); // reset jika invalid
+        setValue("durasiMenit", 0);
       }
     }
-  }, [waktuMulai, waktuSelesai, setValue]);
+  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, setValue]);
 
   const onSubmit = async (data) => {
-    const mulai = new Date(data.waktuMulai);
-    const selesai = new Date(data.waktuSelesai);
+    if (!data.jamMulai || !data.jamSelesai) {
+      toast.error("Jam mulai dan jam selesai wajib diisi");
+      return;
+    }
+
+    const mulai = new Date(`${data.tanggalMulai}T${data.jamMulai}`);
+    const selesai = new Date(`${data.tanggalSelesai}T${data.jamSelesai}`);
 
     if (selesai <= mulai) {
       toast.error("Waktu selesai harus lebih besar dari waktu mulai");
       return;
     }
 
-    const durasiMenit = Math.floor((selesai - mulai) / (1000 * 60)); // dalam menit
+    const durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
 
     const payload = {
       ...data,
+      waktuMulai: mulai.toISOString(),
+      waktuSelesai: selesai.toISOString(),
       durasiMenit,
     };
 
@@ -148,21 +160,57 @@ export default function QuizCreatePage() {
 
         <div className="grid md:grid-cols-2 gap-4">
           <FormField
-            label="Waktu Mulai"
-            name="waktuMulai"
-            type="datetime-local"
+            label="Tanggal Mulai"
+            name="tanggalMulai"
+            type="date"
             control={control}
-            {...register("waktuMulai", { required: "Wajib diisi" })}
-            error={errors.waktuMulai?.message}
+            min={format(new Date(), "yyyy-MM-dd")}
+            {...register("tanggalMulai", {
+              required: "Tanggal mulai wajib diisi",
+              validate: (value) => {
+                const selectedDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+              }
+            })}
+            error={errors.tanggalMulai?.message}
           />
           <FormField
-            label="Waktu Selesai"
-            name="waktuSelesai"
+            label="Jam Mulai"
+            name="jamMulai"
+            type="time"
             control={control}
-            placeholder="Waktu selesai"
-            type="datetime-local"
-            {...register("waktuSelesai", { required: "Wajib diisi" })}
-            error={errors.waktuSelesai?.message}
+            {...register("jamMulai", { required: "Jam mulai wajib diisi" })}
+            error={errors.jamMulai?.message}
+          />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <FormField
+            label="Tanggal Selesai"
+            name="tanggalSelesai"
+            type="date"
+            control={control}
+            min={format(new Date(), "yyyy-MM-dd")}
+            {...register("tanggalSelesai", {
+              required: "Tanggal selesai wajib diisi",
+              validate: (value) => {
+                const selectedDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+              }
+            })}
+            error={errors.tanggalSelesai?.message}
+          />
+          <FormField
+            label="Jam Selesai"
+            name="jamSelesai"
+            type="time"
+            control={control}
+            {...register("jamSelesai", { required: "Jam selesai wajib diisi" })}
+            error={errors.jamSelesai?.message}
           />
         </div>
 

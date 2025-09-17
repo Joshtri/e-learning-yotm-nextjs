@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatISO } from "date-fns";
+import { format } from "date-fns";
 
 export default function AssignmentCreatePage() {
   const [classOptions, setClassOptions] = useState([]);
@@ -32,14 +32,8 @@ export default function AssignmentCreatePage() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      waktuMulai: formatISO(new Date(), { representation: "complete" }).slice(
-        0,
-        16
-      ),
-      waktuSelesai: formatISO(new Date(), { representation: "complete" }).slice(
-        0,
-        16
-      ),
+      tanggalMulai: format(new Date(), "yyyy-MM-dd"),
+      tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
     },
   });
 
@@ -197,43 +191,57 @@ export default function AssignmentCreatePage() {
           )}
         </div>
 
-        {/* Waktu Mulai dan Selesai */}
+        {/* Tanggal Mulai dan Selesai */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label className="text-gray-700 font-medium">
-              Waktu Mulai <span className="text-red-500">*</span>
+              Tanggal Mulai <span className="text-red-500">*</span>
             </Label>
             <Input
-              type="datetime-local"
-              {...register("waktuMulai", {
-                required: "Waktu mulai wajib diisi",
+              type="date"
+              min={format(new Date(), "yyyy-MM-dd")}
+              {...register("tanggalMulai", {
+                required: "Tanggal mulai wajib diisi",
+                validate: (value) => {
+                  const selectedDate = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                }
               })}
               className={`mt-1 border ${
-                errors.waktuMulai ? "border-red-500" : "border-gray-300"
+                errors.tanggalMulai ? "border-red-500" : "border-gray-300"
               } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
             />
-            {errors.waktuMulai && (
+            {errors.tanggalMulai && (
               <p className="mt-1 text-sm text-red-500">
-                {errors.waktuMulai.message}
+                {errors.tanggalMulai.message}
               </p>
             )}
           </div>
           <div>
             <Label className="text-gray-700 font-medium">
-              Waktu Selesai <span className="text-red-500">*</span>
+              Tanggal Selesai <span className="text-red-500">*</span>
             </Label>
             <Input
-              type="datetime-local"
-              {...register("waktuSelesai", {
-                required: "Waktu selesai wajib diisi",
+              type="date"
+              min={format(new Date(), "yyyy-MM-dd")}
+              {...register("tanggalSelesai", {
+                required: "Tanggal selesai wajib diisi",
+                validate: (value) => {
+                  const selectedDate = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                }
               })}
               className={`mt-1 border ${
-                errors.waktuSelesai ? "border-red-500" : "border-gray-300"
+                errors.tanggalSelesai ? "border-red-500" : "border-gray-300"
               } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
             />
-            {errors.waktuSelesai && (
+            {errors.tanggalSelesai && (
               <p className="mt-1 text-sm text-red-500">
-                {errors.waktuSelesai.message}
+                {errors.tanggalSelesai.message}
               </p>
             )}
           </div>
