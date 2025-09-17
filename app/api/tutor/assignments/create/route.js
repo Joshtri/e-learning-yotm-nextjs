@@ -76,7 +76,10 @@ export async function POST(req) {
       if (!dateString) return null;
 
       // For ISO date strings like "2025-09-17", parse as date-only
-      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      if (
+        typeof dateString === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+      ) {
         // Parse as date-only (no time component)
         return new Date(dateString);
       }
@@ -86,10 +89,10 @@ export async function POST(req) {
 
     const parsedTanggalMulai = parseDate(tanggalMulai);
     const parsedTanggalSelesai = parseDate(tanggalSelesai);
-    
-    console.log("Parsed dates:", { 
+
+    console.log("Parsed dates:", {
       parsedTanggalMulai: parsedTanggalMulai?.toISOString(),
-      parsedTanggalSelesai: parsedTanggalSelesai?.toISOString()
+      parsedTanggalSelesai: parsedTanggalSelesai?.toISOString(),
     });
 
     // Simpan tugas
