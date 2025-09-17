@@ -93,9 +93,25 @@ export default function QuizCreatePage() {
 
     console.log("Data Step 1:", payload);
 
-    sessionStorage.setItem("quizInfo", JSON.stringify(payload));
+    try {
+      sessionStorage.setItem("quizInfo", JSON.stringify(payload));
+      console.log("SessionStorage set successfully");
 
-    router.push("/tutor/quizzes/create/questions");
+      // Verify the data was saved
+      const saved = sessionStorage.getItem("quizInfo");
+      const parsedSaved = JSON.parse(saved || "{}");
+      console.log("Saved data:", parsedSaved);
+
+      // Only proceed if data was saved successfully
+      if (parsedSaved.judul && parsedSaved.classSubjectTutorId) {
+        router.push("/tutor/quizzes/create/questions");
+      } else {
+        throw new Error("Data tidak tersimpan dengan benar");
+      }
+    } catch (error) {
+      console.error("Error saving to sessionStorage:", error);
+      toast.error("Gagal menyimpan data quiz. Coba lagi.");
+    }
   };
 
   const durasi = useWatch({ control, name: "durasiMenit" });
@@ -159,76 +175,107 @@ export default function QuizCreatePage() {
         />
 
         <div className="grid md:grid-cols-2 gap-4">
-          <FormField
-            label="Tanggal Mulai"
-            name="tanggalMulai"
-            type="date"
-            control={control}
-            min={format(new Date(), "yyyy-MM-dd")}
-            {...register("tanggalMulai", {
-              required: "Tanggal mulai wajib diisi",
-              validate: (value) => {
-                const selectedDate = new Date(value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-              }
-            })}
-            error={errors.tanggalMulai?.message}
-          />
-          <FormField
-            label="Jam Mulai"
-            name="jamMulai"
-            type="time"
-            control={control}
-            {...register("jamMulai", { required: "Jam mulai wajib diisi" })}
-            error={errors.jamMulai?.message}
-          />
+          <div className="space-y-2">
+            <label htmlFor="tanggalMulai" className="text-sm font-medium">
+              Tanggal Mulai <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              id="tanggalMulai"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              min={format(new Date(), "yyyy-MM-dd")}
+              {...register("tanggalMulai", {
+                required: "Tanggal mulai wajib diisi",
+                validate: (value) => {
+                  const selectedDate = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                }
+              })}
+            />
+            {errors.tanggalMulai && (
+              <p className="text-sm text-red-500">{errors.tanggalMulai.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="jamMulai" className="text-sm font-medium">
+              Jam Mulai <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="time"
+              id="jamMulai"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              {...register("jamMulai", { required: "Jam mulai wajib diisi" })}
+            />
+            {errors.jamMulai && (
+              <p className="text-sm text-red-500">{errors.jamMulai.message}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <FormField
-            label="Tanggal Selesai"
-            name="tanggalSelesai"
-            type="date"
-            control={control}
-            min={format(new Date(), "yyyy-MM-dd")}
-            {...register("tanggalSelesai", {
-              required: "Tanggal selesai wajib diisi",
-              validate: (value) => {
-                const selectedDate = new Date(value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-              }
-            })}
-            error={errors.tanggalSelesai?.message}
-          />
-          <FormField
-            label="Jam Selesai"
-            name="jamSelesai"
-            type="time"
-            control={control}
-            {...register("jamSelesai", { required: "Jam selesai wajib diisi" })}
-            error={errors.jamSelesai?.message}
-          />
+          <div className="space-y-2">
+            <label htmlFor="tanggalSelesai" className="text-sm font-medium">
+              Tanggal Selesai <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              id="tanggalSelesai"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              min={format(new Date(), "yyyy-MM-dd")}
+              {...register("tanggalSelesai", {
+                required: "Tanggal selesai wajib diisi",
+                validate: (value) => {
+                  const selectedDate = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                }
+              })}
+            />
+            {errors.tanggalSelesai && (
+              <p className="text-sm text-red-500">{errors.tanggalSelesai.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="jamSelesai" className="text-sm font-medium">
+              Jam Selesai <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="time"
+              id="jamSelesai"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              {...register("jamSelesai", { required: "Jam selesai wajib diisi" })}
+            />
+            {errors.jamSelesai && (
+              <p className="text-sm text-red-500">{errors.jamSelesai.message}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <FormField
-            label="Durasi (menit)"
-            name="durasiMenit"
-            control={control}
-            type="number"
-            placeholder="Durasi dalam menit"
-            disabled
-            {...register("durasiMenit", { valueAsNumber: true })}
-            error={errors.durasiMenit?.message}
-          />
-
-          {durasiText && (
-            <p className="text-sm text-muted-foreground italic">{durasiText}</p>
-          )}
+          <div className="space-y-2">
+            <label htmlFor="durasiMenit" className="text-sm font-medium">
+              Durasi (menit)
+            </label>
+            <input
+              type="number"
+              id="durasiMenit"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Durasi dalam menit"
+              readOnly
+              {...register("durasiMenit", { valueAsNumber: true })}
+            />
+            {durasiText && (
+              <p className="text-sm text-muted-foreground italic">{durasiText}</p>
+            )}
+            {errors.durasiMenit && (
+              <p className="text-sm text-red-500">{errors.durasiMenit.message}</p>
+            )}
+          </div>
 
           <FormField
             label="Nilai Maksimal"

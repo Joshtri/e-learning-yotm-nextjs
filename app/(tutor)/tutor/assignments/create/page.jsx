@@ -66,21 +66,18 @@ export default function AssignmentCreatePage() {
       }
 
       const res = await api.post("/tutor/assignments/create", {
-        ...data,
+        judul: data.judul,
+        deskripsi: data.deskripsi,
+        classSubjectTutorId: data.classSubjectTutorId,
+        tanggalMulai: data.tanggalMulai,
+        tanggalSelesai: data.tanggalSelesai,
         jenis: "EXERCISE",
         nilaiMaksimal: Number(data.nilaiMaksimal) || 100,
         questionsFromPdf,
       });
 
       toast.success("Tugas berhasil dibuat");
-
-      const assignmentId = res.data.data?.id;
-      if (assignmentId && !questionFile) {
-        // Only redirect to questions if no PDF was uploaded
-        router.push(`/tutor/assignments/${assignmentId}/questions`);
-      } else {
-        router.push("/tutor/assignments");
-      }
+      router.push("/tutor/assignments");
     } catch {
       toast.error("Gagal membuat tugas");
     } finally {
@@ -246,7 +243,6 @@ export default function AssignmentCreatePage() {
             )}
           </div>
         </div>
-
 
         {/* Questions PDF Upload */}
         <div>

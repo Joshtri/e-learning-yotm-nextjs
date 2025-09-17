@@ -66,8 +66,8 @@ export default function TutorAssignmentPage() {
       // Calculate stats
       const now = new Date();
       const activeAssignments = assignmentsData.filter((assignment) => {
-        const startDate = new Date(assignment.waktuMulai);
-        const endDate = new Date(assignment.waktuSelesai);
+        const startDate = new Date(assignment.TanggalMulai || assignment.waktuMulai);
+        const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
         return startDate <= now && endDate >= now;
       });
 
@@ -75,7 +75,7 @@ export default function TutorAssignmentPage() {
       const pendingReview = Math.floor(Math.random() * 10);
 
       const completedAssignments = assignmentsData.filter((assignment) => {
-        const endDate = new Date(assignment.waktuSelesai);
+        const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
         return endDate < now;
       });
 
@@ -115,8 +115,8 @@ export default function TutorAssignmentPage() {
 
   const getAssignmentStatus = (assignment) => {
     const now = new Date();
-    const startDate = new Date(assignment.waktuMulai);
-    const endDate = new Date(assignment.waktuSelesai);
+    const startDate = new Date(assignment.TanggalMulai || assignment.waktuMulai);
+    const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
 
     if (startDate > now) {
       return { status: "pending", label: "Akan Datang" };
@@ -185,7 +185,7 @@ export default function TutorAssignmentPage() {
         <div className="flex items-center text-sm">
           <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
           <span>
-            {new Date(row.tanggalMulai || row.waktuMulai).toLocaleDateString("id-ID", {
+            {new Date(row.TanggalMulai || row.waktuMulai).toLocaleDateString("id-ID", {
               weekday: "short",
               year: "numeric",
               month: "short",
@@ -201,7 +201,7 @@ export default function TutorAssignmentPage() {
         <div className="flex items-center text-sm">
           <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
           <span>
-            {new Date(row.tanggalSelesai || row.waktuSelesai).toLocaleDateString("id-ID", {
+            {new Date(row.TanggalSelesai || row.waktuSelesai).toLocaleDateString("id-ID", {
               weekday: "short",
               year: "numeric",
               month: "short",

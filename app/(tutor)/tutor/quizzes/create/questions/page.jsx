@@ -21,12 +21,41 @@ export default function QuizQuestionsPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [quizInfo, setQuizInfo] = useState({})
 
   useEffect(() => {
     setIsClient(true)
-  }, [])
 
-  const quizInfo = isClient ? JSON.parse(sessionStorage.getItem("quizInfo") || "{}") : {}
+    // Load quiz info from sessionStorage
+    const storedData = sessionStorage.getItem("quizInfo")
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData)
+        console.log("Quiz Info loaded from sessionStorage:", parsedData)
+        setQuizInfo(parsedData)
+
+        if (!parsedData.judul) {
+          console.warn("No quiz title found")
+          setTimeout(() => {
+            toast.error("Data kuis tidak lengkap, silakan mulai dari awal")
+            router.push("/tutor/quizzes/create")
+          }, 100)
+        }
+      } catch (error) {
+        console.error("Error parsing quiz info:", error)
+        setTimeout(() => {
+          toast.error("Data kuis tidak valid, silakan mulai dari awal")
+          router.push("/tutor/quizzes/create")
+        }, 100)
+      }
+    } else {
+      console.warn("No quiz info found in sessionStorage")
+      setTimeout(() => {
+        toast.error("Data kuis tidak ditemukan, silakan mulai dari awal")
+        router.push("/tutor/quizzes/create")
+      }, 100)
+    }
+  }, [router])
 
   const {
     control,
@@ -90,11 +119,15 @@ export default function QuizQuestionsPage() {
         }),
       }
 
-      await api.post("/tutor/quizzes", payload)
+      const response = await api.post("/tutor/quizzes", payload)
 
       toast.success("Kuis berhasil dibuat!")
       sessionStorage.removeItem("quizInfo")
-      router.push("/tutor/quizzes")
+
+      // Redirect ke halaman quiz list
+      setTimeout(() => {
+        router.push("/tutor/quizzes")
+      }, 500)
     } catch (err) {
       console.error(err)
       toast.error("Gagal menyimpan kuis")

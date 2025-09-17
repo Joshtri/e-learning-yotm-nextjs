@@ -29,15 +29,15 @@ export async function POST(req) {
       judul,
       deskripsi,
       classSubjectTutorId,
-      waktuMulai,
-      waktuSelesai,
+      tanggalMulai,
+      tanggalSelesai,
       batasWaktuMenit,
       nilaiMaksimal,
       jenis,
       questionsFromPdf,
     } = await req.json();
 
-    if (!judul || !classSubjectTutorId || !waktuMulai || !waktuSelesai) {
+    if (!judul || !classSubjectTutorId) {
       return NextResponse.json(
         { success: false, message: "Data tidak lengkap" },
         { status: 400 }
@@ -47,6 +47,7 @@ export async function POST(req) {
     console.log("User ID:", user.id);
     console.log("Tutor ID:", tutor.id);
     console.log("ClassSubjectTutor ID:", classSubjectTutorId);
+    console.log("Received dates:", { tanggalMulai, tanggalSelesai });
 
     // Ambil info class + subject + semua siswa
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
@@ -70,6 +71,27 @@ export async function POST(req) {
       );
     }
 
+    // Helper function to parse date string for date-only fields
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+
+      // For ISO date strings like "2025-09-17", parse as date-only
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        // Parse as date-only (no time component)
+        return new Date(dateString);
+      }
+
+      return null;
+    };
+
+    const parsedTanggalMulai = parseDate(tanggalMulai);
+    const parsedTanggalSelesai = parseDate(tanggalSelesai);
+    
+    console.log("Parsed dates:", { 
+      parsedTanggalMulai: parsedTanggalMulai?.toISOString(),
+      parsedTanggalSelesai: parsedTanggalSelesai?.toISOString()
+    });
+
     // Simpan tugas
     const assignment = await prisma.assignment.create({
       data: {
@@ -77,8 +99,8 @@ export async function POST(req) {
         deskripsi,
         jenis: jenis || "EXERCISE", // Default ke EXERCISE jika tidak diberikan
         classSubjectTutorId,
-        waktuMulai: new Date(waktuMulai),
-        waktuSelesai: new Date(waktuSelesai),
+        TanggalMulai: parsedTanggalMulai,
+        TanggalSelesai: parsedTanggalSelesai,
         batasWaktuMenit: batasWaktuMenit ? Number(batasWaktuMenit) : undefined,
         nilaiMaksimal: nilaiMaksimal ? Number(nilaiMaksimal) : undefined,
         questionsFromPdf: questionsFromPdf || null, // Store PDF as base64
