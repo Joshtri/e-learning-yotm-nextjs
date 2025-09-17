@@ -22,6 +22,7 @@ import { formatISO } from "date-fns";
 export default function AssignmentCreatePage() {
   const [classOptions, setClassOptions] = useState([]);
   const [questionFile, setQuestionFile] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const {
     register,
@@ -39,13 +40,9 @@ export default function AssignmentCreatePage() {
         0,
         16
       ),
-      batasWaktuMenit: 0,
     },
   });
 
-  const batasWaktuMenit = useWatch({ control, name: "batasWaktuMenit" });
-
-  // batasWaktuMenit should be set manually by the tutor as the time limit for students
 
   const fetchClassOptions = async () => {
     try {
@@ -65,6 +62,7 @@ export default function AssignmentCreatePage() {
   }, []);
 
   const onSubmit = async (data) => {
+    setIsLoading(true);
     try {
       // Convert PDF to base64 if file is selected
       let questionsFromPdf = null;
@@ -77,7 +75,6 @@ export default function AssignmentCreatePage() {
         ...data,
         jenis: "EXERCISE",
         nilaiMaksimal: Number(data.nilaiMaksimal) || 100,
-        batasWaktuMenit: Number(data.batasWaktuMenit),
         questionsFromPdf,
       });
 
@@ -92,6 +89,8 @@ export default function AssignmentCreatePage() {
       }
     } catch {
       toast.error("Gagal membuat tugas");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -240,43 +239,6 @@ export default function AssignmentCreatePage() {
           </div>
         </div>
 
-        {/* Batas Waktu and Duration Display */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <Label className="text-gray-700 font-medium">
-              Batas Waktu Pengerjaan (menit){" "}
-              <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="number"
-              {...register("batasWaktuMenit", {
-                required: "Batas waktu wajib diisi",
-                min: { value: 1, message: "Minimal 1 menit" },
-                max: { value: 480, message: "Maksimal 8 jam (480 menit)" },
-              })}
-              className={`mt-1 border ${
-                errors.batasWaktuMenit ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
-              placeholder="Contoh: 120 untuk 2 jam"
-            />
-            {errors.batasWaktuMenit && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.batasWaktuMenit.message}
-              </p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Waktu yang diberikan kepada siswa untuk mengerjakan tugas ini
-            </p>
-          </div>
-          <div className="flex items-end">
-            {batasWaktuMenit > 0 && (
-              <p className="text-sm text-gray-500 italic">
-                Durasi: {Math.floor(batasWaktuMenit / 60)} jam{" "}
-                {batasWaktuMenit % 60} menit
-              </p>
-            )}
-          </div>
-        </div>
 
         {/* Questions PDF Upload */}
         <div>
@@ -304,9 +266,10 @@ export default function AssignmentCreatePage() {
         <div className="pt-4">
           <Button
             type="submit"
-            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition-all"
+            disabled={isLoading}
+            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-6 rounded-md transition-all"
           >
-            Simpan
+            {isLoading ? "Menyimpan..." : "Simpan"}
           </Button>
         </div>
       </form>
