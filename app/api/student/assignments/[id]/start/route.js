@@ -38,6 +38,38 @@ export async function GET(req, { params }) {
       );
     }
 
+    // Check if assignment is within the allowed date range
+    const now = new Date();
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (assignment.TanggalMulai) {
+      const startDate = new Date(assignment.TanggalMulai);
+      if (currentDate < startDate) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tugas belum dapat dikerjakan. Silakan kembali pada tanggal mulai.",
+            startDate: assignment.TanggalMulai
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (assignment.TanggalSelesai) {
+      const endDate = new Date(assignment.TanggalSelesai);
+      if (currentDate > endDate) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tugas sudah melewati batas waktu pengerjaan.",
+            endDate: assignment.TanggalSelesai
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const questions = await prisma.question.findMany({
       where: { assignmentId: assignment.id },
       orderBy: { id: "asc" },

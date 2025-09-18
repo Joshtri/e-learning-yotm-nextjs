@@ -28,6 +28,7 @@ export default function AssignmentCreatePage() {
     register,
     handleSubmit,
     setValue,
+    getValues,
     control,
     formState: { errors },
   } = useForm({
@@ -199,11 +200,18 @@ export default function AssignmentCreatePage() {
               min={format(new Date(), "yyyy-MM-dd")}
               {...register("tanggalMulai", {
                 required: "Tanggal mulai wajib diisi",
-                validate: (value) => {
-                  const selectedDate = new Date(value);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                validate: {
+                  notBeforeToday: (value) => {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                  },
+                  beforeEndDate: (value) => {
+                    const endDate = getValues("tanggalSelesai");
+                    if (!endDate) return true;
+                    return new Date(value) <= new Date(endDate) || "Tanggal mulai harus sama dengan atau sebelum tanggal selesai";
+                  }
                 }
               })}
               className={`mt-1 border ${
@@ -225,11 +233,18 @@ export default function AssignmentCreatePage() {
               min={format(new Date(), "yyyy-MM-dd")}
               {...register("tanggalSelesai", {
                 required: "Tanggal selesai wajib diisi",
-                validate: (value) => {
-                  const selectedDate = new Date(value);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                validate: {
+                  notBeforeToday: (value) => {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                  },
+                  afterStartDate: (value) => {
+                    const startDate = getValues("tanggalMulai");
+                    if (!startDate) return true;
+                    return new Date(value) >= new Date(startDate) || "Tanggal selesai harus sama dengan atau setelah tanggal mulai";
+                  }
                 }
               })}
               className={`mt-1 border ${

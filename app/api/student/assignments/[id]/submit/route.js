@@ -61,10 +61,35 @@ export async function POST(req, { params }) {
       });
     }
 
-    // Check if this is a PDF-based assignment
+    // Check if this is a PDF-based assignment and validate date range
     const assignment = await prisma.assignment.findUnique({
       where: { id: assignmentId },
     });
+
+    if (!assignment) {
+      return NextResponse.json(
+        { success: false, message: "Tugas tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    // Check if assignment is within the allowed date range
+    const now = new Date();
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (assignment.TanggalSelesai) {
+      const endDate = new Date(assignment.TanggalSelesai);
+      if (currentDate > endDate) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tugas sudah melewati batas waktu pengumpulan.",
+            endDate: assignment.TanggalSelesai
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     if (assignment.questionsFromPdf && answerPdf) {
       // Handle PDF submission
@@ -89,8 +114,8 @@ export async function POST(req, { params }) {
       );
     }
 
-    // Hitung status apakah terlambat
-    const isLate = new Date() > new Date(assignment.waktuSelesai);
+    // Hitung status apakah terlambat berdasarkan tanggal selesai
+    const isLate = assignment.TanggalSelesai ? currentDate > new Date(assignment.TanggalSelesai) : false;
 
     // Update submission jadi submitted
     await prisma.submission.update({

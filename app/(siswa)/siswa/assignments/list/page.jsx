@@ -67,11 +67,18 @@ export default function StudentSubjectsPage() {
 
   const getAssignmentWindowState = (tugas) => {
     const now = new Date();
-    const start = new Date(tugas.waktuMulai);
-    const end = new Date(tugas.waktuSelesai);
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (now < start) return "not_open"; // belum mulai
-    if (now > end) return "closed"; // sudah selesai
+    if (tugas.TanggalMulai) {
+      const startDate = new Date(tugas.TanggalMulai);
+      if (currentDate < startDate) return "not_open"; // belum mulai
+    }
+
+    if (tugas.TanggalSelesai) {
+      const endDate = new Date(tugas.TanggalSelesai);
+      if (currentDate > endDate) return "closed"; // sudah selesai
+    }
+
     return "open"; // sedang berjalan
   };
 
@@ -146,8 +153,9 @@ export default function StudentSubjectsPage() {
                       <div className="space-y-1">
                         <p className="font-semibold">{tugas.judul}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(tugas.waktuMulai).toLocaleString("id-ID")} -{" "}
-                          {new Date(tugas.waktuSelesai).toLocaleString("id-ID")}
+                          {tugas.TanggalMulai && `Mulai: ${new Date(tugas.TanggalMulai).toLocaleDateString("id-ID")}`}
+                          {tugas.TanggalMulai && tugas.TanggalSelesai && " | "}
+                          {tugas.TanggalSelesai && `Selesai: ${new Date(tugas.TanggalSelesai).toLocaleDateString("id-ID")}`}
                         </p>
                         <p className="text-xs">
                           <strong>Jumlah Soal:</strong> {tugas.jumlahSoal}{" "}

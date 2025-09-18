@@ -35,15 +35,21 @@ export default function AssignmentStartPage() {
         setAssignment(assignment);
         setQuestions(questions);
         setAnswers(previousAnswers || {});
-      } catch {
-        toast.error("Gagal memuat tugas");
+      } catch (error) {
+        if (error.response?.status === 403) {
+          const errorData = error.response.data;
+          toast.error(errorData.message);
+          router.push("/siswa/assignments/list");
+        } else {
+          toast.error("Gagal memuat tugas");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchAssignment();
-  }, [id]);
+  }, [id, router]);
 
   const handleChange = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -98,8 +104,14 @@ export default function AssignmentStartPage() {
       await api.post(`/student/assignments/${id}/submit`, payload);
       toast.success("Jawaban berhasil dikumpulkan");
       router.push("/siswa/assignments/list");
-    } catch {
-      toast.error("Gagal mengumpulkan jawaban");
+    } catch (error) {
+      if (error.response?.status === 403) {
+        const errorData = error.response.data;
+        toast.error(errorData.message);
+        router.push("/siswa/assignments/list");
+      } else {
+        toast.error("Gagal mengumpulkan jawaban");
+      }
     } finally {
       setIsSubmitting(false);
     }
