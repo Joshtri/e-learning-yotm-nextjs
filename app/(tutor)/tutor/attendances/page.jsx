@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
+// import { SkeletonTable } from "@/components/ui/skeleton/SkeletonTable";
 
 export default function AttendanceClassListPage() {
   const router = useRouter();
@@ -113,11 +115,13 @@ export default function AttendanceClassListPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4}>Loading...</TableCell>
+                  <TableCell colSpan={4} className="p-0">
+                    <SkeletonTable numRows={5} numCols={4} showHeader={false} />
+                  </TableCell>
                 </TableRow>
               ) : classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={4} className="text-center p-8">
                     Tidak ada kelas
                   </TableCell>
                 </TableRow>

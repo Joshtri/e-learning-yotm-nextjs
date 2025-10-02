@@ -1,3 +1,12 @@
+import { createDynamicMetadata } from "@/lib/dynamic-metadata";
+
+// Generate metadata dynamically for this page
+export async function generateMetadata() {
+  return createDynamicMetadata("/tutor/assignments", {
+    description: "Manajemen tugas untuk tutor - E-Learning YOTM"
+  });
+}
+
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +19,7 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PDFViewerButton } from "@/components/ui/pdf-viewer";
+// import { SkeletonTable } from "@/components/ui/skeleton/SkeletonTable";
 import api from "@/lib/axios";
 import {
   AlertCircle,
@@ -25,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { deleteAssignmentById } from "@/services/TutorAssignment";
+import SkeletonTable from "../../../../components/ui/skeleton/SkeletonTable";
 
 export default function TutorAssignmentPage() {
   const [data, setData] = useState([]);
@@ -368,7 +379,11 @@ export default function TutorAssignmentPage() {
             </div>
 
             <TabsContent value="all" className="space-y-4">
-              {filteredData.length > 0 ? (
+              {isLoading ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <SkeletonTable numRows={5} numCols={8} showHeader={false} />
+                </div>
+              ) : filteredData.length > 0 ? (
                 <DataTable
                   data={filteredData}
                   columns={columns}

@@ -1,7 +1,17 @@
+'use client';
+
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { usePathname } from 'next/navigation';
+import generateTitleFromPath from "@/lib/title-generator";
 
 export function PageHeader({ title, description, actions, breadcrumbs }) {
+  const pathname = usePathname();
+  
+  // Use either provided title or auto-generated one based on pathname
+  const displayTitle = title || generateTitleFromPath(pathname);
+  const displayDescription = description || `Halaman ${displayTitle}`;
+
   return (
     <div className="flex flex-col gap-4 mb-6">
       {breadcrumbs && breadcrumbs.length > 0 && (
@@ -26,9 +36,9 @@ export function PageHeader({ title, description, actions, breadcrumbs }) {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-          {description && (
-            <p className="text-muted-foreground mt-1">{description}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{displayTitle}</h1>
+          {displayDescription && (
+            <p className="text-muted-foreground mt-1">{displayDescription}</p>
           )}
         </div>
         {actions && <div className="flex gap-2 ml-auto">{actions}</div>}

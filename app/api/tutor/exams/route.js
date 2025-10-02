@@ -40,7 +40,7 @@ export async function GET(req) {
           },
         },
       },
-      orderBy: { waktuSelesai: "desc" },
+      orderBy: { TanggalSelesai: "desc" },
     });
 
     return NextResponse.json({ success: true, data: exams });
@@ -75,8 +75,8 @@ export async function POST(req) {
       deskripsi,
       jenis,
       classSubjectTutorId,
-      waktuMulai,
-      waktuSelesai,
+      tanggalMulai,
+      tanggalSelesai,
       durasiMenit,
       nilaiMaksimal,
     } = body;
@@ -85,8 +85,8 @@ export async function POST(req) {
       !judul ||
       !jenis ||
       !classSubjectTutorId ||
-      !waktuMulai ||
-      !waktuSelesai ||
+      !tanggalMulai ||
+      !tanggalSelesai ||
       !durasiMenit ||
       !nilaiMaksimal
     ) {
@@ -154,8 +154,8 @@ export async function POST(req) {
         deskripsi,
         jenis,
         classSubjectTutorId,
-        waktuMulai: new Date(waktuMulai),
-        waktuSelesai: new Date(waktuSelesai),
+        TanggalMulai: new Date(tanggalMulai),
+        TanggalSelesai: new Date(tanggalSelesai),
         batasWaktuMenit: Number(durasiMenit),
         nilaiMaksimal: Number(nilaiMaksimal),
       },

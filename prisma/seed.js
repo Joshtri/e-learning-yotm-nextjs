@@ -1,0 +1,800 @@
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log("🌱 Starting seed process...\n");
+
+  // ========== FETCH EXISTING DATA FROM DATABASE ==========
+  console.log("📊 Fetching existing data from database...");
+
+  const allClassSubjectTutors = await prisma.classSubjectTutor.findMany({
+    include: {
+      tutor: { include: { user: true } },
+      class: { include: { program: true, academicYear: true } },
+      subject: true,
+    },
+  });
+
+  console.log(
+    `✅ Found ${allClassSubjectTutors.length} class-subject-tutor relationships\n`
+  );
+
+  if (allClassSubjectTutors.length === 0) {
+    console.log(
+      "❌ No class-subject-tutor relationships found. Please create them first."
+    );
+    return;
+  }
+
+  // Filter untuk Kelas 11 saja
+  const kelas11Data = allClassSubjectTutors.filter(
+    (cst) => cst.class.namaKelas === "Kelas 11"
+  );
+
+  console.log(`📚 Found ${kelas11Data.length} subjects for Kelas 11\n`);
+
+  // ========== CREATE QUIZZES ==========
+  const existingQuizzes = await prisma.quiz.findMany();
+
+  if (existingQuizzes.length === 0) {
+    console.log("📝 Creating quizzes for Kelas 11...\n");
+
+    // Quiz Matematika
+    const matematika = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Matematika"
+    );
+    if (matematika) {
+      await prisma.quiz.create({
+        data: {
+          judul: "Kuis Matematika - Trigonometri",
+          deskripsi: "Kuis tentang konsep dasar trigonometri",
+          waktuMulai: new Date("2025-11-01T08:00:00"),
+          waktuSelesai: new Date("2025-11-01T09:00:00"),
+          durasiMenit: 60,
+          nilaiMaksimal: 100,
+          classSubjectTutorId: matematika.id,
+          questions: {
+            create: [
+              {
+                teks: "Nilai sin 30° adalah?",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 25,
+                jawabanBenar: "1/2",
+                options: {
+                  create: [
+                    { teks: "1/2", adalahBenar: true, kode: "A" },
+                    { teks: "1", adalahBenar: false, kode: "B" },
+                    { teks: "√3/2", adalahBenar: false, kode: "C" },
+                    { teks: "√2/2", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Dalam segitiga siku-siku, tan α = ...",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 25,
+                jawabanBenar: "depan/samping",
+                options: {
+                  create: [
+                    { teks: "depan/samping", adalahBenar: true, kode: "A" },
+                    { teks: "samping/miring", adalahBenar: false, kode: "B" },
+                    { teks: "depan/miring", adalahBenar: false, kode: "C" },
+                    { teks: "miring/depan", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "cos 90° = 0",
+                jenis: "TRUE_FALSE",
+                poin: 25,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+              {
+                teks: "Berapa nilai dari sin² α + cos² α?",
+                jenis: "SHORT_ANSWER",
+                poin: 25,
+                jawabanBenar: "1",
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created quiz: Matematika - Trigonometri");
+    }
+
+    // Quiz Bahasa Indonesia
+    const bahasaIndonesia = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Bahasa Indonesia"
+    );
+    if (bahasaIndonesia) {
+      await prisma.quiz.create({
+        data: {
+          judul: "Kuis Bahasa Indonesia - Teks Eksposisi",
+          deskripsi: "Kuis tentang struktur dan ciri-ciri teks eksposisi",
+          waktuMulai: new Date("2025-11-05T10:00:00"),
+          waktuSelesai: new Date("2025-11-05T11:00:00"),
+          durasiMenit: 60,
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaIndonesia.id,
+          questions: {
+            create: [
+              {
+                teks: "Teks eksposisi bertujuan untuk...",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 30,
+                jawabanBenar: "Menjelaskan informasi",
+                options: {
+                  create: [
+                    {
+                      teks: "Menjelaskan informasi",
+                      adalahBenar: true,
+                      kode: "A",
+                    },
+                    {
+                      teks: "Menghibur pembaca",
+                      adalahBenar: false,
+                      kode: "B",
+                    },
+                    {
+                      teks: "Meyakinkan pembaca",
+                      adalahBenar: false,
+                      kode: "C",
+                    },
+                    {
+                      teks: "Menceritakan pengalaman",
+                      adalahBenar: false,
+                      kode: "D",
+                    },
+                  ],
+                },
+              },
+              {
+                teks: "Struktur teks eksposisi terdiri dari tesis, argumentasi, dan penegasan ulang",
+                jenis: "TRUE_FALSE",
+                poin: 35,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+              {
+                teks: "Sebutkan 3 ciri kebahasaan teks eksposisi!",
+                jenis: "ESSAY",
+                poin: 35,
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created quiz: Bahasa Indonesia - Teks Eksposisi");
+    }
+
+    // Quiz Bahasa Inggris
+    const bahasaInggris = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Bahasa Inggris"
+    );
+    if (bahasaInggris) {
+      await prisma.quiz.create({
+        data: {
+          judul: "Quiz English - Past Tense",
+          deskripsi: "Quiz about simple past tense and past continuous",
+          waktuMulai: new Date("2025-11-08T08:00:00"),
+          waktuSelesai: new Date("2025-11-08T09:00:00"),
+          durasiMenit: 45,
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaInggris.id,
+          questions: {
+            create: [
+              {
+                teks: 'Choose the correct form: "She _____ to school yesterday."',
+                jenis: "MULTIPLE_CHOICE",
+                poin: 25,
+                jawabanBenar: "went",
+                options: {
+                  create: [
+                    { teks: "go", adalahBenar: false, kode: "A" },
+                    { teks: "goes", adalahBenar: false, kode: "B" },
+                    { teks: "went", adalahBenar: true, kode: "C" },
+                    { teks: "going", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Simple past tense is used to describe actions in the past",
+                jenis: "TRUE_FALSE",
+                poin: 25,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "True", adalahBenar: true, kode: "A" },
+                    { teks: "False", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+              {
+                teks: "Write a sentence using past continuous tense!",
+                jenis: "SHORT_ANSWER",
+                poin: 50,
+                jawabanBenar: "Example: I was studying when she called me",
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created quiz: English - Past Tense");
+    }
+
+    console.log("\n✅ Quizzes created successfully!\n");
+  } else {
+    console.log(
+      `ℹ️  Quizzes already exist (${existingQuizzes.length}), skipping...\n`
+    );
+  }
+
+  // ========== CREATE ASSIGNMENTS (UTS, UAS, TUGAS) ==========
+  const existingAssignments = await prisma.assignment.count();
+
+  if (existingAssignments === 0) {
+    console.log("📋 Creating assignments for Kelas 11...\n");
+
+    // UTS Matematika
+    const matematika = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Matematika"
+    );
+    if (matematika) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UTS Matematika Kelas 11 Semester Ganjil 2025",
+          deskripsi: "Ujian Tengah Semester untuk mata pelajaran Matematika",
+          jenis: "MIDTERM",
+          TanggalMulai: new Date("2025-10-15"),
+          TanggalSelesai: new Date("2025-10-16"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: matematika.id,
+          questions: {
+            create: [
+              {
+                teks: "Jelaskan apa yang dimaksud dengan fungsi komposisi dan berikan contohnya!",
+                jenis: "ESSAY",
+                poin: 25,
+                pembahasan:
+                  "Fungsi komposisi adalah operasi menggabungkan dua fungsi...",
+              },
+              {
+                teks: "Jika f(x) = 2x + 3 dan g(x) = x², maka (f ∘ g)(2) = ?",
+                jenis: "SHORT_ANSWER",
+                poin: 25,
+                jawabanBenar: "11",
+                pembahasan: "(f ∘ g)(2) = f(g(2)) = f(4) = 2(4) + 3 = 11",
+              },
+              {
+                teks: "Grafik fungsi kuadrat membentuk kurva yang disebut?",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 25,
+                jawabanBenar: "Parabola",
+                options: {
+                  create: [
+                    { teks: "Parabola", adalahBenar: true, kode: "A" },
+                    { teks: "Hiperbola", adalahBenar: false, kode: "B" },
+                    { teks: "Elips", adalahBenar: false, kode: "C" },
+                    { teks: "Lingkaran", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Fungsi f(x) = x³ merupakan fungsi ganjil",
+                jenis: "TRUE_FALSE",
+                poin: 25,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UTS: Matematika");
+
+      // UAS Matematika
+      await prisma.assignment.create({
+        data: {
+          judul: "UAS Matematika Kelas 11 Semester Ganjil 2025",
+          deskripsi: "Ujian Akhir Semester untuk mata pelajaran Matematika",
+          jenis: "FINAL_EXAM",
+          TanggalMulai: new Date("2025-12-10"),
+          TanggalSelesai: new Date("2025-12-15"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: matematika.id,
+          questions: {
+            create: [
+              {
+                teks: "Jelaskan perbedaan antara barisan aritmetika dan barisan geometri! Berikan masing-masing 2 contoh!",
+                jenis: "ESSAY",
+                poin: 30,
+                pembahasan:
+                  "Barisan aritmetika memiliki selisih tetap, barisan geometri memiliki rasio tetap...",
+              },
+              {
+                teks: "Tentukan suku ke-10 dari barisan aritmetika: 3, 7, 11, 15, ...",
+                jenis: "SHORT_ANSWER",
+                poin: 25,
+                jawabanBenar: "39",
+                pembahasan: "a = 3, b = 4, Un = a + (n-1)b = 3 + 9(4) = 39",
+              },
+              {
+                teks: "Rumus suku ke-n barisan geometri adalah?",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 20,
+                jawabanBenar: "Un = a × r^(n-1)",
+                options: {
+                  create: [
+                    { teks: "Un = a × r^(n-1)", adalahBenar: true, kode: "A" },
+                    { teks: "Un = a + (n-1)b", adalahBenar: false, kode: "B" },
+                    { teks: "Un = a × n", adalahBenar: false, kode: "C" },
+                    { teks: "Un = a + r^n", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Jumlah n suku pertama barisan aritmetika dilambangkan dengan Sn",
+                jenis: "TRUE_FALSE",
+                poin: 25,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UAS: Matematika");
+
+      // Tugas Matematika
+      await prisma.assignment.create({
+        data: {
+          judul: "Tugas Matematika - Limit Fungsi",
+          deskripsi: "Kerjakan soal-soal tentang limit fungsi aljabar",
+          jenis: "EXERCISE",
+          TanggalMulai: new Date("2025-11-10"),
+          TanggalSelesai: new Date("2025-11-20"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: matematika.id,
+          questions: {
+            create: [
+              {
+                teks: "Hitunglah lim (x→2) (x² - 4)/(x - 2)",
+                jenis: "SHORT_ANSWER",
+                poin: 50,
+                jawabanBenar: "4",
+                pembahasan:
+                  "Faktorkan: (x-2)(x+2)/(x-2) = x+2, substitusi x=2, hasil=4",
+              },
+              {
+                teks: "Jelaskan apa yang dimaksud dengan limit fungsi!",
+                jenis: "ESSAY",
+                poin: 50,
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created Tugas: Matematika - Limit Fungsi");
+    }
+
+    // UTS Bahasa Indonesia
+    const bahasaIndonesia = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Bahasa Indonesia"
+    );
+    if (bahasaIndonesia) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UTS Bahasa Indonesia Kelas 11 Semester Ganjil 2025",
+          deskripsi:
+            "Ujian Tengah Semester untuk mata pelajaran Bahasa Indonesia",
+          jenis: "MIDTERM",
+          TanggalMulai: new Date("2025-10-17"),
+          TanggalSelesai: new Date("2025-10-18"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaIndonesia.id,
+          questions: {
+            create: [
+              {
+                teks: "Analisislah struktur teks eksposisi yang telah kamu baca!",
+                jenis: "ESSAY",
+                poin: 40,
+              },
+              {
+                teks: "Sebutkan 3 jenis teks eksposisi!",
+                jenis: "SHORT_ANSWER",
+                poin: 30,
+                jawabanBenar: "Definisi, proses, klasifikasi",
+              },
+              {
+                teks: "Kata penghubung yang sering digunakan dalam teks eksposisi adalah kata penghubung kausalitas",
+                jenis: "TRUE_FALSE",
+                poin: 30,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UTS: Bahasa Indonesia");
+
+      // Tugas Bahasa Indonesia
+      await prisma.assignment.create({
+        data: {
+          judul: "Tugas Bahasa Indonesia - Menulis Teks Eksposisi",
+          deskripsi: "Buatlah teks eksposisi dengan tema lingkungan",
+          jenis: "EXERCISE",
+          TanggalMulai: new Date("2025-11-12"),
+          TanggalSelesai: new Date("2025-11-22"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaIndonesia.id,
+          questions: {
+            create: [
+              {
+                teks: "Buatlah teks eksposisi dengan tema 'Pentingnya Menjaga Lingkungan' minimal 5 paragraf dengan struktur yang benar!",
+                jenis: "ESSAY",
+                poin: 100,
+              },
+            ],
+          },
+        },
+      });
+      console.log(
+        "  ✓ Created Tugas: Bahasa Indonesia - Menulis Teks Eksposisi"
+      );
+    }
+
+    // UAS Bahasa Inggris
+    const bahasaInggris = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Bahasa Inggris"
+    );
+    if (bahasaInggris) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UAS English Grade 11 Odd Semester 2025",
+          deskripsi: "Final exam for English subject",
+          jenis: "FINAL_EXAM",
+          TanggalMulai: new Date("2025-12-12"),
+          TanggalSelesai: new Date("2025-12-17"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaInggris.id,
+          questions: {
+            create: [
+              {
+                teks: "Write an essay about 'The Impact of Technology on Education' (minimum 200 words)",
+                jenis: "ESSAY",
+                poin: 40,
+              },
+              {
+                teks: 'Choose the correct form: "I _____ my homework when my friend called me."',
+                jenis: "MULTIPLE_CHOICE",
+                poin: 20,
+                jawabanBenar: "was doing",
+                options: {
+                  create: [
+                    { teks: "do", adalahBenar: false, kode: "A" },
+                    { teks: "was doing", adalahBenar: true, kode: "B" },
+                    { teks: "did", adalahBenar: false, kode: "C" },
+                    { teks: "have done", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: 'What is the past participle of "write"?',
+                jenis: "SHORT_ANSWER",
+                poin: 20,
+                jawabanBenar: "written",
+              },
+              {
+                teks: "Present perfect tense uses has/have + V3",
+                jenis: "TRUE_FALSE",
+                poin: 20,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "True", adalahBenar: true, kode: "A" },
+                    { teks: "False", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UAS: English");
+
+      // Tugas Bahasa Inggris
+      await prisma.assignment.create({
+        data: {
+          judul: "English Assignment - Descriptive Text",
+          deskripsi: "Write a descriptive text about your favorite place",
+          jenis: "EXERCISE",
+          TanggalMulai: new Date("2025-11-15"),
+          TanggalSelesai: new Date("2025-11-25"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: bahasaInggris.id,
+          questions: {
+            create: [
+              {
+                teks: "Write a descriptive text about your favorite place (minimum 3 paragraphs)",
+                jenis: "ESSAY",
+                poin: 100,
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created Tugas: English - Descriptive Text");
+    }
+
+    // UTS Ekonomi
+    const ekonomi = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Ekonomi"
+    );
+    if (ekonomi) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UTS Ekonomi Kelas 11 Semester Ganjil 2025",
+          deskripsi: "Ujian Tengah Semester untuk mata pelajaran Ekonomi",
+          jenis: "MIDTERM",
+          TanggalMulai: new Date("2025-10-19"),
+          TanggalSelesai: new Date("2025-10-20"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: ekonomi.id,
+          questions: {
+            create: [
+              {
+                teks: "Jelaskan perbedaan antara kebutuhan dan keinginan! Berikan masing-masing 3 contoh!",
+                jenis: "ESSAY",
+                poin: 30,
+              },
+              {
+                teks: "Apa yang dimaksud dengan kelangkaan dalam ilmu ekonomi?",
+                jenis: "SHORT_ANSWER",
+                poin: 25,
+                jawabanBenar:
+                  "Kondisi di mana kebutuhan manusia tidak terbatas sedangkan alat pemuas kebutuhan terbatas",
+              },
+              {
+                teks: "Biaya peluang (opportunity cost) adalah...",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 20,
+                jawabanBenar:
+                  "Biaya yang dikorbankan karena memilih alternatif lain",
+                options: {
+                  create: [
+                    {
+                      teks: "Biaya yang dikorbankan karena memilih alternatif lain",
+                      adalahBenar: true,
+                      kode: "A",
+                    },
+                    {
+                      teks: "Biaya produksi suatu barang",
+                      adalahBenar: false,
+                      kode: "B",
+                    },
+                    {
+                      teks: "Harga jual barang",
+                      adalahBenar: false,
+                      kode: "C",
+                    },
+                    {
+                      teks: "Keuntungan maksimal",
+                      adalahBenar: false,
+                      kode: "D",
+                    },
+                  ],
+                },
+              },
+              {
+                teks: "Dalam ilmu ekonomi, manusia dianggap sebagai makhluk yang rasional",
+                jenis: "TRUE_FALSE",
+                poin: 25,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UTS: Ekonomi");
+
+      // Tugas Ekonomi
+      await prisma.assignment.create({
+        data: {
+          judul: "Tugas Ekonomi - Sistem Ekonomi",
+          deskripsi: "Analisis perbandingan sistem ekonomi di berbagai negara",
+          jenis: "EXERCISE",
+          TanggalMulai: new Date("2025-11-18"),
+          TanggalSelesai: new Date("2025-11-28"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: ekonomi.id,
+          questions: {
+            create: [
+              {
+                teks: "Bandingkan sistem ekonomi kapitalis, sosialis, dan campuran! Jelaskan kelebihan dan kekurangan masing-masing!",
+                jenis: "ESSAY",
+                poin: 60,
+              },
+              {
+                teks: "Sebutkan negara yang menerapkan sistem ekonomi campuran!",
+                jenis: "SHORT_ANSWER",
+                poin: 40,
+                jawabanBenar: "Indonesia, Malaysia, Singapura, dll",
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created Tugas: Ekonomi - Sistem Ekonomi");
+    }
+
+    // UTS Geografi
+    const geografi = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Geografi"
+    );
+    if (geografi) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UTS Geografi Kelas 11 Semester Ganjil 2025",
+          deskripsi: "Ujian Tengah Semester untuk mata pelajaran Geografi",
+          jenis: "MIDTERM",
+          TanggalMulai: new Date("2025-10-21"),
+          TanggalSelesai: new Date("2025-10-22"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: geografi.id,
+          questions: {
+            create: [
+              {
+                teks: "Jelaskan apa yang dimaksud dengan atmosfer dan sebutkan lapisan-lapisannya!",
+                jenis: "ESSAY",
+                poin: 35,
+              },
+              {
+                teks: "Lapisan atmosfer yang paling dekat dengan bumi adalah?",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 25,
+                jawabanBenar: "Troposfer",
+                options: {
+                  create: [
+                    { teks: "Troposfer", adalahBenar: true, kode: "A" },
+                    { teks: "Stratosfer", adalahBenar: false, kode: "B" },
+                    { teks: "Mesosfer", adalahBenar: false, kode: "C" },
+                    { teks: "Termosfer", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Sebutkan 3 unsur cuaca dan iklim!",
+                jenis: "SHORT_ANSWER",
+                poin: 20,
+                jawabanBenar: "Suhu, kelembaban, tekanan udara",
+              },
+              {
+                teks: "Efek rumah kaca disebabkan oleh penumpukan gas CO2 di atmosfer",
+                jenis: "TRUE_FALSE",
+                poin: 20,
+                jawabanBenar: "true",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: true, kode: "A" },
+                    { teks: "Salah", adalahBenar: false, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UTS: Geografi");
+    }
+
+    // UTS Sejarah
+    const sejarah = kelas11Data.find(
+      (cst) => cst.subject.namaMapel === "Sejarah"
+    );
+    if (sejarah) {
+      await prisma.assignment.create({
+        data: {
+          judul: "UTS Sejarah Kelas 11 Semester Ganjil 2025",
+          deskripsi: "Ujian Tengah Semester untuk mata pelajaran Sejarah",
+          jenis: "MIDTERM",
+          TanggalMulai: new Date("2025-10-23"),
+          TanggalSelesai: new Date("2025-10-24"),
+          nilaiMaksimal: 100,
+          classSubjectTutorId: sejarah.id,
+          questions: {
+            create: [
+              {
+                teks: "Jelaskan latar belakang terjadinya Perang Dunia II dan dampaknya bagi Indonesia!",
+                jenis: "ESSAY",
+                poin: 40,
+              },
+              {
+                teks: "Perang Dunia II berakhir pada tahun?",
+                jenis: "MULTIPLE_CHOICE",
+                poin: 20,
+                jawabanBenar: "1945",
+                options: {
+                  create: [
+                    { teks: "1943", adalahBenar: false, kode: "A" },
+                    { teks: "1944", adalahBenar: false, kode: "B" },
+                    { teks: "1945", adalahBenar: true, kode: "C" },
+                    { teks: "1946", adalahBenar: false, kode: "D" },
+                  ],
+                },
+              },
+              {
+                teks: "Siapa pemimpin Jerman pada masa Perang Dunia II?",
+                jenis: "SHORT_ANSWER",
+                poin: 20,
+                jawabanBenar: "Adolf Hitler",
+              },
+              {
+                teks: "Indonesia merdeka pada saat Perang Dunia II masih berlangsung",
+                jenis: "TRUE_FALSE",
+                poin: 20,
+                jawabanBenar: "false",
+                options: {
+                  create: [
+                    { teks: "Benar", adalahBenar: false, kode: "A" },
+                    { teks: "Salah", adalahBenar: true, kode: "B" },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+      console.log("  ✓ Created UTS: Sejarah");
+    }
+
+    console.log("\n✅ All assignments created successfully!\n");
+  } else {
+    console.log(
+      `ℹ️  Assignments already exist (${existingAssignments}), skipping...\n`
+    );
+  }
+
+  console.log("🎉 Seed process completed!\n");
+}
+
+main()
+  .catch((e) => {
+    console.error("❌ Error during seeding:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -6,8 +6,8 @@ import jwt from "jsonwebtoken";
  * Mengambil data user dari cookie `auth_token` (JWT)
  * @returns {Object|null} user payload dari token atau null jika tidak valid
  */
-export async function  getUserFromCookie() {
-  const token = await cookies().get("auth_token")?.value;
+export async function getUserFromCookie() {
+  const token = cookies().get("auth_token")?.value;
   if (!token) return null;
 
   try {
