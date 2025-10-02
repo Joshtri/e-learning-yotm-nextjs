@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
+import { useCollapsible } from "@/hooks/useCollapsible";
 import {
   Plus,
   FileText,
@@ -17,6 +18,9 @@ import {
   Filter,
   BarChart3,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -45,6 +49,9 @@ export default function TutorExamsPage() {
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
 
+  // Use the collapsible hook for the sidebar
+  const { isCollapsed, toggle, expand, collapse } = useCollapsible(false, 'exams-sidebar-collapsed');
+
   useEffect(() => {
     const fetchYears = async () => {
       const res = await api.get("/academic-years");
@@ -69,18 +76,18 @@ export default function TutorExamsPage() {
       // Calculate stats
       const now = new Date();
       const activeExams = examsData.filter((exam) => {
-        const startDate = new Date(exam.waktuMulai);
-        const endDate = new Date(exam.waktuSelesai);
+        const startDate = new Date(exam.TanggalMulai);
+        const endDate = new Date(exam.TanggalSelesai);
         return startDate <= now && endDate >= now;
       });
 
       const upcomingExams = examsData.filter((exam) => {
-        const startDate = new Date(exam.waktuMulai);
+        const startDate = new Date(exam.TanggalMulai);
         return startDate > now;
       });
 
       const completedExams = examsData.filter((exam) => {
-        const endDate = new Date(exam.waktuSelesai);
+        const endDate = new Date(exam.TanggalSelesai);
         return endDate < now;
       });
 
@@ -120,8 +127,8 @@ export default function TutorExamsPage() {
 
   const getExamStatus = (exam) => {
     const now = new Date();
-    const start = new Date(exam.waktuMulai);
-    const end = new Date(exam.waktuSelesai);
+    const start = new Date(exam.TanggalMulai);
+    const end = new Date(exam.TanggalSelesai);
 
     if (start > now) return { status: "pending", label: "Akan Datang" };
     if (start <= now && end >= now)
@@ -188,21 +195,14 @@ export default function TutorExamsPage() {
           <div className="flex items-center text-sm">
             <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
             <span>
-              {new Date(row.waktuMulai).toLocaleDateString("id-ID", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-            <span>
-              {new Date(row.waktuMulai).toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {row.TanggalMulai
+                ? new Date(row.TanggalMulai).toLocaleDateString("id-ID", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "-"}
             </span>
           </div>
         </div>
@@ -215,21 +215,14 @@ export default function TutorExamsPage() {
           <div className="flex items-center text-sm">
             <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
             <span>
-              {new Date(row.waktuSelesai).toLocaleDateString("id-ID", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-            <span>
-              {new Date(row.waktuSelesai).toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {row.TanggalSelesai
+                ? new Date(row.TanggalSelesai).toLocaleDateString("id-ID", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "-"}
             </span>
           </div>
         </div>
@@ -288,10 +281,10 @@ export default function TutorExamsPage() {
   const upcomingExams = data
     .filter((exam) => {
       const now = new Date();
-      const startDate = new Date(exam.waktuMulai);
+      const startDate = new Date(exam.TanggalMulai);
       return startDate > now;
     })
-    .sort((a, b) => new Date(a.waktuMulai) - new Date(b.waktuMulai))
+    .sort((a, b) => new Date(a.TanggalMulai) - new Date(b.TanggalMulai))
     .slice(0, 3);
 
   return (
@@ -343,8 +336,23 @@ export default function TutorExamsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      {!isCollapsed && (
+        <div className="fixed top-1/2 right-2 transform -translate-y-1/2 z-40 flex flex-col gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-l-full rounded-r-none shadow-md"
+            onClick={collapse}
+            aria-label="Tutup sidebar"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main content table */}
+        <div className={`${isCollapsed ? "w-full" : "w-full pr-10"} transition-all duration-300`}>
           <Tabs defaultValue="all" className="space-y-6">
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start flex-wrap gap-4">
                 <TabsList className="overflow-x-auto">
@@ -464,13 +472,14 @@ export default function TutorExamsPage() {
           </Tabs>
         </div>
 
-        <div className="space-y-6">
+        {/* Collapsible sidebar */}
+        <div className={`transition-all duration-300 ${isCollapsed ? 'hidden' : 'flex flex-col space-y-6 w-full lg:w-80'}`}>
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>Ujian Mendatang</CardTitle>
-              <CardDescription>
-                Ujian yang akan datang dalam waktu dekat
-              </CardDescription>
+              <Button variant="ghost" size="icon" onClick={collapse} className="h-6 w-6">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {upcomingExams.length > 0 ? (
@@ -491,21 +500,11 @@ export default function TutorExamsPage() {
                       <div className="flex items-center text-xs text-muted-foreground mt-1">
                         <Calendar className="h-3 w-3 mr-1" />
                         <span>
-                          {new Date(exam.waktuMulai).toLocaleDateString(
-                            "id-ID"
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>
-                          {new Date(exam.waktuMulai).toLocaleTimeString(
-                            "id-ID",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
+                          {exam.TanggalMulai
+                            ? new Date(exam.TanggalMulai).toLocaleDateString(
+                                "id-ID"
+                              )
+                            : "-"}
                         </span>
                       </div>
                     </div>
@@ -530,11 +529,11 @@ export default function TutorExamsPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>Jenis Ujian</CardTitle>
-              <CardDescription>
-                Penjelasan singkat tentang jenis-jenis ujian
-              </CardDescription>
+              <Button variant="ghost" size="icon" onClick={collapse} className="h-6 w-6">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -571,6 +570,21 @@ export default function TutorExamsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Chevron button when sidebar is collapsed */}
+      {isCollapsed && (
+        <div className="fixed top-1/2 right-2 transform -translate-y-1/2 z-40 flex flex-col gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-l-full rounded-r-none shadow-md"
+            onClick={expand}
+            aria-label="Buka sidebar"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -96,6 +96,36 @@ export async function POST(req) {
       );
     }
 
+    // Validasi tanggal
+    const startDate = new Date(tanggalMulai);
+    const endDate = new Date(tanggalSelesai);
+
+    // Cek apakah tanggal valid
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return NextResponse.json(
+        { message: "Format tanggal tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah tanggal selesai lebih besar dari tanggal mulai
+    if (endDate <= startDate) {
+      return NextResponse.json(
+        { message: "Tanggal selesai harus setelah tanggal mulai" },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah tanggal tidak di masa lalu (opsional, bisa dihapus jika tidak perlu)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate < today) {
+      return NextResponse.json(
+        { message: "Tanggal mulai tidak boleh di masa lalu" },
+        { status: 400 }
+      );
+    }
+
     // Validasi akses
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
@@ -154,8 +184,8 @@ export async function POST(req) {
         deskripsi,
         jenis,
         classSubjectTutorId,
-        TanggalMulai: new Date(tanggalMulai),
-        TanggalSelesai: new Date(tanggalSelesai),
+        TanggalMulai: startDate,
+        TanggalSelesai: endDate,
         batasWaktuMenit: Number(durasiMenit),
         nilaiMaksimal: Number(nilaiMaksimal),
       },

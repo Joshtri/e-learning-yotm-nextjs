@@ -129,6 +129,35 @@ export async function POST(req) {
       );
     }
 
+    // Validasi waktu
+    const startTime = new Date(waktuMulai);
+    const endTime = new Date(waktuSelesai);
+
+    // Cek apakah waktu valid
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      return NextResponse.json(
+        { message: "Format waktu tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah waktu selesai lebih besar dari waktu mulai
+    if (endTime <= startTime) {
+      return NextResponse.json(
+        { message: "Waktu selesai harus setelah waktu mulai" },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah waktu tidak di masa lalu
+    const now = new Date();
+    if (startTime < now) {
+      return NextResponse.json(
+        { message: "Waktu mulai tidak boleh di masa lalu" },
+        { status: 400 }
+      );
+    }
+
     // Validasi akses tutor
     const isOwned = await prisma.classSubjectTutor.findFirst({
       where: {
@@ -167,8 +196,8 @@ export async function POST(req) {
         judul,
         deskripsi,
         classSubjectTutorId,
-        waktuMulai: new Date(waktuMulai),
-        waktuSelesai: new Date(waktuSelesai),
+        waktuMulai: startTime,
+        waktuSelesai: endTime,
         durasiMenit: Number(durasiMenit),
         nilaiMaksimal: Number(nilaiMaksimal),
         acakSoal,

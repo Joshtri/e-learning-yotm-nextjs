@@ -95,6 +95,33 @@ export async function POST(req) {
       parsedTanggalSelesai: parsedTanggalSelesai?.toISOString(),
     });
 
+    // Validasi tanggal
+    if (parsedTanggalMulai && parsedTanggalSelesai) {
+      // Cek apakah tanggal selesai lebih besar dari tanggal mulai
+      if (parsedTanggalSelesai <= parsedTanggalMulai) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tanggal selesai harus setelah tanggal mulai",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Cek apakah tanggal tidak di masa lalu (opsional)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (parsedTanggalMulai < today) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tanggal mulai tidak boleh di masa lalu",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Simpan tugas
     const assignment = await prisma.assignment.create({
       data: {
