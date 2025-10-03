@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma"; // ✅ tambahkan ini untuk fetch user lengkap
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {

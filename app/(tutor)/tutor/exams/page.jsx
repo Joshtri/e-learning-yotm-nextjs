@@ -20,7 +20,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Edit,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -255,6 +256,13 @@ export default function TutorExamsPage() {
                 </Link>
               </Button>
             )}
+
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/tutor/exams/${row.id}/edit`}>
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Link>
+          </Button>
 
           <Button
             variant="destructive"

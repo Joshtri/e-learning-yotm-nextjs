@@ -42,7 +42,7 @@ export function NotificationDropdown({ userId }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="relative inline-flex items-center justify-center">
+        <button className="relative inline-flex items-center justify-center h-10 w-10 rounded-md hover:bg-blue-400 text-white transition-colors">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-3 min-w-[0.50rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">

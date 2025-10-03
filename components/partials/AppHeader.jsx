@@ -94,14 +94,10 @@ export default function AppHeader({ onMenuClick, role }) {
 
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4 pr-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden md:flex relative hover:bg-blue-400 text-white"
-        >
+        <div className="hidden md:flex relative">
           <span className="sr-only">Notifikasi</span>
           {user && <NotificationDropdown userId={user.id} />}
-        </Button>
+        </div>
 
         {/* User dropdown */}
         <DropdownMenu>

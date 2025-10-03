@@ -1,12 +1,3 @@
-import { createDynamicMetadata } from "@/lib/dynamic-metadata";
-
-// Generate metadata dynamically for this page
-export async function generateMetadata() {
-  return createDynamicMetadata("/tutor/assignments", {
-    description: "Manajemen tugas untuk tutor - E-Learning YOTM"
-  });
-}
-
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +21,7 @@ import {
   FileText,
   Filter,
   Plus,
+  Edit,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -261,6 +253,16 @@ export default function TutorAssignmentPage() {
           >
             <FileText className="h-4 w-4 mr-1" />
             Periksa Jawaban
+          </Button>
+
+          {/* ✅ Tombol Edit */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/tutor/assignments/${row.id}/edit`)}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
           </Button>
 
           {/* ✅ Tombol Hapus */}

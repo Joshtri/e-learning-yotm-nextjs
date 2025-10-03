@@ -9,7 +9,7 @@ import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Plus, FileText, Calendar, Clock, Filter } from "lucide-react";
+import { Plus, FileText, Calendar, Clock, Filter, Edit } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
@@ -242,6 +242,16 @@ export default function TutorQuizPage() {
             onClick={() => router.push(`/tutor/quizzes/${row.id}`)}
           >
             Detail
+          </Button>
+
+          {/* ✅ Tombol Edit */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/tutor/quizzes/${row.id}/edit`)}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
           </Button>
 
           {/* ✅ Tombol Hapus */}

@@ -40,6 +40,74 @@ export async function GET(req, context) {
   }
 }
 
+export async function PATCH(req, context) {
+  const { id } = context.params;
+
+  try {
+    const body = await req.json();
+    const {
+      judul,
+      deskripsi,
+      classSubjectTutorId,
+      tanggalMulai,
+      tanggalSelesai,
+      jenis,
+      nilaiMaksimal,
+      questionsFromPdf,
+    } = body;
+
+    // Check if assignment exists
+    const existingAssignment = await prisma.assignment.findUnique({
+      where: { id },
+    });
+
+    if (!existingAssignment) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Tugas tidak ditemukan" }),
+        { status: 404 }
+      );
+    }
+
+    // Update assignment
+    const updatedAssignment = await prisma.assignment.update({
+      where: { id },
+      data: {
+        judul,
+        deskripsi,
+        classSubjectTutorId,
+        TanggalMulai: tanggalMulai ? new Date(tanggalMulai) : undefined,
+        TanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : undefined,
+        jenis,
+        nilaiMaksimal,
+        questionsFromPdf,
+      },
+      include: {
+        classSubjectTutor: {
+          include: {
+            class: { select: { namaKelas: true } },
+            subject: { select: { namaMapel: true } },
+          },
+        },
+      },
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Tugas berhasil diperbarui",
+        data: updatedAssignment,
+      }),
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Gagal PATCH assignment:", error);
+    return new Response(
+      JSON.stringify({ success: false, message: "Gagal memperbarui tugas" }),
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req, context) {
   const { id } = context.params;
 

@@ -96,6 +96,94 @@ export async function GET(_, { params }) {
 }
 
 
+export async function PATCH(req, { params }) {
+  const { id } = params;
+
+  try {
+    const user = getUserFromCookie();
+    if (!user || user.role !== "TUTOR") {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    const tutor = await prisma.tutor.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!tutor) {
+      return NextResponse.json({ success: false, message: "Tutor not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const {
+      judul,
+      deskripsi,
+      classSubjectTutorId,
+      waktuMulai,
+      waktuSelesai,
+      durasiMenit,
+      nilaiMaksimal,
+      acakSoal,
+      acakJawaban,
+    } = body;
+
+    // Check if quiz exists and belongs to tutor
+    const existingQuiz = await prisma.quiz.findFirst({
+      where: {
+        id,
+        classSubjectTutor: { tutorId: tutor.id },
+      },
+    });
+
+    if (!existingQuiz) {
+      return NextResponse.json(
+        { success: false, message: "Kuis tidak ditemukan atau Anda tidak memiliki akses" },
+        { status: 404 }
+      );
+    }
+
+    // Update quiz
+    const updatedQuiz = await prisma.quiz.update({
+      where: { id },
+      data: {
+        judul,
+        deskripsi,
+        classSubjectTutorId,
+        waktuMulai: waktuMulai ? new Date(waktuMulai) : undefined,
+        waktuSelesai: waktuSelesai ? new Date(waktuSelesai) : undefined,
+        durasiMenit,
+        nilaiMaksimal,
+        acakSoal,
+        acakJawaban,
+      },
+      include: {
+        classSubjectTutor: {
+          include: {
+            class: { select: { namaKelas: true } },
+            subject: { select: { namaMapel: true } },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Kuis berhasil diperbarui",
+      data: updatedQuiz,
+    });
+  } catch (error) {
+    console.error("Gagal PATCH quiz:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Gagal memperbarui kuis",
+        error: error?.message ?? String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req, { params }) {
   const { id } = params;
 

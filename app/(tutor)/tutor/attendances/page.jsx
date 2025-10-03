@@ -6,15 +6,7 @@ import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -23,8 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
-// import { SkeletonTable } from "@/components/ui/skeleton/SkeletonTable";
+import { Calendar, Users, BookOpen, Eye, Filter } from "lucide-react";
+import { StatsCard } from "@/components/ui/stats-card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function AttendanceClassListPage() {
   const router = useRouter();
@@ -82,71 +77,125 @@ export default function AttendanceClassListPage() {
         ]}
       />
 
-      <div className="flex justify-end">
-        <Select value={selectedYearId} onValueChange={setSelectedYearId}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Pilih Tahun Ajaran" />
-          </SelectTrigger>
-          <SelectContent>
-            {academicYears.map((year) => (
-              <SelectItem key={year.id} value={year.id}>
-                {year.tahunMulai}/{year.tahunSelesai}{" "}
-                {year.isActive ? "(Aktif)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total Kelas"
+          value={classes.length}
+          description="Kelas yang Anda ajar"
+          icon={<Users className="h-4 w-4" />}
+        />
+        <StatsCard
+          title="Tahun Ajaran"
+          value={academicYears.find((y) => y.id === selectedYearId)?.tahunMulai || "-"}
+          description="Tahun ajaran aktif"
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <StatsCard
+          title="Mata Pelajaran"
+          value={new Set(classes.map((c) => c.subject.namaMapel)).size}
+          description="Mapel yang diampu"
+          icon={<BookOpen className="h-4 w-4" />}
+        />
       </div>
 
+      {/* Filter Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Kelas</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filter Tahun Ajaran
+              </CardTitle>
+              <CardDescription>Pilih tahun ajaran untuk melihat kelas</CardDescription>
+            </div>
+            <Select value={selectedYearId} onValueChange={setSelectedYearId}>
+              <SelectTrigger className="w-full sm:w-[240px]">
+                <SelectValue placeholder="Pilih Tahun Ajaran" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year) => (
+                  <SelectItem key={year.id} value={year.id}>
+                    {year.tahunMulai}/{year.tahunSelesai}{" "}
+                    {year.isActive && <Badge variant="default" className="ml-2">Aktif</Badge>}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Class List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Daftar Kelas
+          </CardTitle>
+          <CardDescription>
+            {classes.length} kelas tersedia untuk presensi
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Kelas</TableHead>
-                <TableHead>Mapel</TableHead>
-                <TableHead>Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="p-0">
-                    <SkeletonTable numRows={5} numCols={4} showHeader={false} />
-                  </TableCell>
-                </TableRow>
-              ) : classes.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center p-8">
-                    Tidak ada kelas
-                  </TableCell>
-                </TableRow>
-              ) : (
-                classes.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{item.class.namaKelas}</TableCell>
-                    <TableCell>{item.subject.namaMapel}</TableCell>
-                    <TableCell>
+          {isLoading ? (
+            <SkeletonTable numRows={5} numCols={4} showHeader={true} />
+          ) : classes.length === 0 ? (
+            <EmptyState
+              title="Tidak ada kelas"
+              description="Belum ada kelas yang tersedia untuk tahun ajaran ini."
+              icon={<Users className="h-6 w-6 text-muted-foreground" />}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {classes.map((item, index) => (
+                <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <Badge variant="secondary" className="mb-2">
+                          Kelas {index + 1}
+                        </Badge>
+                        <CardTitle className="text-lg">
+                          {item.class.namaKelas}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          {item.subject.namaMapel}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Tahun Ajaran
+                        </span>
+                        <span className="font-medium">
+                          {item.class.academicYear.tahunMulai}/
+                          {item.class.academicYear.tahunSelesai}
+                        </span>
+                      </div>
                       <Button
+                        className="w-full"
                         onClick={() =>
                           router.push(
                             `/tutor/attendances/class/${item.class.id}`
                           )
                         }
                       >
+                        <Eye className="h-4 w-4 mr-2" />
                         Lihat Presensi
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

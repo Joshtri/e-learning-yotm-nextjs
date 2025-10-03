@@ -12,10 +12,37 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatsCard } from "@/components/ui/stats-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  BookOpen,
+  Calendar,
+  FileText,
+  Users,
+  CheckCircle2,
+  Clock,
+  Filter,
+  Eye,
+  Award
+} from "lucide-react";
 
 const statusMap = {
   NOT_STARTED: "Belum Dimulai",
@@ -32,66 +59,83 @@ const jenisUjianMap = {
 };
 
 const statusColor = {
-  NOT_STARTED: "bg-gray-200 text-gray-700",
-  IN_PROGRESS: "bg-yellow-200 text-yellow-800",
-  SUBMITTED: "bg-blue-200 text-blue-800",
-  GRADED: "bg-green-200 text-green-800",
+  NOT_STARTED: "bg-gray-100 text-gray-700 border border-gray-300",
+  IN_PROGRESS: "bg-yellow-100 text-yellow-800 border border-yellow-300",
+  SUBMITTED: "bg-blue-100 text-blue-800 border border-blue-300",
+  GRADED: "bg-green-100 text-green-800 border border-green-300",
+};
+
+const statusIcon = {
+  NOT_STARTED: <Clock className="h-3 w-3" />,
+  IN_PROGRESS: <Clock className="h-3 w-3" />,
+  SUBMITTED: <FileText className="h-3 w-3" />,
+  GRADED: <CheckCircle2 className="h-3 w-3" />,
 };
 
 // SubmissionCard Component
 /* eslint-disable react/prop-types */
 function SubmissionCard({ submission }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row justify-between items-start">
-        <div>
-          <CardTitle className="text-lg font-semibold">
-            {submission.assignment?.judul || submission.quiz?.judul}
-          </CardTitle>
-          <CardDescription className="mt-1">
-            {submission.assignment?.classSubjectTutor?.class?.namaKelas ||
-              submission.quiz?.classSubjectTutor?.class?.namaKelas}
-            {" • "}
-            {submission.assignment?.classSubjectTutor?.subject?.namaMapel ||
-              submission.quiz?.classSubjectTutor?.subject?.namaMapel}
-          </CardDescription>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 space-y-1">
+            <CardTitle className="text-base font-semibold line-clamp-1">
+              {submission.assignment?.judul || submission.quiz?.judul}
+            </CardTitle>
+            <CardDescription className="flex items-center gap-1 text-xs">
+              <Users className="h-3 w-3" />
+              {submission.student.namaLengkap}
+            </CardDescription>
+          </div>
+          <Badge className={`${statusColor[submission.status] || "bg-gray-100"} flex items-center gap-1 px-2`}>
+            {statusIcon[submission.status]}
+            {statusMap[submission.status] || submission.status}
+          </Badge>
         </div>
-        <Badge className={`${statusColor[submission.status] || "bg-gray-100"}`}>
-          {statusMap[submission.status] || submission.status}
-        </Badge>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground space-y-1">
-        <p>
-          <span className="font-medium">Siswa:</span>{" "}
-          {submission.student.namaLengkap}
-        </p>
-        <p>
-          <span className="font-medium">NISN:</span> {submission.student.nisn}
-        </p>
-        {submission.assignment?.jenis && (
-          <p>
-            <span className="font-medium">Jenis :</span>{" "}
-            {jenisUjianMap[submission.assignment.jenis] ||
-              submission.assignment.jenis}
-          </p>
-        )}
-        {submission.nilai != null && (
-          <p>
-            <span className="font-medium">Nilai:</span> {submission.nilai}
-          </p>
-        )}
-        {submission.waktuKumpul && (
-          <p>
-            <span className="font-medium">Waktu Kumpul:</span>{" "}
-            {format(new Date(submission.waktuKumpul), "d MMM yyyy, HH:mm", {
-              locale: id,
-            })}
-          </p>
-        )}
-
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+          <div className="space-y-1">
+            <p className="text-muted-foreground">NISN</p>
+            <p className="font-medium">{submission.student.nisn}</p>
+          </div>
+          {submission.nilai != null && (
+            <div className="space-y-1">
+              <p className="text-muted-foreground flex items-center gap-1">
+                <Award className="h-3 w-3" />
+                Nilai
+              </p>
+              <p className="font-bold text-lg text-green-600">{submission.nilai}</p>
+            </div>
+          )}
+          {submission.assignment?.jenis && (
+            <div className="space-y-1">
+              <p className="text-muted-foreground">Jenis</p>
+              <Badge variant="outline" className="text-xs">
+                {jenisUjianMap[submission.assignment.jenis] ||
+                  submission.assignment.jenis}
+              </Badge>
+            </div>
+          )}
+          {submission.waktuKumpul && (
+            <div className="space-y-1">
+              <p className="text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Waktu Kumpul
+              </p>
+              <p className="font-medium text-xs">
+                {format(new Date(submission.waktuKumpul), "d MMM yyyy, HH:mm", {
+                  locale: id,
+                })}
+              </p>
+            </div>
+          )}
+        </div>
         <Link href={`/tutor/submissions/${submission.id}/review`} passHref>
-          <Button variant="outline" className="mt-2">
-            Review
+          <Button variant="default" size="sm" className="w-full">
+            <Eye className="h-3 w-3 mr-1" />
+            Review Submission
           </Button>
         </Link>
       </CardContent>
@@ -161,127 +205,253 @@ export default function SubmissionsPage() {
     fetchSubmissions();
   }, [selectedYear, selectedSubject]);
 
+  // Calculate stats
+  const totalSubmissions = isFiltered
+    ? Array.isArray(submissions)
+      ? submissions.length
+      : 0
+    : Object.values(submissions).reduce(
+        (acc, curr) =>
+          acc +
+          (curr.assignments?.length || 0) +
+          (curr.quizzes?.length || 0),
+        0
+      );
+
+  const gradedCount = isFiltered
+    ? Array.isArray(submissions)
+      ? submissions.filter((s) => s.status === "GRADED").length
+      : 0
+    : Object.values(submissions).reduce(
+        (acc, curr) =>
+          acc +
+          (curr.assignments?.filter((s) => s.status === "GRADED").length ||
+            0) +
+          (curr.quizzes?.filter((s) => s.status === "GRADED").length || 0),
+        0
+      );
+
+  const pendingCount = totalSubmissions - gradedCount;
+
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Daftar Pengumpulan Siswa</h1>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Daftar Pengumpulan Siswa"
+        description="Review dan nilai pengumpulan tugas dan kuis siswa."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/tutor/dashboard" },
+          { label: "Pengumpulan Siswa" },
+        ]}
+      />
 
-      <div className="mb-4 flex gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Tahun Ajaran</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="p-2 border rounded w-full max-w-xs"
-          >
-            {academicYears.map((year) => (
-              <option key={year.id} value={year.id}>
-                {year.tahunMulai}/{year.tahunSelesai}{" "}
-                {year.isActive ? "(Aktif)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Mata Pelajaran
-          </label>
-          <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            className="p-2 border rounded w-full max-w-xs"
-          >
-            <option value="">Semua Mata Pelajaran</option>
-            {availableSubjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.namaMapel}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total Pengumpulan"
+          value={totalSubmissions}
+          description="Semua submission"
+          icon={<FileText className="h-4 w-4" />}
+        />
+        <StatsCard
+          title="Sudah Dinilai"
+          value={gradedCount}
+          description={`${gradedCount} dari ${totalSubmissions} submission`}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          trend={gradedCount > 0 ? "up" : undefined}
+        />
+        <StatsCard
+          title="Belum Dinilai"
+          value={pendingCount}
+          description="Menunggu review"
+          icon={<Clock className="h-4 w-4" />}
+        />
       </div>
 
+      {/* Filter Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2 mb-2">
+                <Filter className="h-5 w-5" />
+                Filter
+              </CardTitle>
+              <CardDescription>
+                Filter berdasarkan tahun ajaran dan mata pelajaran
+              </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Tahun Ajaran
+                </label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Pilih Tahun Ajaran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.map((year) => (
+                      <SelectItem key={year.id} value={year.id}>
+                        {year.tahunMulai}/{year.tahunSelesai}{" "}
+                        {year.isActive && "(Aktif)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
+                  Mata Pelajaran
+                </label>
+                <Select
+                  value={selectedSubject}
+                  onValueChange={setSelectedSubject}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Semua Mapel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Semua Mata Pelajaran</SelectItem>
+                    {availableSubjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.namaMapel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Submissions List */}
       {loading ? (
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))}
         </div>
       ) : (
-        <ScrollArea className="h-[75vh] pr-2">
-          <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {isFiltered ? "Hasil Filter" : "Pengumpulan per Mata Pelajaran"}
+            </CardTitle>
+            <CardDescription>
+              {totalSubmissions} pengumpulan ditemukan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             {isFiltered ? (
-              // Filtered view - show flat list
-              <div className="space-y-4">
+              // Filtered view - show flat grid
+              <div>
                 {Array.isArray(submissions) && submissions.length === 0 ? (
-                  <p className="text-muted-foreground text-center">
-                    Belum ada pengumpulan.
-                  </p>
+                  <EmptyState
+                    title="Tidak ada pengumpulan"
+                    description="Belum ada submission untuk filter yang dipilih."
+                    icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+                  />
                 ) : (
-                  Array.isArray(submissions) &&
-                  submissions.map((sub) => (
-                    <SubmissionCard key={sub.id} submission={sub} />
-                  ))
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.isArray(submissions) &&
+                      submissions.map((sub) => (
+                        <SubmissionCard key={sub.id} submission={sub} />
+                      ))}
+                  </div>
                 )}
               </div>
             ) : (
-              // Grouped view - show by subject
-              <>
+              // Grouped view - show accordion by subject
+              <div>
                 {Object.keys(submissions).length === 0 ? (
-                  <p className="text-muted-foreground text-center">
-                    Belum ada pengumpulan.
-                  </p>
+                  <EmptyState
+                    title="Tidak ada pengumpulan"
+                    description="Belum ada submission untuk tahun ajaran ini."
+                    icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+                  />
                 ) : (
-                  Object.entries(submissions).map(
-                    ([subjectName, subjectData]) => (
-                      <div key={subjectName} className="space-y-4">
-                        <h2 className="text-xl font-semibold text-primary border-b pb-2">
-                          {subjectName}
-                        </h2>
+                  <Accordion type="multiple" className="w-full">
+                    {Object.entries(submissions).map(
+                      ([subjectName, subjectData], index) => {
+                        const totalItems =
+                          (subjectData.assignments?.length || 0) +
+                          (subjectData.quizzes?.length || 0);
 
-                        {/* Assignments Section */}
-                        {subjectData.assignments &&
-                          subjectData.assignments.length > 0 && (
-                            <div className="space-y-3">
-                              <h3 className="text-lg font-medium text-green-700">
-                                📝 Tugas ({subjectData.assignments.length})
-                              </h3>
-                              <div className="space-y-3 pl-4">
-                                {subjectData.assignments.map((sub) => (
-                                  <SubmissionCard
-                                    key={sub.id}
-                                    submission={sub}
-                                  />
-                                ))}
+                        return (
+                          <AccordionItem key={subjectName} value={`subject-${index}`}>
+                            <AccordionTrigger className="hover:no-underline">
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="h-4 w-4" />
+                                  <span className="font-semibold">
+                                    {subjectName}
+                                  </span>
+                                </div>
+                                <Badge variant="secondary" className="ml-2">
+                                  {totalItems} submission
+                                </Badge>
                               </div>
-                            </div>
-                          )}
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-4 pt-4">
+                                {/* Assignments Section */}
+                                {subjectData.assignments &&
+                                  subjectData.assignments.length > 0 && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2 px-2">
+                                        <FileText className="h-4 w-4 text-green-600" />
+                                        <h3 className="text-sm font-semibold text-green-700">
+                                          Tugas ({subjectData.assignments.length})
+                                        </h3>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {subjectData.assignments.map((sub) => (
+                                          <SubmissionCard
+                                            key={sub.id}
+                                            submission={sub}
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
 
-                        {/* Quizzes Section */}
-                        {subjectData.quizzes &&
-                          subjectData.quizzes.length > 0 && (
-                            <div className="space-y-3">
-                              <h3 className="text-lg font-medium text-blue-700">
-                                📊 Kuis ({subjectData.quizzes.length})
-                              </h3>
-                              <div className="space-y-3 pl-4">
-                                {subjectData.quizzes.map((sub) => (
-                                  <SubmissionCard
-                                    key={sub.id}
-                                    submission={sub}
-                                  />
-                                ))}
+                                {/* Quizzes Section */}
+                                {subjectData.quizzes &&
+                                  subjectData.quizzes.length > 0 && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2 px-2">
+                                        <Award className="h-4 w-4 text-blue-600" />
+                                        <h3 className="text-sm font-semibold text-blue-700">
+                                          Kuis ({subjectData.quizzes.length})
+                                        </h3>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {subjectData.quizzes.map((sub) => (
+                                          <SubmissionCard
+                                            key={sub.id}
+                                            submission={sub}
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                               </div>
-                            </div>
-                          )}
-                      </div>
-                    )
-                  )
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      }
+                    )}
+                  </Accordion>
                 )}
-              </>
+              </div>
             )}
-          </div>
-        </ScrollArea>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
