@@ -2,12 +2,18 @@
 
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export function Providers({ children }) {
+  //initiate client here.
+  const queryClient = new QueryClient();
   return (
     <ReactQueryProvider>
-      <Toaster richColors position="top-right" />
-      {children}
+      <QueryClientProvider client={queryClient}>
+        <Toaster richColors position="top-right" />
+        {children}
+      </QueryClientProvider>
     </ReactQueryProvider>
   );
 }
+  
