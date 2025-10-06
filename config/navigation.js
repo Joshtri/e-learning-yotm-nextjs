@@ -412,7 +412,7 @@ export const navByRole = {
           icon: <BarChart3 className="h-4 w-4" />,
         },
         {
-          title: "Nilai Sikap",
+          title: "Nilai Sikap & Kehadiran",
           href: "/homeroom/behavior-scores",
           icon: <FileCheck2 className="h-4 w-4" />,
         },
@@ -421,6 +421,11 @@ export const navByRole = {
           href: "/homeroom/final-scores ",
           icon: <FileCheck2 className="h-4 w-4" />,
         },
+        // {
+        //   title: "Rekap Kehadiran Siswa",
+        //   href: "/homeroom/attendance-recap",
+        //   icon: <CalendarCheck className="h-4 w-4" />,
+        // },
         {
           title: "Rekap Nilai Ujian",
           href: "/homeroom/exams-scores",
