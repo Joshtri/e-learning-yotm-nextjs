@@ -316,7 +316,7 @@ export default function TutorQuizPage() {
                     >
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
-                          {year.tahunMulai}/{year.tahunSelesai}
+                          {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
                           {year.isActive ? " (Aktif)" : ""}
                         </option>
                       ))}
