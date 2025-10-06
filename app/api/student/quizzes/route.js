@@ -21,6 +21,7 @@ export async function GET(req) {
         class: {
           include: {
             classSubjectTutors: true,
+            academicYear: true,
           },
         },
       },
@@ -33,19 +34,60 @@ export async function GET(req) {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    const queryAcademicYearId = searchParams.get("academicYearId");
+    const querySemester = searchParams.get("semester");
+
     const studentId = student.id;
-    const cstIds = student.class.classSubjectTutors.map((cst) => cst.id);
+
+    // Get all class IDs the student has ever been associated with
+    const studentClassHistory = await prisma.studentClassHistory.findMany({
+      where: { studentId: student.id },
+      select: { classId: true },
+    });
+    const allClassIds = [
+      student.class.id,
+      ...studentClassHistory.map((history) => history.classId),
+    ];
+
+    // Get all ClassSubjectTutor IDs for these classes
+    const allCst = await prisma.classSubjectTutor.findMany({
+      where: { classId: { in: allClassIds } },
+      select: { id: true },
+    });
+    const cstIds = allCst.map((cst) => cst.id);
+
+    const whereClause = {
+      classSubjectTutorId: { in: cstIds },
+      classSubjectTutor: {
+        class: {
+          academicYearId: queryAcademicYearId,
+          academicYear: {
+            semester: querySemester,
+          },
+        },
+      },
+    };
 
     const quizzes = await prisma.quiz.findMany({
-      where: {
-        classSubjectTutorId: { in: cstIds },
-      },
+      where: whereClause,
       include: {
         classSubjectTutor: {
           include: {
             subject: { select: { namaMapel: true } },
             tutor: { select: { namaLengkap: true } },
-            class: { select: { namaKelas: true } },
+            class: {
+              select: {
+                namaKelas: true,
+                academicYear: {
+                  select: {
+                    tahunMulai: true,
+                    tahunSelesai: true,
+                    semester: true,
+                  },
+                },
+              },
+            },
           },
         },
         submissions: {
