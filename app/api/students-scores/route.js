@@ -239,16 +239,30 @@ export async function GET(request) {
               id: true,
               tahunMulai: true,
               tahunSelesai: true,
+              semester: true,
             },
           },
         },
         orderBy: { namaKelas: "asc" },
       }),
       prisma.academicYear.findMany({
-        select: { id: true, tahunMulai: true, tahunSelesai: true },
+        select: { id: true, tahunMulai: true, tahunSelesai: true, semester: true },
         orderBy: { tahunMulai: "desc" },
       }),
     ]);
+
+    const formattedAcademicYears = academicYears.map((year) => ({
+      ...year,
+      label: `${year.tahunMulai}/${year.tahunSelesai} - ${year.semester}`,
+    }));
+
+    const formattedClasses = classes.map((cls) => ({
+      ...cls,
+      academicYear: {
+        ...cls.academicYear,
+        label: `${cls.academicYear.tahunMulai}/${cls.academicYear.tahunSelesai} - ${cls.academicYear.semester}`,
+      },
+    }));
 
     return NextResponse.json({
       quizzes: allQuizzes,
@@ -256,8 +270,8 @@ export async function GET(request) {
       students: result,
       filterOptions: {
         subjects,
-        classes,
-        academicYears,
+        classes: formattedClasses,
+        academicYears: formattedAcademicYears,
       },
     });
   } catch {
