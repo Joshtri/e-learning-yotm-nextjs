@@ -19,18 +19,25 @@ import { toast } from "sonner";
 export default function DailyExamsPage() {
   const [data, setData] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedSemester, setSelectedSemester] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const [examRes, subjectRes] = await Promise.all([
-        api.get("/student/daily-exams"), // kamu harus siapkan endpoint ini
+      setIsLoading(true);
+      const [examRes, subjectRes, yearRes] = await Promise.all([
+        api.get("/student/daily-exams", { params: { academicYearId: selectedYear === "all" ? undefined : selectedYear, semester: selectedSemester === "all" ? undefined : selectedSemester } }),
         api.get("/subjects"),
+        api.get("/academic-years"),
       ]);
       setData(examRes.data.data);
-      setSubjects(subjectRes.data.data.subjects || []); // <<< Fix disini
+      setSubjects(subjectRes.data.data.subjects || []);
+      setAcademicYears(yearRes.data.data.academicYears);
     } catch (err) {
       toast.error("Gagal memuat data ujian harian");
     } finally {
@@ -40,7 +47,19 @@ export default function DailyExamsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedYear, selectedSemester]);
+
+  useEffect(() => {
+    if (academicYears.length > 0 && selectedYear === "all") {
+      const activeYear = academicYears.find(ay => ay.isActive);
+      if (activeYear) {
+        setSelectedYear(activeYear.id);
+      } else {
+        const latestYear = academicYears[0];
+        setSelectedYear(latestYear.id);
+      }
+    }
+  }, [academicYears, selectedYear]);
 
   const filteredData = data.filter((item) => {
     const matchSearch =
@@ -64,6 +83,13 @@ export default function DailyExamsPage() {
       ),
     },
     { header: "Mata Pelajaran", cell: (row) => row.subject?.namaMapel || "-" },
+    {
+      header: "Tahun Ajaran",
+      cell: (row) =>
+        row.class?.academicYear
+          ? `${row.class.academicYear.tahunMulai}/${row.class.academicYear.tahunSelesai} - ${row.class.academicYear.semester}`
+          : "-",
+    },
     { header: "Tutor", cell: (row) => row.tutor?.namaLengkap || "-" },
     {
       header: "Waktu",
@@ -153,6 +179,46 @@ export default function DailyExamsPage() {
                     </Select>
                   ),
                 },
+                {
+                  label: "Tahun Ajaran",
+                  content: (
+                    <Select
+                      value={selectedYear}
+                      onValueChange={(val) => setSelectedYear(val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Tahun Ajaran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua Tahun</SelectItem>
+                        {Array.isArray(academicYears) &&
+                          academicYears.map((y) => (
+                            <SelectItem key={y.id} value={y.id}>
+                              {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  ),
+                },
+                {
+                  label: "Semester",
+                  content: (
+                    <Select
+                      value={selectedSemester}
+                      onValueChange={(val) => setSelectedSemester(val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua Semester</SelectItem>
+                        <SelectItem value="GANJIL">GANJIL</SelectItem>
+                        <SelectItem value="GENAP">GENAP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ),
+                },
               ]}
             />
 
@@ -172,3 +238,20 @@ export default function DailyExamsPage() {
     </div>
   );
 }
+
+//             <TabsContent value="all">
+//               <DataTable
+//                 data={filteredData}
+//                 columns={columns}
+//                 isLoading={isLoading}
+//                 loadingMessage="Memuat data ujian harian..."
+//                 emptyMessage="Belum ada ujian tersedia"
+//                 keyExtractor={(item) => item.id}
+//               />
+//             </TabsContent>
+//           </Tabs>
+//         </main>
+//       </div>
+//     </div>
+//   );
+// }
