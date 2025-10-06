@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -15,45 +15,83 @@ import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { Users } from "lucide-react";
+import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+// import AcademicYearFilter from "@/components/AcademicYearFilter";
 
 export default function FinalScoresPage() {
-  const [data, setData] = useState({ students: [], subjects: [], tahunAjaranId: null });
+  const [data, setData] = useState({ students: [], subjects: [], tahunAjaranId: null, classInfo: null, filterOptions: { academicYears: [] } });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedYear, setSelectedYear] = useState("");
 
-  useEffect(() => {
-    fetchFinalScores();
-  }, []);
+  // Helper function untuk format angka ke 2 desimal
+  const formatNumber = (value) => {
+    if (value == null || value === "" || value === "-") return "-";
+    const num = typeof value === "number" ? value : parseFloat(value);
+    return isNaN(num) ? "-" : num.toFixed(2);
+  };
 
-  const fetchFinalScores = async () => {
+  const fetchFinalScores = useCallback(async (academicYearId) => {
     try {
       setIsLoading(true);
-      const res = await api.get("/homeroom/final-scores");
-      setData(res.data.data || { students: [], subjects: [] });
+      const params = academicYearId ? { academicYearId } : {};
+      const res = await api.get("/homeroom/final-scores", { params });
+      setData(res.data.data || { students: [], subjects: [], classInfo: null, filterOptions: { academicYears: [] } });
+      if (res.data.data?.classInfo?.academicYear?.id && !academicYearId) {
+        setSelectedYear(res.data.data.classInfo.academicYear.id);
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Gagal memuat data nilai akhir siswa");
+      const errorMessage = error.response?.data?.message || "Gagal memuat data nilai akhir siswa";
+      toast.error(errorMessage);
+      setData({ students: [], subjects: [], classInfo: null, filterOptions: { academicYears: [] } });
+      if (error.response?.data?.data?.filterOptions) {
+        setData(prevData => ({ ...prevData, filterOptions: error.response.data.data.filterOptions }));
+      }
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchFinalScores();
+  }, [fetchFinalScores]);
+
+  const handleYearChange = (yearId) => {
+    setSelectedYear(yearId);
+    fetchFinalScores(yearId);
+  };
+
+  const handleOpenConfirmDialog = () => {
+    if (!data.tahunAjaranId) {
+      toast.error("Data tahun ajaran tidak ditemukan.");
+      return;
+    }
+
+    if (data.students.length === 0) {
+      toast.warning("Tidak ada data siswa untuk disimpan.");
+      return;
+    }
+
+    setShowConfirmDialog(true);
   };
 
   const handleSaveFinalScores = async () => {
     try {
+      setIsSaving(true);
       const payload = [];
-  
-      if (!data.tahunAjaranId) {
-        toast.error("Data tahun ajaran tidak ditemukan.");
-        return;
-      }
-  
+
       data.students.forEach((student) => {
         data.subjects.forEach((subject) => {
           const mapel = student.mapelDetails.find(
             (m) => m.namaMapel === subject.namaMapel
           );
-  
+
           if (!mapel) return;
-  
+
           const komponen = [
             mapel.exercise,
             mapel.quiz,
@@ -62,40 +100,47 @@ export default function FinalScoresPage() {
             mapel.finalExam,
             mapel.skill,
           ];
-  
+
           const nilaiList = komponen
             .map((n) => (typeof n === "number" ? n : parseFloat(n)))
             .filter((n) => !isNaN(n));
-  
+
           if (nilaiList.length === 0) return;
-  
+
           const nilaiAkhir = (
             nilaiList.reduce((acc, n) => acc + n, 0) / nilaiList.length
           );
-  
+
           payload.push({
             studentId: student.id,
             subjectId: subject.id,
-            tahunAjaranId: data.tahunAjaranId, // ✅ fix here
+            tahunAjaranId: data.tahunAjaranId,
             nilaiAkhir: parseFloat(nilaiAkhir.toFixed(2)),
           });
         });
       });
-  
+
       if (payload.length === 0) {
         toast.warning("Tidak ada data nilai akhir yang valid untuk disimpan.");
+        setShowConfirmDialog(false);
         return;
       }
-  
+
       await api.post("/homeroom/final-scores/save", { finalScores: payload });
       toast.success("Nilai akhir berhasil disimpan.");
+      setShowConfirmDialog(false);
+      fetchFinalScores(selectedYear); // Refresh data setelah simpan
     } catch (error) {
       console.error(error);
       toast.error("Gagal menyimpan nilai akhir");
+    } finally {
+      setIsSaving(false);
     }
   };
   
   
+
+  const classInfo = data.classInfo;
 
   return (
     <div className="p-6">
@@ -106,7 +151,67 @@ export default function FinalScoresPage() {
           { label: "Dashboard", href: "/homeroom/dashboard" },
           { label: "Perhitungan Nilai Akhir" },
         ]}
-      />
+      >
+        <AcademicYearFilter
+          academicYears={(data.filterOptions?.academicYears || []).map(y => ({ ...y, value: y.id, label: y.label }))}
+          selectedYear={selectedYear}
+          onYearChange={handleYearChange}
+        />
+      </PageHeader>
+
+      {/* Info Kelas & Tahun Ajaran */}
+      {!isLoading && classInfo && (
+        <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              Informasi Kelas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Kelas</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.namaKelas}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Program</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.program || "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tahun Ajaran</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.academicYear.tahunMulai}/
+                  {classInfo.academicYear.tahunSelesai}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Semester</p>
+                <p className="text-lg font-bold">
+                  <span
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      classInfo.academicYear.semester === "GENAP"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {classInfo.academicYear.semester}
+                  </span>
+                  {classInfo.academicYear.isActive && (
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
+                      Aktif
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardHeader>
@@ -224,26 +329,26 @@ export default function FinalScoresPage() {
 
                         return (
                           <>
-                            <TableCell>{mapel.exercise}</TableCell>
-                            <TableCell>{mapel.quiz}</TableCell>
-                            <TableCell>{mapel.dailyTest}</TableCell>
-                            <TableCell>{mapel.midterm}</TableCell>
-                            <TableCell>{mapel.finalExam}</TableCell>
-                            <TableCell>{mapel.skill}</TableCell>
+                            <TableCell>{formatNumber(mapel.exercise)}</TableCell>
+                            <TableCell>{formatNumber(mapel.quiz)}</TableCell>
+                            <TableCell>{formatNumber(mapel.dailyTest)}</TableCell>
+                            <TableCell>{formatNumber(mapel.midterm)}</TableCell>
+                            <TableCell>{formatNumber(mapel.finalExam)}</TableCell>
+                            <TableCell>{formatNumber(mapel.skill)}</TableCell>
                           </>
                         );
                       })}
 
                       <TableCell>
-                        {student.behavior?.spiritual ?? "-"}
+                        {formatNumber(student.behavior?.spiritual)}
                       </TableCell>
-                      <TableCell>{student.behavior?.sosial ?? "-"}</TableCell>
+                      <TableCell>{formatNumber(student.behavior?.sosial)}</TableCell>
                       <TableCell>
-                        {student.behavior?.kehadiran ?? "-"}
+                        {formatNumber(student.behavior?.kehadiran)}
                       </TableCell>
 
                       <TableCell className="font-bold">
-                        {student.nilaiAkhir?.toFixed(2) ?? "-"}
+                        {formatNumber(student.nilaiAkhir)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -253,13 +358,27 @@ export default function FinalScoresPage() {
           </div>
 
           <div className="flex justify-between mt-4 gap-2 flex-wrap">
-            <Button variant="outline" onClick={fetchFinalScores}>
+            <Button variant="outline" onClick={() => fetchFinalScores(selectedYear)} disabled={isSaving}>
               Refresh Data
-            </Button> 
-            <Button onClick={handleSaveFinalScores}>Simpan Nilai Akhir</Button>
+            </Button>
+            <Button onClick={handleOpenConfirmDialog} disabled={isSaving}>
+              Simpan Nilai Akhir
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleSaveFinalScores}
+        title="Konfirmasi Simpan Nilai Akhir"
+        description={`Anda akan menyimpan nilai akhir untuk ${data.students.length} siswa. Data yang sudah disimpan akan menimpa nilai sebelumnya. Apakah Anda yakin?`}
+        confirmText="Ya, Simpan"
+        cancelText="Batal"
+        isLoading={isSaving}
+      />
     </div>
   );
 }
