@@ -24,18 +24,27 @@ export async function GET() {
       );
     }
 
-    // 🔥 Cari kelas yang dipegang sebagai wali kelas (homeroom teacher)
+    // 🔥 Cari kelas yang dipegang sebagai wali kelas (kelas terbaru dengan siswa aktif)
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
+      where: {
+        homeroomTeacherId: tutor.id,
+        students: {
+          some: {
+            status: "ACTIVE",
+          },
+        },
+      },
       include: {
         students: {
           where: { status: "ACTIVE" },
-          include: {
-            submissions: true, // Untuk rata-rata nilai
-          },
         },
         academicYear: true,
+        program: true,
       },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "asc" } },
+      ],
     });
 
     if (!kelas) {
@@ -53,14 +62,15 @@ export async function GET() {
     // 🔥 Hitung total students
     const totalStudents = students.length;
 
-    // 🔥 Hitung total presensi siswa di kelas ini
+    // 🔥 Hitung total presensi siswa di kelas ini (filter by academic year)
     const totalAttendances = await prisma.attendance.count({
       where: {
         classId: kelas.id,
+        academicYearId: kelas.academicYearId,
       },
     });
 
-    // 🔥 Hitung total assignments
+    // 🔥 Hitung total assignments (filter by class)
     const totalAssignments = await prisma.assignment.count({
       where: {
         classSubjectTutor: {
@@ -69,20 +79,24 @@ export async function GET() {
       },
     });
 
-    // 🔥 Hitung rata-rata nilai siswa
-    const allScores = [];
-    students.forEach((student) => {
-      student.submissions.forEach((submission) => {
-        if (submission.nilai !== null) {
-          allScores.push(submission.nilai);
-        }
-      });
+    // 🔥 Hitung rata-rata nilai siswa dari FinalScore tahun ajaran ini
+    const studentIds = students.map((s) => s.id);
+
+    const finalScores = await prisma.finalScore.findMany({
+      where: {
+        studentId: { in: studentIds },
+        tahunAjaranId: kelas.academicYearId,
+      },
     });
 
+    // Hitung rata-rata dari nilai akhir
     const averageScore =
-      allScores.length > 0
+      finalScores.length > 0
         ? parseFloat(
-            (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(2)
+            (
+              finalScores.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
+              finalScores.length
+            ).toFixed(2)
           )
         : 0;
 
@@ -93,6 +107,19 @@ export async function GET() {
         totalAttendances,
         totalAssignments,
         averageScore,
+        totalFinalScores: finalScores.length, // Jumlah nilai akhir yang sudah tercatat
+        classInfo: {
+          id: kelas.id,
+          namaKelas: kelas.namaKelas,
+          program: kelas.program?.namaPaket,
+          academicYear: {
+            id: kelas.academicYear.id,
+            tahunMulai: kelas.academicYear.tahunMulai,
+            tahunSelesai: kelas.academicYear.tahunSelesai,
+            semester: kelas.academicYear.semester,
+            isActive: kelas.academicYear.isActive,
+          },
+        },
       },
     });
   } catch (error) {
