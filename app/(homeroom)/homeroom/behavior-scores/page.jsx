@@ -23,12 +23,16 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 export default function BehaviorScoresPage() {
   const [classes, setClasses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYearId, setSelectedYearId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function BehaviorScoresPage() {
   const fetchClasses = async (academicYearId) => {
     setIsLoading(true);
     try {
-      const res = await api.get("/tutor/my-classes", {
+      const res = await api.get("/homeroom/my-homeroom-classes", {
         params: { academicYearId },
       });
       setClasses(res.data.data || []);
@@ -72,18 +76,26 @@ export default function BehaviorScoresPage() {
     fetchClasses(val);
   };
 
-  const handleBeriNilaiSikap = (classId, subjectId) => {
-    router.push(`/homeroom/behavior-scores/${classId}/${subjectId}`);
+  const handleOpenConfirmDialog = (kelas) => {
+    setSelectedClass(kelas);
+    setShowConfirmDialog(true);
+  };
+
+  const handleBeriNilaiSikap = () => {
+    if (!selectedClass) return;
+
+    setIsNavigating(true);
+    router.push(`/homeroom/behavior-scores/${selectedClass.id}/input`);
   };
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Nilai Sikap Siswa"
+        title="Nilai Sikap & Kehadiran"
         description="Berikan nilai sikap untuk siswa di kelas yang Anda wali."
         breadcrumbs={[
           { label: "Dashboard", href: "/homeroom/dashboard" },
-          { label: "Nilai Sikap" },
+          { label: "Nilai Sikap & Kehadiran" },
         ]}
       />
 
@@ -95,7 +107,7 @@ export default function BehaviorScoresPage() {
           <SelectContent>
             {academicYears.map((year) => (
               <SelectItem key={year.id} value={year.id}>
-                {year.tahunMulai}/{year.tahunSelesai}
+                {year.tahunMulai}/{year.tahunSelesai} - Semester {year.semester}
               </SelectItem>
             ))}
           </SelectContent>
@@ -115,41 +127,51 @@ export default function BehaviorScoresPage() {
                   <TableHead>Kelas</TableHead>
                   <TableHead>Program</TableHead>
                   <TableHead>Tahun Ajaran</TableHead>
-                  <TableHead>Mapel</TableHead>
+                  <TableHead>Semester</TableHead>
+                  <TableHead>Jumlah Siswa</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
                 ) : classes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Tidak ada kelas yang diampu
+                    <TableCell colSpan={7} className="text-center">
+                      Tidak ada kelas yang Anda wali
                     </TableCell>
                   </TableRow>
                 ) : (
-                  classes.map((item, index) => (
-                    <TableRow key={item.id}>
+                  classes.map((kelas, index) => (
+                    <TableRow key={kelas.id}>
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{item.class.namaKelas}</TableCell>
-                      <TableCell>{item.class.program.namaPaket}</TableCell>
+                      <TableCell>{kelas.namaKelas}</TableCell>
+                      <TableCell>{kelas.program.namaPaket}</TableCell>
                       <TableCell>
-                        {item.class.academicYear.tahunMulai}/
-                        {item.class.academicYear.tahunSelesai}
+                        {kelas.academicYear.tahunMulai}/{kelas.academicYear.tahunSelesai}
                       </TableCell>
-                      <TableCell>{item.subject.namaMapel}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          kelas.academicYear.semester === 'GENAP'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {kelas.academicYear.semester}
+                        </span>
+                      </TableCell>
+                      <TableCell>{kelas._count?.students || 0} siswa</TableCell>
                       <TableCell>
                         <Button
-                          onClick={() =>
-                            handleBeriNilaiSikap(item.class.id, item.subject.id)
-                          }
+                          onClick={() => handleOpenConfirmDialog(kelas)}
+                          disabled={isNavigating}
                         >
-                          Beri Nilai Sikap
+                          {isNavigating && selectedClass?.id === kelas.id
+                            ? "Memuat..."
+                            : "Beri Nilai Sikap"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -160,6 +182,22 @@ export default function BehaviorScoresPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleBeriNilaiSikap}
+        title="Konfirmasi Beri Nilai Sikap"
+        description={
+          selectedClass
+            ? `Anda akan memberikan nilai sikap untuk ${selectedClass._count?.students || 0} siswa di kelas ${selectedClass.namaKelas} (${selectedClass.program?.namaPaket}). Lanjutkan?`
+            : ""
+        }
+        confirmText="Ya, Lanjutkan"
+        cancelText="Batal"
+        isLoading={isNavigating}
+      />
     </div>
   );
 }
