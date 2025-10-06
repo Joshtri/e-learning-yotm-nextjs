@@ -406,7 +406,7 @@ export default function StudentDashboardPage() {
             <CardHeader>
               <CardTitle>Pengumpulan Terbaru</CardTitle>
               <CardDescription>
-                Tugas dan kuis yang telah dikumpulkan
+                Tugas dan kuis yang telah dikumpulkan pada tahun ajaran {student.academicYear}
               </CardDescription>
             </CardHeader>
             <CardContent>
