@@ -99,8 +99,10 @@ export default function TutorSkillScoresPage() {
         />
         <StatsCard
           title="Tahun Ajaran"
-          value={academicYears.find((y) => y.id === selectedYearId)?.tahunMulai || "-"}
-          description="Periode aktif"
+          value={academicYears.find((y) => y.id === selectedYearId) 
+            ? `${academicYears.find((y) => y.id === selectedYearId).tahunMulai}/${academicYears.find((y) => y.id === selectedYearId).tahunSelesai} - ${academicYears.find((y) => y.id === selectedYearId).semester}`
+            : "-"}
+          description="Periode yang dipilih"
           icon={<Calendar className="h-4 w-4" />}
         />
       </div>
@@ -123,7 +125,7 @@ export default function TutorSkillScoresPage() {
               <SelectContent>
                 {academicYears.map((year) => (
                   <SelectItem key={year.id} value={year.id}>
-                    {year.tahunMulai}/{year.tahunSelesai}
+                    {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
                     {year.isActive && " (Aktif)"}
                   </SelectItem>
                 ))}
@@ -190,7 +192,7 @@ export default function TutorSkillScoresPage() {
                           </p>
                           <p className="font-medium text-xs">
                             {item.class.academicYear.tahunMulai}/
-                            {item.class.academicYear.tahunSelesai}
+                            {item.class.academicYear.tahunSelesai} - {item.class.academicYear.semester}
                           </p>
                         </div>
                       </div>
