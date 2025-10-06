@@ -12,7 +12,7 @@ export function AcademicYearFilter({ academicYears, selectedId, onChange }) {
       <SelectContent>
         {academicYears.map((year) => (
           <SelectItem key={year.id} value={year.id}>
-            {year.tahunMulai}/{year.tahunSelesai}
+            {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
           </SelectItem>
         ))}
       </SelectContent>
