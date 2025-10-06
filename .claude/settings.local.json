@@ -5,7 +5,12 @@
       "Bash(npm run dev:*)",
       "Bash(node:*)",
       "Bash(copy seed.js seed.js.backup)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(rm:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma:*)",
+      "Read(//d/**)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []
