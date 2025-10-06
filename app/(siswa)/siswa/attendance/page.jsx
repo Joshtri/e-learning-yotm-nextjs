@@ -23,6 +23,21 @@ export default function StudentAttendancePage() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("table"); // table | calendar
+  const [classInfo, setClassInfo] = useState(null);
+
+  const fetchClassInfo = async () => {
+    try {
+      const res = await api.get("/student/my-class");
+      setClassInfo(res.data.data);
+    } catch (error) {
+      console.error("Gagal memuat info kelas:", error);
+      toast.error("Gagal memuat informasi kelas");
+    }
+  };
+
+  useEffect(() => {
+    fetchClassInfo();
+  }, []);
 
   // === state libur bulan aktif (mengikuti bulan yang terlihat di kalender) ===
   const [activeMonthDate, setActiveMonthDate] = useState(() => {
@@ -245,6 +260,24 @@ export default function StudentAttendancePage() {
         icon={<CalendarCheck className="h-6 w-6" />}
       />
       <GreetingWidget />
+
+      {classInfo && (
+        <div className="rounded border p-4">
+          <h3 className="font-medium mb-2">Informasi Kelas</h3>
+          <p className="text-sm text-muted-foreground">
+            Tahun Ajaran:{" "}
+            <span className="text-foreground">
+              {classInfo.academicYear?.tahunMulai}/{
+                classInfo.academicYear?.tahunSelesai
+              }
+            </span>{" "}
+            • Semester:{" "}
+            <span className="text-foreground">
+              {classInfo.academicYear?.semester}
+            </span>
+          </p>
+        </div>
+      )}
 
       {/* Info libur bulan ini */}
       <div className="rounded border p-4">
