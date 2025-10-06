@@ -74,18 +74,27 @@ export default function HomeroomManagementPage() {
     const grouped = {};
 
     classes.forEach((kelas) => {
-      const year =
+      const yearAndSemester =
         kelas.academicYear &&
-        `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`;
+        `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} - ${kelas.academicYear.semester}`;
 
-      if (!grouped[year]) {
-        grouped[year] = [];
+      if (!yearAndSemester) return;
+
+      if (!grouped[yearAndSemester]) {
+        grouped[yearAndSemester] = [];
       }
-      grouped[year].push(kelas);
+      grouped[yearAndSemester].push(kelas);
     });
 
     return grouped;
   }, [classes]);
+
+  const sortedAcademicYears = useMemo(() => {
+    return Object.keys(groupedByAcademicYear).sort((a, b) => {
+      // Sort ascending: oldest year first
+      return a.localeCompare(b);
+    });
+  }, [groupedByAcademicYear]);
 
   const columns = [
     {
@@ -108,7 +117,7 @@ export default function HomeroomManagementPage() {
       cell: (row) => (
         <div className="text-sm">
           {row.academicYear
-            ? `${row.academicYear.tahunMulai}/${row.academicYear.tahunSelesai}`
+            ? `${row.academicYear.tahunMulai}/${row.academicYear.tahunSelesai} - ${row.academicYear.semester}`
             : "-"}
         </div>
       ),
@@ -175,16 +184,16 @@ export default function HomeroomManagementPage() {
         ]}
       />
 
-      {Object.keys(groupedByAcademicYear).length > 0 ? (
+      {sortedAcademicYears.length > 0 ? (
         <Accordion type="multiple" className="space-y-4">
-          {Object.entries(groupedByAcademicYear).map(([tahun, kelasList]) => (
+          {sortedAcademicYears.map((tahun) => (
             <AccordionItem key={tahun} value={tahun}>
               <AccordionTrigger className="text-base font-semibold">
                 Tahun Ajaran {tahun}
               </AccordionTrigger>
               <AccordionContent>
                 <DataTable
-                  data={kelasList}
+                  data={groupedByAcademicYear[tahun]}
                   columns={columns}
                   isLoading={isLoading}
                   loadingMessage={`Memuat kelas untuk tahun ajaran ${tahun}...`}
