@@ -24,20 +24,22 @@ export default function StudentExamsPage() {
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
 
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     try {
+      setIsLoading(true);
       const [examRes, subjectRes, yearRes] = await Promise.all([
-        api.get("/student/exams"),
+        api.get("/student/exams", { params: { academicYearId: selectedYear === "all" ? undefined : selectedYear, semester: selectedSemester === "all" ? undefined : selectedSemester } }),
         api.get("/subjects"),
         api.get("/academic-years"),
       ]);
       setData(examRes.data.data);
       setSubjects(subjectRes.data.data);
-      setAcademicYears(yearRes.data.data);
+      setAcademicYears(yearRes.data.data.academicYears);
     } catch (err) {
       toast.error("Gagal memuat data ujian atau filter");
     } finally {
@@ -47,7 +49,19 @@ export default function StudentExamsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedYear, selectedSemester]);
+
+  useEffect(() => {
+    if (academicYears.length > 0 && selectedYear === "all") {
+      const activeYear = academicYears.find(ay => ay.isActive);
+      if (activeYear) {
+        setSelectedYear(activeYear.id);
+      } else {
+        const latestYear = academicYears[0];
+        setSelectedYear(latestYear.id);
+      }
+    }
+  }, [academicYears, selectedYear]);
 
   const filteredData = data.filter((item) => {
     const matchSearch =
@@ -85,6 +99,10 @@ export default function StudentExamsPage() {
       ),
     },
     { header: "Mata Pelajaran", cell: (row) => row.subject?.namaMapel || "-" },
+    {
+      header: "Tahun Ajaran",
+      cell: (row) => row.class?.academicYear?.tahunMulai || "-",
+    },
     { header: "Tutor", cell: (row) => row.tutor?.namaLengkap || "-" },
     {
       header: "Waktu",
@@ -189,9 +207,25 @@ export default function StudentExamsPage() {
                     {Array.isArray(academicYears) &&
                       academicYears.map((y) => (
                         <SelectItem key={y.id} value={y.id}>
-                          {y.namaTahunAjaran}
+                          {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
                         </SelectItem>
                       ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-48">
+                <Select
+                  value={selectedSemester}
+                  onValueChange={(val) => setSelectedSemester(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Semester</SelectItem>
+                    <SelectItem value="GANJIL">GANJIL</SelectItem>
+                    <SelectItem value="GENAP">GENAP</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
