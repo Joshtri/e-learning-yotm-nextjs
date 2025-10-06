@@ -67,14 +67,14 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { tahunMulai, tahunSelesai } = body;
+    const { tahunMulai, tahunSelesai, semester } = body;
 
     // Validasi wajib
-    if (!tahunMulai || !tahunSelesai) {
+    if (!tahunMulai || !tahunSelesai || !semester) {
       return NextResponse.json(
         {
           success: false,
-          message: "Tahun mulai dan tahun selesai wajib diisi",
+          message: "Tahun mulai, tahun selesai, dan semester wajib diisi",
         },
         { status: 400 }
       );
@@ -85,6 +85,7 @@ export async function POST(request) {
       where: {
         tahunMulai: parseInt(tahunMulai),
         tahunSelesai: parseInt(tahunSelesai),
+        semester,
       },
     });
 
@@ -99,6 +100,7 @@ export async function POST(request) {
       data: {
         tahunMulai: parseInt(tahunMulai),
         tahunSelesai: parseInt(tahunSelesai),
+        semester,
         isActive: false, // default: tidak aktif
       },
     });
