@@ -23,14 +23,24 @@ export async function GET(request) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const academicYearId = searchParams.get("academicYearId");
+
+    let whereClause = {
+      homeroomTeacherId: tutor.id,
+    };
+
+    if (academicYearId) {
+      whereClause.academicYearId = academicYearId;
+    } else {
+      whereClause.academicYear = {
+        isActive: true,
+      };
+    }
+
     // Find the class where this tutor is homeroom teacher
     const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYear: {
-          isActive: true,
-        },
-      },
+      where: whereClause,
       include: {
         academicYear: true,
         program: true,
@@ -231,6 +241,8 @@ export async function GET(request) {
               id: kelas.academicYear.id,
               tahunMulai: kelas.academicYear.tahunMulai,
               tahunSelesai: kelas.academicYear.tahunSelesai,
+              semester: kelas.academicYear.semester,
+              label: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} - ${kelas.academicYear.semester}`,
             },
           },
         ],
@@ -239,6 +251,8 @@ export async function GET(request) {
             id: kelas.academicYear.id,
             tahunMulai: kelas.academicYear.tahunMulai,
             tahunSelesai: kelas.academicYear.tahunSelesai,
+            semester: kelas.academicYear.semester,
+            label: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} - ${kelas.academicYear.semester}`,
           },
         ],
       },
@@ -246,6 +260,7 @@ export async function GET(request) {
         id: kelas.id,
         namaKelas: kelas.namaKelas,
         program: kelas.program.namaPaket,
+        semester: kelas.academicYear.semester,
         tahunAjaran: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
       },
     });
