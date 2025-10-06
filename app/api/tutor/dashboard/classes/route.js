@@ -47,7 +47,7 @@ const classSubjectTutors = await prisma.classSubjectTutor.findMany({
       program: cst.class.program.namaPaket,
       subject: cst.subject.namaMapel,
       totalStudents: cst.class.students.length,
-      academicYear: `${cst.class.academicYear.tahunMulai}/${cst.class.academicYear.tahunSelesai}`,
+      academicYear: `${cst.class.academicYear.tahunMulai}/${cst.class.academicYear.tahunSelesai} - ${cst.class.academicYear.semester}`,
     };
   });
 
