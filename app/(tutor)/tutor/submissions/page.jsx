@@ -151,7 +151,7 @@ export default function SubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("all");
   useEffect(() => {
     const fetchYears = async () => {
       try {
@@ -181,7 +181,7 @@ export default function SubmissionsPage() {
       try {
         const params = new URLSearchParams();
         params.append("academicYearId", selectedYear);
-        if (selectedSubject) {
+        if (selectedSubject && selectedSubject !== "all") {
           params.append("subjectId", selectedSubject);
         }
 
@@ -293,7 +293,7 @@ export default function SubmissionsPage() {
                   <SelectContent>
                     {academicYears.map((year) => (
                       <SelectItem key={year.id} value={year.id}>
-                        {year.tahunMulai}/{year.tahunSelesai}{" "}
+                        {year.tahunMulai}/{year.tahunSelesai} - {year.semester}{" "}
                         {year.isActive && "(Aktif)"}
                       </SelectItem>
                     ))}
@@ -314,7 +314,7 @@ export default function SubmissionsPage() {
                     <SelectValue placeholder="Semua Mapel" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Semua Mata Pelajaran</SelectItem>
+                    <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
                     {availableSubjects.map((subject) => (
                       <SelectItem key={subject.id} value={subject.id}>
                         {subject.namaMapel}
