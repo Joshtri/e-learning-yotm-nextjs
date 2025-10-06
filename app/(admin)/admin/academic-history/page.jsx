@@ -60,6 +60,18 @@ export default function StudentHistoryPage() {
     if (selectedAcademicYear) fetchHistory();
   }, [searchQuery, selectedAcademicYear, naikKelasFilter]);
 
+  const handleUpdateStatus = async (historyId, currentStatus) => {
+    try {
+      await api.patch(`/student-histories/${historyId}`, {
+        naikKelas: !currentStatus,
+      });
+      toast.success("Status berhasil diperbarui");
+      fetchHistory();
+    } catch (err) {
+      toast.error("Gagal memperbarui status");
+    }
+  };
+
   const columns = [
     {
       header: "Nama Siswa",
@@ -75,6 +87,10 @@ export default function StudentHistoryPage() {
         row.academicYear
           ? `${row.academicYear.tahunMulai}/${row.academicYear.tahunSelesai}`
           : "-",
+    },
+    {
+      header: "Semester",
+      cell: (row) => row.academicYear?.semester || "-",
     },
     {
       header: "Kelas",
@@ -97,6 +113,17 @@ export default function StudentHistoryPage() {
       header: "Nilai Akhir",
       cell: (row) =>
         row.nilaiAkhir != null ? Number(row.nilaiAkhir).toFixed(2) : "-",
+    },
+    {
+      header: "Aksi",
+      cell: (row) => (
+        <button
+          onClick={() => handleUpdateStatus(row.id, row.naikKelas)}
+          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+        >
+          Ubah Status
+        </button>
+      ),
     },
   ];
 
