@@ -44,6 +44,7 @@ export async function GET() {
                 tahunMulai: true,
                 tahunSelesai: true,
                 isActive: true,
+                semester: true,
               },
             },
           },
