@@ -7,64 +7,69 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DataTable({
   data,
   columns,
   isLoading = false,
-  loadingMessage = "Loading data...",
+  loadingMessage = "Loading data...", // No longer visually used, but kept for compatibility
   emptyMessage = "No data found",
   keyExtractor,
 }) {
   return (
     <Card>
       <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column, index) => (
-                <TableHead key={index} className={column.className}>
-                  {column.header}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+        <div className="overflow-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-10 text-muted-foreground"
-                >
-                  {loadingMessage}
-                </TableCell>
+                {columns.map((column, index) => (
+                  <TableHead key={index} className={column.className}>
+                    {column.header}
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-10 text-muted-foreground"
-                >
-                  {emptyMessage}
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((item, index) => (
-                <TableRow key={keyExtractor ? keyExtractor(item) : index}>
-                  {columns.map((column, columnIndex) => (
-                    <TableCell key={columnIndex}>
-                      {column.cell
-                        ? column.cell(item, index)
-                        : column.accessorKey
-                        ? item[column.accessorKey]
-                        : null}
+            </TableHeader>
+            <TableBody>
+              {isLoading
+                ? Array.from({ length: 10 }).map((_, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {columns.map((column, cellIndex) => (
+                        <TableCell key={cellIndex} className={column.className}>
+                          <Skeleton className="h-5 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                : data.length === 0
+                ? <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center py-10 text-muted-foreground"
+                    >
+                      {emptyMessage}
                     </TableCell>
+                  </TableRow>
+                : data.map((item, index) => (
+                    <TableRow key={keyExtractor ? keyExtractor(item) : index}>
+                      {columns.map((column, columnIndex) => (
+                        <TableCell
+                          key={columnIndex}
+                          className={column.className}
+                        >
+                          {column.cell
+                            ? column.cell(item, index)
+                            : column.accessorKey
+                            ? item[column.accessorKey]
+                            : null}
+                        </TableCell>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
