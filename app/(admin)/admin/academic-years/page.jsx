@@ -72,15 +72,15 @@ export default function AcademicYearPage() {
       header: "Tahun Ajaran",
       cell: (item) => `${item.tahunMulai}/${item.tahunSelesai}`,
     },
-    {
-      header: "Status",
-      cell: (item) =>
-        item.isActive ? (
-          <span className="text-green-600 font-semibold">Aktif</span>
-        ) : (
-          <span className="text-muted-foreground">Tidak Aktif</span>
-        ),
-    },
+    // {
+    //   header: "Status",
+    //   cell: (item) =>
+    //     item.isActive ? (
+    //       <span className="text-green-600 font-semibold">Aktif</span>
+    //     ) : (
+    //       <span className="text-muted-foreground">Tidak Aktif</span>
+    //     ),
+    // },
 
     {
       header: "Status",
@@ -116,6 +116,12 @@ export default function AcademicYearPage() {
           </span>
         </div>
       ),
+    },
+
+    {
+      header: "Semester",
+      cell: (item) => item.semester,
+      // className: "w-[120px]",
     },
 
     {
