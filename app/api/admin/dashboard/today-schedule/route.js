@@ -19,8 +19,8 @@ export async function GET() {
     const [assignments, quizzes] = await Promise.all([
       prisma.assignment.findMany({
         where: {
-          waktuMulai: { lte: tomorrow },
-          waktuSelesai: { gte: today }
+          TanggalMulai: { lte: tomorrow },
+          TanggalSelesai: { gte: today }
         },
         include: {
           classSubjectTutor: {
@@ -56,8 +56,8 @@ export async function GET() {
         subject: a.classSubjectTutor.subject.namaMapel,
         class: a.classSubjectTutor.class.namaKelas,
         tutor: a.classSubjectTutor.tutor.user.nama,
-        startTime: a.waktuMulai,
-        endTime: a.waktuSelesai
+        startTime: a.TanggalMulai,
+        endTime: a.TanggalSelesai
       })),
       ...quizzes.map(q => ({
         type: "quiz",
