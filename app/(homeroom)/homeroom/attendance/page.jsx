@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Loader2,
   Check, // Hadir
@@ -38,6 +39,7 @@ import {
   FileText, // Izin
   X, // Alpha
   Minus, // Kosong
+  Users,
 } from "lucide-react";
 
 export default function HomeroomAttendancePage() {
@@ -49,9 +51,10 @@ export default function HomeroomAttendancePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [academicYearInfo, setAcademicYearInfo] = useState(null);
 
   // Set locale Indonesia untuk dayjs
-  dayjs.locale('id');
+  dayjs.locale("id");
 
   useEffect(() => {
     fetchAttendance();
@@ -60,10 +63,19 @@ export default function HomeroomAttendancePage() {
   const fetchAttendance = async () => {
     try {
       setIsLoading(true);
+      setAcademicYearInfo(null);
       const res = await api.get(
         `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`
       );
-      setStudents(res.data.data || []);
+      const responseData = res.data.data || {};
+      const studentData = responseData.students || [];
+      setStudents(studentData);
+
+      if (responseData.academicYearInfo) {
+        setAcademicYearInfo(responseData.academicYearInfo);
+      } else {
+        setAcademicYearInfo(null);
+      }
 
       const days = Array.from(
         { length: new Date(currentYear, currentMonth, 0).getDate() },
@@ -158,13 +170,19 @@ export default function HomeroomAttendancePage() {
     }
   };
 
+  const pageDescription = `Kelola presensi siswa bulan ${dayjs()
+    .month(currentMonth - 1)
+    .format("MMMM")} ${currentYear}. ${
+    academicYearInfo
+      ? `T.A ${academicYearInfo.tahunMulai}/${academicYearInfo.tahunSelesai} Semester ${academicYearInfo.semester}`
+      : ""
+  }`;
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
         title="Presensi Siswa"
-        description={`Kelola presensi siswa bulan ${dayjs()
-          .month(currentMonth - 1)
-          .format("MMMM")} ${currentYear}.`}
+        description={pageDescription}
         breadcrumbs={[
           { label: "Dashboard", href: "/homeroom/dashboard" },
           { label: "Presensi" },
@@ -197,7 +215,7 @@ export default function HomeroomAttendancePage() {
               <SelectValue placeholder="Pilih Tahun" />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 5 }).map((_, idx) => {
+              {Array.from({ length: 10 }).map((_, idx) => {
                 const year = new Date().getFullYear() - 2 + idx;
                 return (
                   <SelectItem key={year} value={String(year)}>
@@ -210,14 +228,19 @@ export default function HomeroomAttendancePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleGenerate} disabled={isGenerating}>
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating || students.length === 0}
+          >
             {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isGenerating ? "Mengenerate..." : "Generate Presensi Bulan Ini"}
           </Button>
 
           <AlertDialog open={modalOpen} onOpenChange={setModalOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">Hapus Semua Presensi</Button>
+              <Button variant="destructive" disabled={students.length === 0}>
+                Hapus Semua Presensi
+              </Button>
             </AlertDialogTrigger>
 
             <AlertDialogContent>
@@ -246,50 +269,49 @@ export default function HomeroomAttendancePage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-12">No</TableHead>
-              <TableHead>Nama</TableHead>
-              {daysInMonth.map((day) => {
-                const date = dayjs(new Date(currentYear, currentMonth - 1, day));
-                const dayName = date.format('ddd'); // Nama hari singkat (Sen, Sel, Rab, etc.)
-                const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
-                
-                return (
-                  <TableHead 
-                    key={day} 
-                    className={`text-center min-w-[60px] ${isWeekend ? 'bg-red-50 text-red-700' : ''}`}
-                  >
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs font-medium">{dayName}</span>
-                      <span className="text-sm">{day}</span>
-                    </div>
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          </TableHeader>
+      {isLoading ? (
+        <div className="rounded-lg border p-4">
+          <Skeleton className="h-64 w-full" />
+        </div>
+      ) : students.length === 0 ? (
+        <EmptyState
+          title="Tidak Ada Siswa"
+          description="Tidak ada data siswa yang ditemukan di kelas Anda untuk periode ini. Anda dapat generate presensi jika data siswa sudah ada."
+          icon={<Users className="h-12 w-12 text-muted-foreground" />}
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12">No</TableHead>
+                <TableHead>Nama</TableHead>
+                {daysInMonth.map((day) => {
+                  const date = dayjs(
+                    new Date(currentYear, currentMonth - 1, day)
+                  );
+                  const dayName = date.format("ddd"); // Nama hari singkat (Sen, Sel, Rab, etc.)
+                  const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
 
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={daysInMonth.length + 2}>
-                  <Skeleton className="h-8 w-full" />
-                </TableCell>
+                  return (
+                    <TableHead
+                      key={day}
+                      className={`text-center min-w-[60px] ${
+                        isWeekend ? "bg-red-50 text-red-700" : ""
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-medium">{dayName}</span>
+                        <span className="text-sm">{day}</span>
+                      </div>
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ) : students.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={daysInMonth.length + 2}
-                  className="text-center text-muted-foreground"
-                >
-                  Tidak ada data siswa
-                </TableCell>
-              </TableRow>
-            ) : (
-              students.map((student, index) => (
+            </TableHeader>
+
+            <TableBody>
+              {students.map((student, index) => (
                 <TableRow key={student.id}>
                   <TableCell className="text-muted-foreground">
                     {index + 1}
@@ -298,27 +320,31 @@ export default function HomeroomAttendancePage() {
                     {student.namaLengkap}
                   </TableCell>
                   {daysInMonth.map((day) => {
-                    const date = dayjs(new Date(currentYear, currentMonth - 1, day));
+                    const date = dayjs(
+                      new Date(currentYear, currentMonth - 1, day)
+                    );
                     const tanggal = date.format("YYYY-MM-DD");
                     const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
                     const attendance = student.Attendance.find(
                       (a) => dayjs(a.date).format("YYYY-MM-DD") === tanggal
                     );
                     return (
-                      <TableCell 
-                        key={day} 
-                        className={`text-center ${isWeekend ? 'bg-red-50' : ''}`}
+                      <TableCell
+                        key={day}
+                        className={`text-center ${
+                          isWeekend ? "bg-red-50" : ""
+                        }`}
                       >
                         <StatusIcon status={attendance?.status} />
                       </TableCell>
                     );
                   })}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Legend */}
       <div className="mt-6">
