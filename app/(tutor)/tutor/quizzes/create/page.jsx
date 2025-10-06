@@ -166,7 +166,7 @@ export default function QuizCreatePage() {
           placeholder="Pilih Kelas dan Mapel"
           options={classSubjects.map((item) => ({
             value: item.id,
-            label: `${item.class.namaKelas} - ${item.subject.namaMapel}`,
+            label: `${item.class.namaKelas} - ${item.subject.namaMapel} (${item.class.academicYear.tahunMulai}/${item.class.academicYear.tahunSelesai} - ${item.class.academicYear.semester})`,
           }))}
           {...register("classSubjectTutorId", {
             required: "Kelas dan Mapel wajib dipilih",
