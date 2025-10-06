@@ -6,15 +6,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import api from "@/lib/axios";
 import { toast } from "sonner";
+import { AcademicYearFilter } from "@/components/AcademicYearFilter"; // Keep this import
 
 export default function ExamScoresPage() {
   const [scores, setScores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [academicYears, setAcademicYears] = useState([]); // New state for academic years
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
 
-  const fetchScores = async () => {
+  // Function to fetch academic years
+  const fetchAcademicYears = async () => {
     try {
-      const res = await api.get("/student/exams-scores");
-      setScores(res.data.data); // ✅ langsung array
+      const res = await api.get("/academic-years");
+      const fetchedYears = Array.isArray(res.data.data) ? res.data.data : [];
+      console.log("Raw Fetched Academic Years:", fetchedYears); // Log raw data
+
+      const formattedYears = fetchedYears.map(year => ({
+        id: year.id,
+        tahunMulai: new Date(year.startDate).getFullYear(), // Assuming startDate is a date string
+        tahunSelesai: new Date(year.endDate).getFullYear(), // Assuming endDate is a date string
+        semester: year.name || "Semester", // Assuming 'name' can be used for semester or a placeholder
+      }));
+
+      console.log("Formatted Academic Years:", formattedYears); // Log formatted data
+      setAcademicYears(formattedYears);
+      // Set the latest academic year as default
+      if (fetchedYears.length > 0) {
+        setSelectedAcademicYearId(fetchedYears[0].id);
+      }
+    } catch (err) {
+      console.error("Gagal memuat tahun ajaran:", err);
+      toast.error("Gagal memuat tahun ajaran.");
+    }
+  };
+
+  // Function to fetch scores, now accepts academicYearId
+  const fetchScores = async (academicYearId) => {
+    setIsLoading(true);
+    try {
+      const res = await api.get("/student/exams-scores", {
+        params: { academicYearId },
+      });
+      setScores(res.data.data);
     } catch (err) {
       console.error("Gagal memuat nilai ujian:", err);
       toast.error("Gagal memuat nilai ujian");
@@ -23,9 +56,17 @@ export default function ExamScoresPage() {
     }
   };
 
+  // Fetch academic years on component mount
   useEffect(() => {
-    fetchScores();
+    fetchAcademicYears();
   }, []);
+
+  // Fetch scores when selectedAcademicYearId changes
+  useEffect(() => {
+    if (selectedAcademicYearId) {
+      fetchScores(selectedAcademicYearId);
+    }
+  }, [selectedAcademicYearId]);
 
   const groupScores = {
     DAILY_TEST: [],
@@ -35,8 +76,10 @@ export default function ExamScoresPage() {
   };
 
   scores.forEach((item) => {
-    if (groupScores[item.jenis]) {
+    if (item.jenis && groupScores[item.jenis]) {
       groupScores[item.jenis].push(item);
+    } else {
+      console.warn("Unknown or undefined score type:", item.jenis, "for item:", item);
     }
   });
 
@@ -95,6 +138,15 @@ export default function ExamScoresPage() {
               { label: "Rekap Nilai" },
             ]}
           />
+
+          <div className="flex justify-end mb-4">
+            {/* Render AcademicYearFilter */}
+            <AcademicYearFilter
+              academicYears={academicYears}
+              selectedId={selectedAcademicYearId}
+              onChange={setSelectedAcademicYearId}
+            />
+          </div>
 
           {isLoading ? (
             <p className="text-center text-muted-foreground">Memuat nilai...</p>
