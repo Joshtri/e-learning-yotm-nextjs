@@ -1,15 +1,14 @@
-// app/api/homeroom/about-class/route.js
-
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
+import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request) {
   try {
     const user = await getUserFromCookie();
 
     if (!user) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Unauthorized" }),
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
@@ -19,19 +18,45 @@ export async function GET() {
     });
 
     if (!tutor) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Tutor not found" }),
+      return NextResponse.json(
+        { success: false, message: "Tutor not found" },
         { status: 404 }
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const academicYearId = searchParams.get("academicYearId");
+
+    // Get all academic years for the filter
+    const homeroomClasses = await prisma.class.findMany({
+      where: { homeroomTeacherId: tutor.id },
+      include: { academicYear: true },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "asc" } },
+      ],
+    });
+
+    const academicYears = homeroomClasses.map((c) => ({
+      ...c.academicYear,
+      value: c.academicYear.id,
+      label: `${c.academicYear.tahunMulai}/${c.academicYear.tahunSelesai} - ${c.academicYear.semester}`,
+    }));
+
+    const filterOptions = { academicYears };
+
+    let whereClause = {
+      homeroomTeacherId: tutor.id,
+    };
+
+    if (academicYearId) {
+      whereClause.academicYearId = academicYearId;
+    } else {
+      whereClause.academicYear = { isActive: true };
+    }
+
     const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYear: {
-          isActive: true,
-        },
-      },
+      where: whereClause,
       include: {
         program: true,
         academicYear: true,
@@ -39,6 +64,7 @@ export async function GET() {
           include: { user: true },
         },
         students: {
+          where: { status: 'ACTIVE' },
           include: {
             user: true,
           },
@@ -50,11 +76,15 @@ export async function GET() {
         },
       },
     });
-    
 
     if (!kelas) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Class not found" }),
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tidak ada data kelas untuk tahun ajaran yang dipilih",
+          data: null,
+          filterOptions,
+        },
         { status: 404 }
       );
     }
@@ -77,25 +107,27 @@ export async function GET() {
       namaKelas: kelas.namaKelas,
       program: { namaPaket: kelas.program.namaPaket },
       academicYear: {
+        id: kelas.academicYear.id,
         tahunMulai: kelas.academicYear.tahunMulai,
         tahunSelesai: kelas.academicYear.tahunSelesai,
+        semester: kelas.academicYear.semester,
+        isActive: kelas.academicYear.isActive,
       },
       homeroomTeacher: { namaLengkap: kelas.homeroomTeacher.namaLengkap },
       students,
       subjects,
     };
 
-    return new Response(JSON.stringify({ success: true, data }), {
-      status: 200,
-    });
+    return NextResponse.json({ success: true, data, filterOptions });
+
   } catch (error) {
     console.error(error);
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: false,
         message: "Internal Server Error",
         error: error.message,
-      }),
+      },
       { status: 500 }
     );
   }
