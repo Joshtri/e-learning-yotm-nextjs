@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
-import { Menu } from "lucide-react";
+import { Loader2, Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,6 +23,7 @@ export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
   const [mode, setMode] = useState("default");
   const [user, setUser] = useState(null);
+  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -43,17 +44,26 @@ export default function AppHeader({ onMenuClick, role }) {
     fetchUser();
   }, []);
 
-  const handleSwitchMode = () => {
-    if (mode === "default") {
-      localStorage.setItem("mode", "homeroom");
-      setMode("homeroom");
-      toast.success("Berpindah ke Mode Wali Kelas");
-      router.push("/homeroom/dashboard");
-    } else {
-      localStorage.setItem("mode", "default");
-      setMode("default");
-      toast.success("Berpindah ke Mode Tutor");
-      router.push("/tutor/dashboard");
+  const handleSwitchMode = async () => {
+    setIsSwitching(true);
+
+    try {
+      if (mode === "default") {
+        localStorage.setItem("mode", "homeroom");
+        setMode("homeroom");
+        toast.success("Berpindah ke Mode Wali Kelas");
+        await router.push("/homeroom/dashboard");
+        router.refresh();
+      } else {
+        localStorage.setItem("mode", "default");
+        setMode("default");
+        toast.success("Berpindah ke Mode Tutor");
+        await router.push("/tutor/dashboard");
+        router.refresh();
+      }
+    } finally {
+      // Reset switching state setelah navigasi selesai
+      setTimeout(() => setIsSwitching(false), 500);
     }
   };
 
@@ -136,10 +146,23 @@ export default function AppHeader({ onMenuClick, role }) {
             {role === "tutor" && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSwitchMode}>
-                  {mode === "homeroom"
-                    ? "Switch ke Mode Tutor"
-                    : "Switch ke Mode Wali Kelas"}
+                <DropdownMenuItem
+                  onClick={handleSwitchMode}
+                  disabled={isSwitching}
+                  className="cursor-pointer"
+                >
+                  {isSwitching ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Switching...</span>
+                    </div>
+                  ) : (
+                    <span>
+                      {mode === "homeroom"
+                        ? "Switch ke Mode Tutor"
+                        : "Switch ke Mode Wali Kelas"}
+                    </span>
+                  )}
                 </DropdownMenuItem>
               </>
             )}
