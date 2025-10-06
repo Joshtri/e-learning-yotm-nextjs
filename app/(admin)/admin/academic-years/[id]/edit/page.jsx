@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import api from "@/lib/axios";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SEMESTERS } from "@/constants/common";
 
 export default function AcademicYearEditPage() {
   const router = useRouter();
@@ -16,6 +24,7 @@ export default function AcademicYearEditPage() {
 
   const [tahunMulai, setTahunMulai] = useState("");
   const [tahunSelesai, setTahunSelesai] = useState("");
+  const [semester, setSemester] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = async () => {
@@ -23,6 +32,7 @@ export default function AcademicYearEditPage() {
       const res = await api.get(`/academic-years/${id}`);
       setTahunMulai(res.data.data.tahunMulai);
       setTahunSelesai(res.data.data.tahunSelesai);
+      setSemester(res.data.data.semester);
     } catch (error) {
       toast.error("Gagal memuat data tahun ajaran");
     }
@@ -32,13 +42,16 @@ export default function AcademicYearEditPage() {
     try {
       setIsLoading(true);
       await api.patch(`/academic-years/${id}`, {
-        tahunMulai,
-        tahunSelesai,
+        tahunMulai: Number(tahunMulai),
+        tahunSelesai: Number(tahunSelesai),
+        semester,
       });
       toast.success("Tahun ajaran berhasil diperbarui");
       router.push("/admin/academic-years");
     } catch (error) {
-      toast.error("Gagal memperbarui tahun ajaran");
+      const errorMessage =
+        error.response?.data?.message || "Gagal memperbarui tahun ajaran";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +79,7 @@ export default function AcademicYearEditPage() {
             type="number"
             value={tahunMulai}
             onChange={(e) => setTahunMulai(e.target.value)}
+            placeholder="Contoh: 2023"
           />
         </div>
 
@@ -75,7 +89,24 @@ export default function AcademicYearEditPage() {
             type="number"
             value={tahunSelesai}
             onChange={(e) => setTahunSelesai(e.target.value)}
+            placeholder="Contoh: 2024"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Semester</label>
+          <Select value={semester} onValueChange={setSemester}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih Semester" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(SEMESTERS).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Button onClick={handleUpdate} disabled={isLoading}>
