@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
+export const maxDuration = 60; // 60 seconds timeout
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();
