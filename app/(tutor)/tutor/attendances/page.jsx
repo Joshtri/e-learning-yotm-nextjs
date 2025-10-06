@@ -87,7 +87,13 @@ export default function AttendanceClassListPage() {
         />
         <StatsCard
           title="Tahun Ajaran"
-          value={academicYears.find((y) => y.id === selectedYearId)?.tahunMulai || "-"}
+          value={
+            academicYears.find((y) => y.id === selectedYearId)
+              ? `${academicYears.find((y) => y.id === selectedYearId).tahunMulai}/${
+                  academicYears.find((y) => y.id === selectedYearId).tahunSelesai
+                } - ${academicYears.find((y) => y.id === selectedYearId).semester}`
+              : "-"
+          }
           description="Tahun ajaran aktif"
           icon={<Calendar className="h-4 w-4" />}
         />
@@ -117,7 +123,7 @@ export default function AttendanceClassListPage() {
               <SelectContent>
                 {academicYears.map((year) => (
                   <SelectItem key={year.id} value={year.id}>
-                    {year.tahunMulai}/{year.tahunSelesai}{" "}
+                    {year.tahunMulai}/{year.tahunSelesai} - {year.semester}{" "}
                     {year.isActive && <Badge variant="default" className="ml-2">Aktif</Badge>}
                   </SelectItem>
                 ))}
@@ -176,7 +182,7 @@ export default function AttendanceClassListPage() {
                         </span>
                         <span className="font-medium">
                           {item.class.academicYear.tahunMulai}/
-                          {item.class.academicYear.tahunSelesai}
+                          {item.class.academicYear.tahunSelesai} - {item.class.academicYear.semester}
                         </span>
                       </div>
                       <Button
