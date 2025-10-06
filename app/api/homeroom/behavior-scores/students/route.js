@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
+import { calculateAttendanceScore } from "@/lib/attendance-calculator";
 
 export async function GET(request) {
   try {
@@ -29,21 +30,24 @@ export async function GET(request) {
       where: { id: classId },
       select: {
         academicYearId: true,
+        namaKelas: true,
+        academicYear: {
+          select: {
+            id: true,
+            tahunMulai: true,
+            tahunSelesai: true,
+            semester: true,
+          },
+        },
       },
     });
-    
+
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Kelas tidak ditemukan" },
         { status: 404 }
       );
     }
-    
-        const selectedClass = await prisma.class.findUnique({
-          where: { id: classId },
-          select: { academicYearId: true },
-        });
-        
 
     const academicYearId = kelas.academicYearId;
 
@@ -57,7 +61,10 @@ export async function GET(request) {
         namaLengkap: true,
         nisn: true,
         BehaviorScore: {
-          where: { academicYearId },
+          where: {
+            academicYearId,
+            classId
+          },
           select: {
             spiritual: true,
             sosial: true,
@@ -71,14 +78,42 @@ export async function GET(request) {
       },
     });
 
-    const data = students.map((s) => ({
-      id: s.id,
-      namaLengkap: s.namaLengkap,
-      behaviorScore: s.BehaviorScore[0],
-      academicYearId, // tambahkan ini
-    }));
+    // Calculate attendance for each student
+    const data = await Promise.all(
+      students.map(async (s) => {
+        // Auto-calculate kehadiran
+        const kehadiran = await calculateAttendanceScore(
+          s.id,
+          academicYearId,
+          classId
+        );
 
-    return NextResponse.json({ success: true, data });
+        return {
+          id: s.id,
+          namaLengkap: s.namaLengkap,
+          behaviorScore: s.BehaviorScore[0],
+          academicYearId,
+          autoCalculatedKehadiran: kehadiran, // Send auto-calculated value
+        };
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      data,
+      academicYearInfo: {
+        id: kelas.academicYear.id,
+        tahunAjaran: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
+        semester: kelas.academicYear.semester,
+        keterangan: kelas.academicYear.semester === "GENAP"
+          ? "Semester Genap - Digunakan untuk kenaikan kelas"
+          : "Semester Ganjil",
+      },
+      kehadiranInfo: {
+        keterangan: "Nilai kehadiran dihitung otomatis dari data absensi siswa sepanjang tahun ajaran ini",
+        rumus: "Bobot: PRESENT=100, SICK=75, EXCUSED=50, ABSENT=0",
+      },
+    });
   } catch (error) {
     console.error("Gagal mengambil siswa untuk behavior score:", error);
     return NextResponse.json(
