@@ -2,18 +2,24 @@
 
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCard } from "@/components/ui/stats-card";
-import { CalendarCheck, Users, BarChart3, NotebookPen } from "lucide-react";
+import { CalendarCheck, Users, BarChart3, NotebookPen, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function HomeroomDashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalAttendances: 0,
     totalAssignments: 0,
     averageScore: 0,
+    totalFinalScores: 0,
+    classInfo: null,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,6 +54,8 @@ export default function HomeroomDashboardPage() {
     </div>
   );
 
+  const classInfo = stats.classInfo;
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -55,6 +63,60 @@ export default function HomeroomDashboardPage() {
         description="Pantau presensi dan prestasi siswa di kelas Anda."
         breadcrumbs={[{ label: "Dashboard", href: "/homeroom/dashboard" }]}
       />
+
+      {/* Info Kelas & Tahun Ajaran */}
+      {!isLoading && classInfo && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              Informasi Kelas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Kelas</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.namaKelas}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Program</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.program || "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tahun Ajaran</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {classInfo.academicYear.tahunMulai}/
+                  {classInfo.academicYear.tahunSelesai}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Semester</p>
+                <p className="text-lg font-bold">
+                  <span
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      classInfo.academicYear.semester === "GENAP"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {classInfo.academicYear.semester}
+                  </span>
+                  {classInfo.academicYear.isActive && (
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
+                      Aktif
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
@@ -67,31 +129,60 @@ export default function HomeroomDashboardPage() {
         ) : (
           <>
             <StatsCard
-              title="Jumlah Siswa"
+              title="Jumlah Siswa Aktif"
               value={stats.totalStudents}
-              description="Total siswa di kelas Anda"
+              description="Total siswa aktif di kelas"
               icon={<Users className="h-4 w-4" />}
             />
             <StatsCard
-              title="Jumlah Presensi"
+              title="Total Presensi"
               value={stats.totalAttendances}
-              description="Jumlah kehadiran siswa"
+              description="Rekap kehadiran tahun ajaran ini"
               icon={<CalendarCheck className="h-4 w-4" />}
             />
             <StatsCard
-              title="Jumlah Tugas"
+              title="Total Tugas"
               value={stats.totalAssignments}
-              description="Tugas yang diberikan"
+              description="Tugas di kelas ini"
               icon={<NotebookPen className="h-4 w-4" />}
             />
             <StatsCard
-              title="Rata-rata Nilai"
-              value={`${stats.averageScore}%`}
-              description="Rata-rata nilai akademik"
+              title="Rata-rata Nilai Akhir"
+              value={stats.averageScore}
+              description={
+                stats.totalFinalScores > 0
+                  ? `Dari ${stats.totalFinalScores} nilai akhir siswa`
+                  : "Belum ada nilai akhir"
+              }
               icon={<BarChart3 className="h-4 w-4" />}
             />
           </>
         )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Aksi Cepat</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push("/homeroom/move-semester")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowRight className="h-5 w-5 text-blue-600" />
+                Pindah ke Semester Baru
+              </CardTitle>
+              <CardDescription>
+                Pindahkan siswa ke tahun akademik atau semester berikutnya
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="w-full">
+                Pindahkan Siswa
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Tambahkan quick actions lain di sini jika perlu */}
+        </div>
       </div>
     </div>
   );
