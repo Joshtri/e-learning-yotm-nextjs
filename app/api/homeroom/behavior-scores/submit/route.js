@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
+import { calculateAttendanceScore } from "@/lib/attendance-calculator";
 
 export async function POST(request) {
   try {
@@ -23,32 +24,42 @@ export async function POST(request) {
       );
     }
 
-    const operations = scores.map((entry) =>
-      prisma.behaviorScore.upsert({
-        where: {
-          studentId_academicYearId: {
-            studentId: entry.studentId,
-            academicYearId,
-          },
-        },
-        update: {
-          spiritual: entry.spiritual,
-          sosial: entry.sosial,
-          kehadiran: entry.kehadiran,
-          catatan: entry.catatan || null,
-        },
-        create: {
-          studentId: entry.studentId,
+    // Calculate attendance for each student and save
+    await prisma.$transaction(async (tx) => {
+      for (const entry of scores) {
+        // Auto-calculate kehadiran berdasarkan Attendance model
+        const kehadiran = await calculateAttendanceScore(
+          entry.studentId,
           academicYearId,
-          spiritual: entry.spiritual,
-          sosial: entry.sosial,
-          kehadiran: entry.kehadiran,
-          catatan: entry.catatan || null,
-        },
-      })
-    );
+          classId
+        );
 
-    await prisma.$transaction(operations);
+        await tx.behaviorScore.upsert({
+          where: {
+            studentId_classId_academicYearId: {
+              studentId: entry.studentId,
+              classId,
+              academicYearId,
+            },
+          },
+          update: {
+            spiritual: entry.spiritual,
+            sosial: entry.sosial,
+            kehadiran, // Auto-calculated
+            catatan: entry.catatan || null,
+          },
+          create: {
+            studentId: entry.studentId,
+            classId,
+            academicYearId,
+            spiritual: entry.spiritual,
+            sosial: entry.sosial,
+            kehadiran, // Auto-calculated
+            catatan: entry.catatan || null,
+          },
+        });
+      }
+    });
 
     return NextResponse.json({
       success: true,
