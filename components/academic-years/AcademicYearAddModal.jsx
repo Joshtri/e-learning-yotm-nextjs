@@ -7,6 +7,7 @@ import FormField from "@/components/ui/form-field";
 import api from "@/lib/axios";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { SEMESTERS } from "@/constants/common";
 
 export default function AcademicYearAddModal({ open, onClose, onSuccess }) {
   const {
@@ -19,6 +20,7 @@ export default function AcademicYearAddModal({ open, onClose, onSuccess }) {
     defaultValues: {
       tahunMulai: "",
       tahunSelesai: "",
+      semester: undefined,
     },
   });
 
@@ -27,6 +29,7 @@ export default function AcademicYearAddModal({ open, onClose, onSuccess }) {
       const payload = {
         tahunMulai: parseInt(data.tahunMulai),
         tahunSelesai: parseInt(data.tahunSelesai),
+        semester: data.semester,
       };
 
       await api.post("/academic-years", payload);
@@ -61,6 +64,8 @@ export default function AcademicYearAddModal({ open, onClose, onSuccess }) {
         name="tahunMulai"
         type="number"
         control={control}
+        required
+        rules={{ required: "Tahun mulai wajib diisi" }}
         placeholder="Contoh: 2024"
         {...register("tahunMulai", {
           required: "Tahun mulai wajib diisi",
@@ -74,12 +79,31 @@ export default function AcademicYearAddModal({ open, onClose, onSuccess }) {
         name="tahunSelesai"
         type="number"
         control={control}
+        required
+        rules={{ required: "Tahun selesai wajib diisi" }}
         placeholder="Contoh: 2025"
         {...register("tahunSelesai", {
           required: "Tahun selesai wajib diisi",
           min: { value: 2000, message: "Minimal tahun 2000" },
         })}
         error={errors.tahunSelesai?.message}
+      />
+
+      <FormField
+        label="Semester"
+        name="semester"
+        type="select"
+        control={control}
+        required
+        rules={{ required: "Semester wajib dipilih" }}
+        options={[
+          { value: SEMESTERS.GANJIL, label: "GANJIL" },
+          { value: SEMESTERS.GENAP, label: "GENAP" },
+        ]}
+        {...register("semester", {
+          required: "Semester wajib dipilih",
+        })}
+        error={errors.semester?.message}
       />
     </ModalForm>
   );
