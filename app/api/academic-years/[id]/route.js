@@ -33,11 +33,21 @@ export async function PATCH(req, context) {
 
   try {
     const body = await req.json();
-    const { tahunMulai, tahunSelesai } = body;
+    const { tahunMulai, tahunSelesai, semester } = body;
 
-    if (!tahunMulai || !tahunSelesai) {
+    if (!tahunMulai || !tahunSelesai || !semester) {
       return NextResponse.json(
-        { success: false, message: "Tahun mulai dan selesai wajib diisi" },
+        {
+          success: false,
+          message: "Tahun mulai, tahun selesai, dan semester wajib diisi",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (semester !== "GANJIL" && semester !== "GENAP") {
+      return NextResponse.json(
+        { success: false, message: "Semester harus GANJIL atau GENAP" },
         { status: 400 }
       );
     }
@@ -47,6 +57,7 @@ export async function PATCH(req, context) {
       data: {
         tahunMulai: Number(tahunMulai),
         tahunSelesai: Number(tahunSelesai),
+        semester: semester,
       },
     });
 
