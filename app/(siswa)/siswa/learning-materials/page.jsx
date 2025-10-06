@@ -1,6 +1,8 @@
 // File: app/siswa/learning-materials/page.jsx
 "use client";
 
+import { useState, useEffect } from "react";
+// import AcademicYearFilter from "@/components/AcademicYearFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,8 +16,16 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { Loader2, ArrowUpDown, ArrowUp, ArrowDown, BookOpen, FileText, Play } from "lucide-react";
-import { useState } from "react";
+import {
+  Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  BookOpen,
+  FileText,
+  Play,
+} from "lucide-react";
+import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 
 // Helpers
 const extractFirstUrl = (text = "") => {
@@ -41,32 +51,75 @@ const getTypeLabel = (m) =>
   getType(m) === "LINK_YOUTUBE" ? "Link YouTube" : "File";
 
 export default function LearningMaterialsPage() {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState("");
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["siswa-materi-pelajaran"],
+    queryKey: ["siswa-materi-pelajaran", selectedAcademicYearId],
     queryFn: async () => {
-      const res = await axios.get("/api/student/materi-pelajaran");
+      const params = selectedAcademicYearId
+        ? { academicYearId: selectedAcademicYearId }
+        : {};
+      const res = await axios.get("/api/student/materi-pelajaran", { params });
+
+      // Extract filter options and set academic years
+      if (res.data.filterOptions) {
+        const years = res.data.filterOptions.academicYears.map((y) => ({
+          ...y,
+          value: y.id,
+          label: `${y.tahunMulai}/${y.tahunSelesai} - ${y.semester}`,
+        }));
+        setAcademicYears(years);
+        // Set default selected year if not already set
+        if (!selectedAcademicYearId && years.length > 0) {
+          const activeYear = years.find((y) => y.isActive);
+          setSelectedAcademicYearId(activeYear?.id || years[0].id);
+        }
+      }
       return res.data.data;
     },
+    enabled: !!selectedAcademicYearId, // Only run query if a year is selected
   });
 
+  useEffect(() => {
+    // Initial fetch of academic years to populate the filter
+    const fetchInitialAcademicYears = async () => {
+      try {
+        const res = await axios.get("/api/student/materi-pelajaran"); // Fetch without academicYearId to get all options
+        if (res.data.filterOptions) {
+          const years = res.data.filterOptions.academicYears.map((y) => ({
+            ...y,
+            value: y.id,
+            label: `${y.tahunMulai}/${y.tahunSelesai} - ${y.semester}`,
+          }));
+          setAcademicYears(years);
+          const activeYear = years.find((y) => y.isActive);
+          setSelectedAcademicYearId(activeYear?.id || years[0]?.id || "");
+        }
+      } catch (error) {
+        console.error("Error fetching initial academic years:", error);
+      }
+    };
+    fetchInitialAcademicYears();
+  }, []);
+
   const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
 
   const getSortedMateri = (materi) => {
     if (!sortConfig.key) return materi;
-    
+
     return [...materi].sort((a, b) => {
-      if (sortConfig.key === 'pertemuan') {
+      if (sortConfig.key === "pertemuan") {
         const aVal = parseInt(a.pertemuan) || 1;
         const bVal = parseInt(b.pertemuan) || 1;
-        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
       }
       return 0;
     });
@@ -74,9 +127,11 @@ export default function LearningMaterialsPage() {
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <ArrowUpDown className="w-4 h-4" />;
-    return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="w-4 h-4" /> 
-      : <ArrowDown className="w-4 h-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ArrowUp className="w-4 h-4" />
+    ) : (
+      <ArrowDown className="w-4 h-4" />
+    );
   };
 
   return (
@@ -88,6 +143,13 @@ export default function LearningMaterialsPage() {
           { label: "Dashboard", href: "/siswa/dashboard" },
           { label: "Materi Pembelajaran" },
         ]}
+        actions={
+          <AcademicYearFilter
+            academicYears={academicYears}
+            selectedId={selectedAcademicYearId}
+            onChange={setSelectedAcademicYearId}
+          />
+        }
       />
 
       <div className="space-y-6 mt-6">
@@ -102,7 +164,10 @@ export default function LearningMaterialsPage() {
         {!isLoading &&
           (data?.length ? (
             data.map((mapel) => (
-              <Card key={mapel.mapelId} className="shadow-sm border-l-4 border-l-primary/20 hover:shadow-md transition-shadow">
+              <Card
+                key={mapel.mapelId}
+                className="shadow-sm border-l-4 border-l-primary/20 hover:shadow-md transition-shadow"
+              >
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-primary" />
@@ -124,13 +189,13 @@ export default function LearningMaterialsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead 
+                          <TableHead
                             className="cursor-pointer hover:bg-muted/50 transition-colors select-none"
-                            onClick={() => handleSort('pertemuan')}
+                            onClick={() => handleSort("pertemuan")}
                           >
                             <div className="flex items-center gap-2">
                               Pertemuan
-                              {getSortIcon('pertemuan')}
+                              {getSortIcon("pertemuan")}
                             </div>
                           </TableHead>
                           <TableHead>Judul Materi</TableHead>
@@ -148,23 +213,39 @@ export default function LearningMaterialsPage() {
                             null;
 
                           return (
-                            <TableRow key={materi.id} className="hover:bg-muted/30 transition-colors">
+                            <TableRow
+                              key={materi.id}
+                              className="hover:bg-muted/30 transition-colors"
+                            >
                               <TableCell className="font-medium">
-                                <Badge variant="secondary" className="font-normal">
+                                <Badge
+                                  variant="secondary"
+                                  className="font-normal"
+                                >
                                   Pertemuan {materi.pertemuan || "1"}
                                 </Badge>
                               </TableCell>
 
                               <TableCell className="max-w-[360px]">
-                                <div className="truncate font-medium">{materi.judul}</div>
+                                <div className="truncate font-medium">
+                                  {materi.judul}
+                                </div>
                               </TableCell>
 
                               <TableCell>
-                                <Badge 
-                                  variant={tipe === "LINK_YOUTUBE" ? "destructive" : "default"}
+                                <Badge
+                                  variant={
+                                    tipe === "LINK_YOUTUBE"
+                                      ? "destructive"
+                                      : "default"
+                                  }
                                   className="flex items-center gap-1 w-fit"
                                 >
-                                  {tipe === "LINK_YOUTUBE" ? <Play className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                  {tipe === "LINK_YOUTUBE" ? (
+                                    <Play className="w-3 h-3" />
+                                  ) : (
+                                    <FileText className="w-3 h-3" />
+                                  )}
                                   {getTypeLabel(materi)}
                                 </Badge>
                               </TableCell>
@@ -172,8 +253,8 @@ export default function LearningMaterialsPage() {
                               <TableCell>
                                 {url ? (
                                   tipe === "LINK_YOUTUBE" ? (
-                                    <Badge 
-                                      variant="destructive" 
+                                    <Badge
+                                      variant="destructive"
                                       className="cursor-pointer hover:bg-destructive/90 transition-colors"
                                       asChild
                                     >
@@ -189,8 +270,8 @@ export default function LearningMaterialsPage() {
                                     </Badge>
                                   ) : (
                                     <div className="flex items-center gap-2">
-                                      <Badge 
-                                        variant="outline" 
+                                      <Badge
+                                        variant="outline"
                                         className="cursor-pointer hover:bg-muted transition-colors"
                                         asChild
                                       >
@@ -204,8 +285,8 @@ export default function LearningMaterialsPage() {
                                           Lihat
                                         </a>
                                       </Badge>
-                                      <Badge 
-                                        variant="secondary" 
+                                      <Badge
+                                        variant="secondary"
                                         className="cursor-pointer hover:bg-secondary/80 transition-colors"
                                         asChild
                                       >
@@ -221,7 +302,9 @@ export default function LearningMaterialsPage() {
                                     </div>
                                   )
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground">
+                                    -
+                                  </span>
                                 )}
                               </TableCell>
 
@@ -253,10 +336,11 @@ export default function LearningMaterialsPage() {
                 <div className="text-center">
                   <BookOpen className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                    Tidak ada mata pelajaran
+                    Tidak ada materi pembelajaran
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Belum ada mata pelajaran yang tersedia untuk saat ini.
+                    Belum ada materi pembelajaran yang tersedia untuk tahun
+                    ajaran yang dipilih.
                   </p>
                 </div>
               </CardContent>
