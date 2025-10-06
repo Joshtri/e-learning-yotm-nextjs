@@ -138,7 +138,7 @@ export default function MyClassesPage() {
           <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
           <span>{`${row.class?.academicYear?.tahunMulai || "-"}/${
             row.class?.academicYear?.tahunSelesai || "-"
-          }`}</span>
+          } - ${row.class?.academicYear?.semester || ""}`}</span>
         </div>
       ),
     },
