@@ -31,6 +31,7 @@ export async function GET(request) {
                 id: true,
                 tahunMulai: true,
                 tahunSelesai: true,
+                semester: true,
               },
             },
             students: {
@@ -44,6 +45,12 @@ export async function GET(request) {
               select: {
                 id: true,
                 subject: { select: { id: true, namaMapel: true } },
+                tutor: {
+                  select: {
+                    namaLengkap: true,
+                    user: { select: { nama: true } },
+                  },
+                },
               },
             },
           },
