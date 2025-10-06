@@ -1,15 +1,13 @@
-// app/api/homeroom/my-students/route.js
-
 import prisma from "@/lib/prisma";
-import { getUserFromCookie } from "@/utils/auth"; // ganti dari getAuthUser ke getUserFromCookie
+import { getUserFromCookie } from "@/utils/auth";
+import { NextResponse } from "next/server";
 
-export async function GET(req) {
+export async function GET(request) {
   try {
     const user = await getUserFromCookie();
-
-    if (!user) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Unauthorized" }),
+    if (!user || user.role !== "TUTOR") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
@@ -19,48 +17,101 @@ export async function GET(req) {
     });
 
     if (!tutor) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Tutor not found" }),
+      return NextResponse.json(
+        { success: false, message: "Tutor profile not found" },
         { status: 404 }
       );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const academicYearId = searchParams.get("academicYearId");
+
+    // Get all academic years where this tutor is a homeroom teacher
+    const homeroomClasses = await prisma.class.findMany({
+      where: { homeroomTeacherId: tutor.id },
+      include: { academicYear: true },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "asc" } },
+      ],
+    });
+
+    const academicYears = homeroomClasses.map((c) => ({
+      ...c.academicYear,
+      value: c.academicYear.id,
+      label: `${c.academicYear.tahunMulai}/${c.academicYear.tahunSelesai} - ${c.academicYear.semester}`,
+    }));
+
+    const filterOptions = { academicYears };
+
+    let whereClause = {
+      homeroomTeacherId: tutor.id,
+    };
+
+    if (academicYearId) {
+      whereClause.academicYearId = academicYearId;
+    } else {
+      // Default to the class in the active academic year if no ID is provided
+      whereClause.academicYear = {
+        isActive: true,
+      };
     }
 
     const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYear: {
-          isActive: true,
-        },
-      },
+      where: whereClause,
       include: {
-        students: {
-          include: {
-            user: true,
-          },
-        },
+        academicYear: true,
+        program: true,
       },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "asc" } },
+      ],
     });
-    
 
     if (!kelas) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih",
+          data: [],
+          classInfo: null,
+          filterOptions,
+        },
         { status: 404 }
       );
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: kelas.students }),
-      { status: 200 }
-    );
+    const students = await prisma.student.findMany({
+      where: {
+        classId: kelas.id,
+      },
+      orderBy: {
+        namaLengkap: "asc",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: students,
+      classInfo: {
+        id: kelas.id,
+        namaKelas: kelas.namaKelas,
+        program: kelas.program?.namaPaket,
+        academicYear: {
+          id: kelas.academicYear.id,
+          tahunMulai: kelas.academicYear.tahunMulai,
+          tahunSelesai: kelas.academicYear.tahunSelesai,
+          semester: kelas.academicYear.semester,
+          isActive: kelas.academicYear.isActive,
+        },
+      },
+      filterOptions,
+    });
   } catch (error) {
-    console.error("[GET My Students]", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: "Internal Server Error",
-        error: error.message,
-      }),
+    console.error("Failed to load my students:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to load my students" },
       { status: 500 }
     );
   }
