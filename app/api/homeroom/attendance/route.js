@@ -1,12 +1,13 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
+import { NextResponse } from "next/server";
 
 export async function GET(req) {
   try {
     const user = await getUserFromCookie();
     if (!user) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Unauthorized" }),
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
@@ -16,19 +17,19 @@ export async function GET(req) {
     const tahun = parseInt(searchParams.get("tahun"));
 
     if (!bulan || !tahun) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           success: false,
           message: "Bulan dan Tahun wajib diisi",
-        }),
+        },
         { status: 400 }
       );
     }
 
     const tutor = await prisma.tutor.findUnique({ where: { userId: user.id } });
     if (!tutor) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Tutor not found" }),
+      return NextResponse.json(
+        { success: false, message: "Tutor not found" },
         { status: 404 }
       );
     }
@@ -36,10 +37,11 @@ export async function GET(req) {
     const kelas = await prisma.class.findFirst({
       where: {
         homeroomTeacherId: tutor.id,
-        academicYear: {
-          isActive: true,
-        },
       },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "desc" } },
+      ],
       include: {
         students: {
           where: { status: "ACTIVE" },
@@ -48,34 +50,40 @@ export async function GET(req) {
               where: {
                 date: {
                   gte: new Date(tahun, bulan - 1, 1),
-                  lte: new Date(tahun, bulan - 1, 31),
+                  lte: new Date(tahun, bulan, 0), // Correctly get the last day of the month
                 },
+              },
+              include: {
+                academicYear: true,
               },
             },
           },
         },
+        academicYear: true, // Include academicYear for the class itself
       },
     });
 
     if (!kelas) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
-        { status: 404 }
-      );
+      // If no class is assigned to the homeroom teacher at all, return empty.
+      return NextResponse.json({ success: true, data: [] });
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: kelas.students }),
-      { status: 200 }
-    );
+    // Pass academic year info along with the students
+    const responseData = {
+        students: kelas.students,
+        academicYearInfo: kelas.academicYear
+    }
+
+    return NextResponse.json({ success: true, data: responseData });
+
   } catch (error) {
     console.error(error);
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: false,
         message: "Internal Server Error",
         error: error.message,
-      }),
+      },
       { status: 500 }
     );
   }
@@ -85,8 +93,8 @@ export async function DELETE(req) {
   try {
     const user = await getUserFromCookie();
     if (!user) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Unauthorized" }),
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
@@ -96,11 +104,11 @@ export async function DELETE(req) {
     const tahun = parseInt(searchParams.get("tahun") || "");
 
     if (!bulan || !tahun) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           success: false,
           message: "Bulan dan Tahun harus diisi",
-        }),
+        },
         { status: 400 }
       );
     }
@@ -111,29 +119,30 @@ export async function DELETE(req) {
     });
 
     if (!tutor) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           success: false,
           message: "Homeroom Teacher tidak ditemukan",
-        }),
+        },
         { status: 404 }
       );
     }
 
-    // Cari kelas aktif yang dipegang wali kelas
+    // Cari kelas terbaru yang dipegang wali kelas
     const kelas = await prisma.class.findFirst({
       where: {
         homeroomTeacherId: tutor.id,
-        academicYear: {
-          isActive: true,
-        },
       },
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "desc" } },
+      ],
       include: { students: true },
     });
 
     if (!kelas) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
+      return NextResponse.json(
+        { success: false, message: "Kelas tidak ditemukan" },
         { status: 404 }
       );
     }
@@ -167,21 +176,19 @@ export async function DELETE(req) {
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Berhasil menghapus ${deletedAttendances.count} presensi dan ${deletedSessions.count} sesi di bulan ${bulan}/${tahun}`,
-      }),
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: `Berhasil menghapus ${deletedAttendances.count} presensi dan ${deletedSessions.count} sesi di bulan ${bulan}/${tahun}`,
+    });
+
   } catch (error) {
     console.error("DELETE /homeroom/attendance error:", error);
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: false,
         message: "Internal Server Error",
         error: error.message,
-      }),
+      },
       { status: 500 }
     );
   }
