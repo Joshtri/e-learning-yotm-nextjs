@@ -16,54 +16,50 @@ import { useEffect, useState } from "react";
 export default function StudentSubjectsPage() {
   const [subjects, setSubjects] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
-  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [classOptions, setClassOptions] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get("/student/assignments");
-        const data = res.data.data || [];
-        setSubjects(data);
+  const fetchData = async (academicYearId) => {
+    try {
+      setLoading(true);
+      const params = academicYearId ? { academicYearId } : {};
+      const res = await api.get("/student/assignments", { params });
+      const data = res.data.data || [];
+      setSubjects(data);
 
-        const academicYearSet = new Map();
-        const classSet = new Map();
-
-        data.forEach((s) => {
-          if (s.academicYearId && s.academicYear) {
-            academicYearSet.set(s.academicYearId, s.academicYear);
-          }
-          if (s.classId && s.className) {
-            classSet.set(s.classId, s.className);
-          }
-        });
-
-        const yearArr = Array.from(academicYearSet.entries()).map(
-          ([id, tahun]) => {
-            const [tahunMulai, tahunSelesai] = tahun.split("/");
-            return { id, tahunMulai, tahunSelesai };
-          }
-        );
-        const classArr = Array.from(classSet.entries()).map(
-          ([value, label]) => ({ value, label })
-        );
-
-        setAcademicYears(yearArr);
-        setClassOptions(classArr);
-
-        if (yearArr.length > 0) setSelectedAcademicYearId(yearArr[0].id);
-      } catch (error) {
-        console.error("Gagal memuat data mata pelajaran siswa:", error);
-      } finally {
-        setLoading(false);
+      if (res.data.filterOptions) {
+        const years = res.data.filterOptions.academicYears.map(y => ({ ...y, value: y.id, label: `${y.tahunMulai}/${y.tahunSelesai} - ${y.semester}` }));
+        setAcademicYears(years);
+        if (!academicYearId && years.length > 0) {
+          const activeYear = years.find(y => y.isActive);
+          setSelectedAcademicYearId(activeYear?.id || years[0].id);
+        }
       }
-    };
 
-    fetchData();
-  }, []);
+      const classSet = new Map();
+      data.forEach((s) => {
+        if (s.classId && s.className) {
+          classSet.set(s.classId, s.className);
+        }
+      });
+      const classArr = Array.from(classSet.entries()).map(
+        ([value, label]) => ({ value, label })
+      );
+      setClassOptions(classArr);
+
+    } catch (error) {
+      console.error("Gagal memuat data mata pelajaran siswa:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(selectedAcademicYearId);
+  }, [selectedAcademicYearId]);
 
   const getAssignmentWindowState = (tugas) => {
     const now = new Date();
