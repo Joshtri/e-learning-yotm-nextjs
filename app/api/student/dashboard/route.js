@@ -36,9 +36,9 @@ export async function GET() {
       );
     }
 
-    if (!student.class) {
+    if (!student.class || !student.class.academicYear.isActive) {
       return NextResponse.json(
-        { success: false, message: "Siswa belum terdaftar di kelas manapun." },
+        { success: false, message: "Anda tidak terdaftar di kelas pada tahun ajaran aktif saat ini." },
         { status: 404 }
       );
     }
@@ -59,24 +59,68 @@ export async function GET() {
       prisma.assignment.findMany({
         where: {
           classSubjectTutorId: { in: cstIds },
-          waktuSelesai: { gte: now },
+          TanggalSelesai: { gte: now },
           jenis: "EXERCISE", // hanya tugas latihan
+          classSubjectTutor: {
+            class: {
+              academicYearId: student.class.academicYearId,
+              academicYear: {
+                semester: student.class.academicYear.semester,
+              },
+            },
+          },
         },
         include: { classSubjectTutor: { include: { subject: true } } },
-        orderBy: { waktuSelesai: "asc" },
+        orderBy: { TanggalSelesai: "asc" },
         take: 5,
       }),
       prisma.quiz.findMany({
         where: {
           classSubjectTutorId: { in: cstIds },
           waktuSelesai: { gte: now },
+          classSubjectTutor: {
+            class: {
+              academicYearId: student.class.academicYearId,
+              academicYear: {
+                semester: student.class.academicYear.semester,
+              },
+            },
+          },
         },
         include: { classSubjectTutor: { include: { subject: true } } },
         orderBy: { waktuSelesai: "asc" },
         take: 5,
       }),
       prisma.submission.findMany({
-        where: { studentId },
+        where: {
+          studentId,
+          OR: [
+            {
+              assignment: {
+                classSubjectTutor: {
+                  class: {
+                    academicYearId: student.class.academicYearId,
+                    academicYear: {
+                      semester: student.class.academicYear.semester,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              quiz: {
+                classSubjectTutor: {
+                  class: {
+                    academicYearId: student.class.academicYearId,
+                    academicYear: {
+                      semester: student.class.academicYear.semester,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
         include: {
           assignment: {
             include: { classSubjectTutor: { include: { subject: true } } },
@@ -89,11 +133,50 @@ export async function GET() {
         take: 5,
       }),
       prisma.submission.findMany({
-        where: { studentId, nilai: { not: null } },
+        where: {
+          studentId,
+          nilai: { not: null },
+          OR: [
+            {
+              assignment: {
+                classSubjectTutor: {
+                  class: {
+                    academicYearId: student.class.academicYearId,
+                    academicYear: {
+                      semester: student.class.academicYear.semester,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              quiz: {
+                classSubjectTutor: {
+                  class: {
+                    academicYearId: student.class.academicYearId,
+                    academicYear: {
+                      semester: student.class.academicYear.semester,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
         include: { assignment: true, quiz: true },
       }),
       prisma.learningMaterial.findMany({
-        where: { classSubjectTutorId: { in: cstIds } },
+        where: {
+          classSubjectTutorId: { in: cstIds },
+          classSubjectTutor: {
+            class: {
+              academicYearId: student.class.academicYearId,
+              academicYear: {
+                semester: student.class.academicYear.semester,
+              },
+            },
+          },
+        },
         include: { classSubjectTutor: { include: { subject: true } } },
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -153,13 +236,13 @@ export async function GET() {
         id: student.id,
         name: student.namaLengkap || student.user.nama,
         class: `${student.class.namaKelas} - ${student.class.program.namaPaket}`,
-        academicYear: `${student.class.academicYear.tahunMulai}/${student.class.academicYear.tahunSelesai}`,
+        academicYear: `${student.class.academicYear.tahunMulai}/${student.class.academicYear.tahunSelesai} - ${student.class.academicYear.semester}`,
       },
       upcomingAssignments: upcomingAssignments.map((a) => ({
         id: a.id,
         title: a.judul,
         subject: a.classSubjectTutor.subject.namaMapel,
-        dueDate: a.waktuSelesai,
+        dueDate: a.TanggalSelesai,
         type: a.jenis,
       })),
       upcomingQuizzes: upcomingQuizzes.map((q) => ({
