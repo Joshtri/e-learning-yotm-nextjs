@@ -79,6 +79,11 @@ enum AttendanceStatus {
   ABSENT
 }
 
+enum Semester {
+  GANJIL
+  GENAP
+}
+
 // ========== MAIN MODELS ==========
 model User {
   id          String    @id @default(dbgenerated("concat('usr_', gen_random_uuid())")) @db.VarChar(40)
@@ -181,6 +186,7 @@ model AcademicYear {
   id                  String                @id @default(dbgenerated("concat('acy_', gen_random_uuid())")) @db.VarChar(40)
   tahunMulai          Int
   tahunSelesai        Int
+  semester            Semester              @default(GANJIL)
   isActive            Boolean               @default(false)
   classes             Class[]
   StudentClassHistory StudentClassHistory[]
@@ -191,7 +197,7 @@ model AcademicYear {
   HolidayRange        HolidayRange[]
 
   // Validation
-  @@unique([tahunMulai, tahunSelesai])
+  @@unique([tahunMulai, tahunSelesai, semester])
 }
 
 model Program {
@@ -222,6 +228,7 @@ model Class {
   StudentClassHistory StudentClassHistory[]
   Attendance          Attendance[]
   AttendanceSession   AttendanceSession[]
+  BehaviorScore       BehaviorScore[]
 
   @@unique([namaKelas, programId, academicYearId])
 }
@@ -482,17 +489,19 @@ model SkillScore {
 model BehaviorScore {
   id             String   @id @default(dbgenerated("concat('bhs_', gen_random_uuid())")) @db.VarChar(40)
   studentId      String
+  classId        String
   academicYearId String
   spiritual      Float
   sosial         Float
-  kehadiran      Float // presentase atau skor berdasarkan absensi
+  kehadiran      Float // presentase atau skor berdasarkan absensi (auto-calculated)
   catatan        String? // opsional, misal "Sikap sangat baik", "Perlu perbaikan kehadiran"
   createdAt      DateTime @default(now())
 
   student      Student      @relation(fields: [studentId], references: [id])
+  class        Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
 
-  @@unique([studentId, academicYearId]) // ❗ 1 tahun ajaran, 1 nilai behavior
+  @@unique([studentId, classId, academicYearId]) // ❗ 1 tahun ajaran per kelas, 1 nilai behavior
 }
 
 model StudentClassHistory {
