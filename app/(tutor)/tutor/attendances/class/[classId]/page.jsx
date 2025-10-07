@@ -31,7 +31,11 @@ const startOfDay = (d) => {
   x.setHours(0, 0, 0, 0);
   return x;
 };
-const isSameDay = (a, b) => startOfDay(a).getTime() === startOfDay(b).getTime();
+const isSameDay = (a, b) => {
+  const dateA = new Date(a).toISOString().split('T')[0];
+  const dateB = new Date(b).toISOString().split('T')[0];
+  return dateA === dateB;
+};
 const toLocalISO = (d) => {
   const x = new Date(d);
   return `${x.getFullYear()}-${pad2(x.getMonth() + 1)}-${pad2(x.getDate())}`;

@@ -81,10 +81,11 @@ export default function StudentAttendancePage() {
 
   const isSameDay = (a, b) => {
     const da = new Date(a);
-    da.setHours(0, 0, 0, 0);
     const db = new Date(b);
-    db.setHours(0, 0, 0, 0);
-    return da.getTime() === db.getTime();
+    // Bandingkan tanggal dalam format YYYY-MM-DD untuk menghindari perbedaan zona waktu
+    const dateA = da.toISOString().split('T')[0];
+    const dateB = db.toISOString().split('T')[0];
+    return dateA === dateB;
   };
 
   const fetchSessions = async () => {

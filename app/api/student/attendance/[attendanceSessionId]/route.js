@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(request, { params }) {
   try {
+    const { attendanceSessionId } = await params;
+
     const user = await getUserFromCookie();
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
@@ -33,7 +35,7 @@ export async function POST(request, { params }) {
     }
 
     const session = await prisma.attendanceSession.findUnique({
-      where: { id: params.attendanceSessionId },
+      where: { id: attendanceSessionId },
       select: { id: true, academicYearId: true, tanggal: true, classId: true },
     });
 
@@ -44,18 +46,19 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Validasi: hanya hari yang sama
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Validasi: hanya hari yang sama (timezone-aware)
+    const now = new Date();
     const sessionDate = new Date(session.tanggal);
-    sessionDate.setHours(0, 0, 0, 0);
-    if (today.getTime() !== sessionDate.getTime()) {
+
+    // Normalize ke midnight waktu lokal untuk perbandingan
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sessionMidnight = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate());
+
+    if (todayMidnight.getTime() !== sessionMidnight.getTime()) {
       return NextResponse.json(
         {
           success: false,
-          message: `Presensi hanya pada ${sessionDate.toLocaleDateString(
-            "id-ID"
-          )}`,
+          message: `Presensi hanya dapat dilakukan pada tanggal ${sessionDate.toLocaleDateString("id-ID")}`,
         },
         { status: 400 }
       );

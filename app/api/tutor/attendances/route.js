@@ -39,12 +39,13 @@ export async function GET() {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    // 🔥 Setup tanggal hari ini
+    // 🔥 Setup tanggal hari ini - gunakan ISO string untuk menghindari perbedaan zona waktu
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+    const tomorrow = new Date(todayDate);
+    tomorrow.setDate(todayDate.getDate() + 1);
 
     // 🔥 Cari attendance session untuk hari ini dan kelas yang dia ajar
     const attendances = await prisma.attendanceSession.findMany({
@@ -102,12 +103,19 @@ export async function POST(request) {
     const body = await request.json();
     const { classId, academicYearId, tanggal, keterangan } = body;
 
+    // Konversi tanggal dengan memastikan waktu tetap di awal hari untuk menghindari perbedaan zona waktu
+    let tanggalForDB = new Date(tanggal);
+    if (typeof tanggal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
+      // Jika input tanggal dalam format YYYY-MM-DD, buat sebagai UTC
+      tanggalForDB = new Date(`${tanggal}T00:00:00.000Z`);
+    }
+
     const attendanceSession = await prisma.attendanceSession.create({
       data: {
         tutorId: tutor.id, // ❗ Bukan user.id, tapi tutor.id
         classId,
         academicYearId,
-        tanggal: new Date(tanggal),
+        tanggal: tanggalForDB,
         keterangan,
       },
     });
