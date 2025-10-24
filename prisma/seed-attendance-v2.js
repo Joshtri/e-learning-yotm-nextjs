@@ -13,6 +13,7 @@ async function seedAttendance() {
           tahunMulai: 2025,
           tahunSelesai: 2026,
           isActive: true,
+          semester: "GENAP",
         },
       },
       include: {
