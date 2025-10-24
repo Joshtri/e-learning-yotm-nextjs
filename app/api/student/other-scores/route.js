@@ -31,8 +31,11 @@ export async function GET(request) {
       prisma.submission.findMany({
         where: {
           studentId: student.id,
+          assignmentId: { not: null },
           assignment: {
-            isNot: null,
+            jenis: {
+              notIn: ["MIDTERM", "FINAL_EXAM"], // ✅ Filter MIDTERM dan FINAL_EXAM
+            },
           },
           status: "GRADED", // ✅ Tugas tetap hanya GRADED
         },
