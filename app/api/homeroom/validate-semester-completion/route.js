@@ -52,7 +52,7 @@ export async function GET(request) {
       },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } }, // GANJIL dulu baru GENAP
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
