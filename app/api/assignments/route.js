@@ -28,7 +28,7 @@ export async function GET() {
         },
       },
       orderBy: {
-        waktuMulai: "desc",
+        TanggalMulai: "desc",
       },
     });
 
