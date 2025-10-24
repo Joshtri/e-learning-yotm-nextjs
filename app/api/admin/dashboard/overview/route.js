@@ -44,7 +44,8 @@ export async function GET() {
       totalMaterials,
       currentAcademicYear: currentAcademicYear ? {
         id: currentAcademicYear.id,
-        year: `${currentAcademicYear.tahunMulai}/${currentAcademicYear.tahunSelesai}`
+        year: `${currentAcademicYear.tahunMulai}/${currentAcademicYear.tahunSelesai}`,
+        semester: currentAcademicYear.semester
       } : null
     });
   } catch (error) {

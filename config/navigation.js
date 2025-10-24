@@ -173,6 +173,16 @@ export const navByRole = {
       ],
     },
     {
+      title: "Laporan",
+      items: [
+        {
+          title: "Cetak Laporan",
+          href: "/admin/reports",
+          icon: <Printer className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
       title: "Komunikasi",
       items: [
         {
