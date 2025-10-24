@@ -127,12 +127,17 @@ export async function GET(request) {
       const submission = exam.submissions[0]; // Get student's submission if exists
       const academicYear = exam.classSubjectTutor?.class?.academicYear;
 
-      // Determine exam status
+      // Determine exam status dengan normalisasi UTC
       let status = "Belum Tersedia";
       let canStart = false;
       const now = new Date();
+      const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+
       const startDate = exam.TanggalMulai ? new Date(exam.TanggalMulai) : null;
+      const startDateUTC = startDate ? Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) : null;
+
       const endDate = exam.TanggalSelesai ? new Date(exam.TanggalSelesai) : null;
+      const endDateUTC = endDate ? Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : null;
 
       if (submission) {
         if (submission.status === "GRADED") {
@@ -143,11 +148,11 @@ export async function GET(request) {
           status = "Sedang Dikerjakan";
           canStart = true;
         }
-      } else if (startDate && endDate) {
-        if (now >= startDate && now <= endDate) {
+      } else if (startDateUTC && endDateUTC) {
+        if (currentDateUTC >= startDateUTC && currentDateUTC <= endDateUTC) {
           status = "Tersedia";
           canStart = true;
-        } else if (now < startDate) {
+        } else if (currentDateUTC < startDateUTC) {
           status = "Belum Dimulai";
         } else {
           status = "Sudah Berakhir";
