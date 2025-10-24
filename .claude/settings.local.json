@@ -10,7 +10,9 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(npx prisma:*)",
       "Read(//d/**)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
