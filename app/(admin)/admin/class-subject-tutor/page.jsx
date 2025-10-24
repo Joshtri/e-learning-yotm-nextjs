@@ -197,6 +197,11 @@ export default function ClassSubjectTutorPage() {
                   academicYears.find((y) => y.id === selectedAcademicYear)
                     ?.tahunSelesai
                 }
+                {" - "}
+                {
+                  academicYears.find((y) => y.id === selectedAcademicYear)
+                    ?.semester
+                }
               </span>
             </div>
           )}
