@@ -24,6 +24,7 @@ export default function StudentAttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("table"); // table | calendar
   const [classInfo, setClassInfo] = useState(null);
+  const [submittingSessionId, setSubmittingSessionId] = useState(null);
 
   const fetchClassInfo = async () => {
     try {
@@ -136,14 +137,17 @@ export default function StudentAttendancePage() {
 
   const handleSubmitAttendance = async (sessionId, status) => {
     try {
+      setSubmittingSessionId(sessionId);
       const res = await api.post(`/student/attendance/${sessionId}`, {
         status,
       });
       toast.success(res.data.message || "Presensi berhasil!");
-      fetchSessions();
+      await fetchSessions();
     } catch (error) {
       const msg = error.response?.data?.message || "Gagal mengisi presensi";
       toast.error(msg);
+    } finally {
+      setSubmittingSessionId(null);
     }
   };
 
@@ -168,30 +172,31 @@ export default function StudentAttendancePage() {
       cell: (row) => {
         const alreadyFinal =
           !!row.attendanceStatus && row.attendanceStatus !== "ABSENT";
+        const isSubmitting = submittingSessionId === row.id;
         return (
           <div className="flex gap-2">
             <Button
               size="sm"
-              disabled={alreadyFinal}
+              disabled={alreadyFinal || isSubmitting}
               onClick={() => handleSubmitAttendance(row.id, "PRESENT")}
             >
-              Hadir
+              {isSubmitting ? "Memproses..." : "Hadir"}
             </Button>
             <Button
               size="sm"
               variant="outline"
-              disabled={alreadyFinal}
+              disabled={alreadyFinal || isSubmitting}
               onClick={() => handleSubmitAttendance(row.id, "SICK")}
             >
-              Sakit
+              {isSubmitting ? "Memproses..." : "Sakit"}
             </Button>
             <Button
               size="sm"
               variant="destructive"
-              disabled={alreadyFinal}
+              disabled={alreadyFinal || isSubmitting}
               onClick={() => handleSubmitAttendance(row.id, "EXCUSED")}
             >
-              Izin
+              {isSubmitting ? "Memproses..." : "Izin"}
             </Button>
           </div>
         );
