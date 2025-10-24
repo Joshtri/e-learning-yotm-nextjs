@@ -65,7 +65,7 @@ Video pembelajaran: https://www.youtube.com/watch?v=example_matriks`,
         classSubjectTutorId: matematika.id,
       },
     });
-
+    
     await prisma.learningMaterial.create({
       data: {
         judul: "Determinan dan Invers Matriks",
