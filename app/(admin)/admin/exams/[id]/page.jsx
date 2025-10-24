@@ -85,8 +85,8 @@ export default function ExamDetailPage() {
           </p>
           <p>
             <b>Waktu Aktif:</b>{" "}
-            {new Date(exam?.waktuMulai).toLocaleString("id-ID")} -{" "}
-            {new Date(exam?.waktuSelesai).toLocaleString("id-ID")}
+            {new Date(exam?.TanggalMulai).toLocaleString("id-ID")} -{" "}
+            {new Date(exam?.TanggalSelesai).toLocaleString("id-ID")}
           </p>
           <p>
             <b>Nilai Maksimal:</b> {exam?.nilaiMaksimal}
