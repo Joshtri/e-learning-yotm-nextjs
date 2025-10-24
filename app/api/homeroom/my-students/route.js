@@ -32,7 +32,7 @@ export async function GET(request) {
       include: { academicYear: true },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
@@ -65,7 +65,7 @@ export async function GET(request) {
       },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
