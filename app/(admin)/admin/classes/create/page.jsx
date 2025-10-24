@@ -18,6 +18,7 @@ export default function ClassCreatePage() {
   const [academicYears, setAcademicYears] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(null);
 
   const form = useForm({
     defaultValues: {
@@ -26,6 +27,18 @@ export default function ClassCreatePage() {
       academicYearId: "",
     },
   });
+
+  // Watch academicYearId untuk menampilkan info semester
+  const watchAcademicYearId = form.watch("academicYearId");
+
+  useEffect(() => {
+    if (watchAcademicYearId && academicYears.length > 0) {
+      const year = academicYears.find((y) => y.id === watchAcademicYearId);
+      setSelectedYear(year);
+    } else {
+      setSelectedYear(null);
+    }
+  }, [watchAcademicYearId, academicYears]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -93,8 +106,8 @@ export default function ClassCreatePage() {
           label: "Kembali ke daftar kelas",
         }}
         breadcrumbs={[
-          { title: "Kelas", href: "/admin/classes" },
-          { title: "Tambah Kelas" },
+          { label: "Kelas", href: "/admin/classes" },
+          { label: "Tambah Kelas" },
         ]}
       />
 
@@ -141,16 +154,42 @@ export default function ClassCreatePage() {
             <FormField
               control={form.control}
               name="academicYearId"
-              label="Tahun Ajaran"
+              label="Tahun Ajaran & Semester"
               type="select"
-              placeholder="Pilih tahun ajaran"
+              placeholder="Pilih tahun ajaran dan semester"
               required
               rules={{ required: "Tahun ajaran wajib dipilih" }}
               options={academicYears.map((y) => ({
                 value: y.id,
-                label: `${y.tahunMulai}/${y.tahunSelesai}`,
+                label: `${y.tahunMulai}/${y.tahunSelesai} - ${y.semester}${y.isActive ? " (Aktif)" : ""}`,
               }))}
             />
+
+            {selectedYear && (
+              <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm font-medium text-blue-900">
+                  📅 Informasi Tahun Ajaran yang Dipilih:
+                </p>
+                <ul className="mt-2 text-sm text-blue-800 space-y-1">
+                  <li>
+                    • <span className="font-medium">Tahun:</span>{" "}
+                    {selectedYear.tahunMulai}/{selectedYear.tahunSelesai}
+                  </li>
+                  <li>
+                    • <span className="font-medium">Semester:</span>{" "}
+                    {selectedYear.semester}
+                  </li>
+                  <li>
+                    • <span className="font-medium">Status:</span>{" "}
+                    {selectedYear.isActive ? (
+                      <span className="text-green-600 font-semibold">Aktif</span>
+                    ) : (
+                      <span className="text-gray-600">Tidak Aktif</span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
 
