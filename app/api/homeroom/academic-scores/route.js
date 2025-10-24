@@ -2,6 +2,9 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
+// Increase timeout for this route
+export const maxDuration = 300; // 5 minutes
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();
@@ -120,24 +123,32 @@ export async function GET(request) {
             program: true,
           },
         },
-        submissions: {
+      },
+    });
+
+    // Get submissions separately for better performance
+    const allSubmissions = await prisma.submission.findMany({
+      where: {
+        student: {
+          classId: kelas.id,
+          status: "ACTIVE",
+        },
+      },
+      include: {
+        assignment: {
           include: {
-            assignment: {
+            classSubjectTutor: {
               include: {
-                classSubjectTutor: {
-                  include: {
-                    subject: true,
-                  },
-                },
+                subject: true,
               },
             },
-            quiz: {
+          },
+        },
+        quiz: {
+          include: {
+            classSubjectTutor: {
               include: {
-                classSubjectTutor: {
-                  include: {
-                    subject: true,
-                  },
-                },
+                subject: true,
               },
             },
           },
@@ -145,9 +156,21 @@ export async function GET(request) {
       },
     });
 
+    // Group submissions by studentId for efficient lookup
+    const submissionsByStudent = {};
+    allSubmissions.forEach(sub => {
+      if (!submissionsByStudent[sub.studentId]) {
+        submissionsByStudent[sub.studentId] = [];
+      }
+      submissionsByStudent[sub.studentId].push(sub);
+    });
+
     const result = students.map((student) => {
+      // Get submissions for this student
+      const studentSubmissions = submissionsByStudent[student.id] || [];
+
       const kuisNilai = allQuizzes.map((quiz) => {
-        const s = student.submissions.find((sub) => sub.quizId === quiz.id);
+        const s = studentSubmissions.find((sub) => sub.quizId === quiz.id);
         return {
           id: quiz.id,
           judul: quiz.judul,
@@ -157,7 +180,7 @@ export async function GET(request) {
       });
 
       const tugasNilai = tugasList.map((asn) => {
-        const s = student.submissions.find(
+        const s = studentSubmissions.find(
           (sub) => sub.assignmentId === asn.id
         );
         return {
@@ -169,12 +192,12 @@ export async function GET(request) {
       });
 
       const nilaiUTS =
-        student.submissions.find(
+        studentSubmissions.find(
           (s) => s.assignment && s.assignment.jenis === "MIDTERM"
         )?.nilai ?? null;
 
       const nilaiUAS =
-        student.submissions.find(
+        studentSubmissions.find(
           (s) => s.assignment && s.assignment.jenis === "FINAL_EXAM"
         )?.nilai ?? null;
 
