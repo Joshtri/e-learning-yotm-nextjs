@@ -5,14 +5,14 @@ import { calculateAttendanceScore } from "@/lib/attendance-calculator";
 
 export async function POST(request) {
   try {
-    // const user = await getUserFromCookie();
+    const user = await getUserFromCookie();
 
-    // if (!user || user.role !== "HOMEROOM_TEACHER") {
-    //   return NextResponse.json(
-    //     { success: false, message: "Unauthorized" },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     const { academicYearId, classId, scores } = body;
