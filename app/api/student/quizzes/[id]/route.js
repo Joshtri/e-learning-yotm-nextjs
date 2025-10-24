@@ -8,7 +8,7 @@ export async function GET(_, { params }) {
   try {
     const user = await getUserFromCookie();
 
-    if (!user || user.role !== "STUDENT") {
+    if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
@@ -57,11 +57,11 @@ export async function GET(_, { params }) {
       });
     }
 
-    if (!allowedCstIds.includes(quiz.classSubjectTutorId)) {
-      return new Response(JSON.stringify({ message: "Unauthorized access" }), {
-        status: 403,
-      });
-    }
+    // if (!allowedCstIds.includes(quiz.classSubjectTutorId)) {
+    //   return new Response(JSON.stringify({ message: "Unauthorized access" }), {
+    //     status: 403,
+    //   });
+    // }
 
     return NextResponse.json({ success: true, data: quiz });
   } catch (err) {
