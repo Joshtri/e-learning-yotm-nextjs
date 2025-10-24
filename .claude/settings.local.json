@@ -12,7 +12,8 @@
       "Read(//d/**)",
       "Bash(cd:*)",
       "Bash(ls:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
