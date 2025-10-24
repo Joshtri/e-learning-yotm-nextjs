@@ -10,9 +10,8 @@
     "lint": "eslint .",
     "seed": "node prisma/seed.js",
     "db-seed": "prisma db seed",
-
     "seed:materi": "node prisma/seed-genap-materi.js",
-    "seed:tugas": "node prisma/seed-genap-tugas.js", 
+    "seed:tugas": "node prisma/seed-genap-tugas.js",
     "seed:uts-uas": "node prisma/seed-genap-uts-uas.js",
     "seed:genap-all": "npm run seed:materi && npm run seed:tugas && npm run seed:uts-uas"
   },
@@ -51,6 +50,8 @@
     "firebase": "^11.5.0",
     "framer-motion": "^12.6.2",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.485.0",
     "next": "15.2.4",
     "next-themes": "^0.4.6",
@@ -69,10 +70,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4"
   }
 }
