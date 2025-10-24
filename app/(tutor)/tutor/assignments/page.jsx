@@ -66,12 +66,18 @@ export default function TutorAssignmentPage() {
       const assignmentsData = res.data.data || [];
       setData(assignmentsData);
 
-      // Calculate stats
+      // Calculate stats dengan normalisasi UTC
       const now = new Date();
+      const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+
       const activeAssignments = assignmentsData.filter((assignment) => {
         const startDate = new Date(assignment.TanggalMulai || assignment.waktuMulai);
+        const startDateUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
         const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
-        return startDate <= now && endDate >= now;
+        const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+        return startDateUTC <= currentDateUTC && endDateUTC >= currentDateUTC;
       });
 
       // This would be replaced with actual API data in production
@@ -79,7 +85,8 @@ export default function TutorAssignmentPage() {
 
       const completedAssignments = assignmentsData.filter((assignment) => {
         const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
-        return endDate < now;
+        const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        return endDateUTC < currentDateUTC;
       });
 
       setStats({
@@ -117,13 +124,19 @@ export default function TutorAssignmentPage() {
   }, [data, searchQuery]);
 
   const getAssignmentStatus = (assignment) => {
+    // Normalisasi ke UTC midnight untuk perbandingan yang konsisten
     const now = new Date();
-    const startDate = new Date(assignment.TanggalMulai || assignment.waktuMulai);
-    const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
+    const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (startDate > now) {
+    const startDate = new Date(assignment.TanggalMulai || assignment.waktuMulai);
+    const startDateUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
+    const endDate = new Date(assignment.TanggalSelesai || assignment.waktuSelesai);
+    const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+    if (startDateUTC > currentDateUTC) {
       return { status: "pending", label: "Akan Datang" };
-    } else if (startDate <= now && endDate >= now) {
+    } else if (startDateUTC <= currentDateUTC && endDateUTC >= currentDateUTC) {
       return { status: "active", label: "Sedang Berlangsung" };
     } else {
       return { status: "completed", label: "Selesai" };
