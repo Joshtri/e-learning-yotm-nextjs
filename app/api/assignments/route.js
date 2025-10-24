@@ -3,24 +3,37 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const assignments = await prisma.assignment.findMany({
+      where: {
+        jenis: {
+          notIn: ["MIDTERM", "FINAL_EXAM"],
+        },
+      },
       include: {
         classSubjectTutor: {
           include: {
             class: {
               select: {
-                id: true, // <== tambahkan ini
+                id: true,
                 namaKelas: true,
+                academicYear: {
+                  select: {
+                    id: true,
+                    tahunMulai: true,
+                    tahunSelesai: true,
+                    semester: true,
+                  }
+                }
               },
             },
             subject: {
               select: {
-                id: true, // <== bisa juga ambil id mapel
+                id: true,
                 namaMapel: true,
               },
             },
             tutor: {
               select: {
-                id: true, // <== bisa juga ambil id tutor
+                id: true,
                 namaLengkap: true,
               },
             },
