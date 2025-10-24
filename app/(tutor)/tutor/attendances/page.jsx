@@ -160,9 +160,9 @@ export default function AttendanceClassListPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
-                        <Badge variant="secondary" className="mb-2">
+                        {/* <Badge variant="secondary" className="mb-2">
                           Kelas {index + 1}
-                        </Badge>
+                        </Badge> */}
                         <CardTitle className="text-lg">
                           {item.class.namaKelas}
                         </CardTitle>
