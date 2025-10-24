@@ -22,14 +22,28 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      setIsSidebarOpen(window.innerWidth >= 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsSidebarOpen(!mobile);
     };
 
     checkIfMobile();
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobile, isSidebarOpen]);
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
@@ -44,7 +58,7 @@ export default function AdminLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         > */}
-          <div className="flex h-full overflow-hidden bg-background">
+          <div className="flex min-h-screen bg-background">
             {/* Sidebar */}
             <AppSidebar
               role="admin"
@@ -59,8 +73,8 @@ export default function AdminLayout({ children }) {
               {/* Header */}
               <AppHeader role="admin" onMenuClick={toggleSidebar} />
 
-              {/* Scrollable content */}
-              <main className="flex-1 overflow-auto p-4 md:p-6">
+              {/* Scrollable content with padding-top for fixed header */}
+              <main className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">
                 {children}
               </main>
             </div>
