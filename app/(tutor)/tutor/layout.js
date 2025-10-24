@@ -19,25 +19,38 @@ const geistMono = Geist_Mono({
 });
 
 export default function TutorLayout({ children }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
+    const checkIfMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsSidebarOpen(!mobile);
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobile, isSidebarOpen]);
+
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -50,23 +63,17 @@ export default function TutorLayout({ children }) {
         <div className="flex min-h-screen bg-background">
           {/* Sidebar (desktop & mobile) */}
           <AppSidebar
-            role="tutor" // ✅ sidebar isi berdasarkan role tutor
+            role="tutor"
             isOpen={isSidebarOpen}
-            isMobileOpen={isMobileSidebarOpen}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            onToggleMobileSidebar={() =>
-              setIsMobileSidebarOpen(!isMobileSidebarOpen)
-            }
+            isMobile={isMobile}
+            onToggleSidebar={toggleSidebar}
+            onClose={() => setIsSidebarOpen(false)}
           />
 
           {/* Main Content */}
-          <div className="flex flex-1 flex-col">
-            <AppHeader
-              role="tutor"
-              onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            />
-
-            <div className="flex-1 p-6">{children}</div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <AppHeader role="tutor" onMenuClick={toggleSidebar} />
+            <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
           </div>
         </div>
         <Toaster richColors position="top-right" />
