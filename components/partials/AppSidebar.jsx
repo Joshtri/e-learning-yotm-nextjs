@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronDown, ChevronRight, LogOut, Settings, X } from "lucide-react";
+import { ChevronDown, ChevronRight, LogOut, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { navByRole } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import api from "@/lib/axios";
+import axios from "axios";
+import { toast } from "sonner";
 
 // Wrapper component for conditional tooltip
 const ConditionalTooltip = ({ children, content, showTooltip }) => {
@@ -88,7 +90,11 @@ const NavGroup = ({
 
           const isActive = pathname.startsWith(item.href);
           return (
-            <ConditionalTooltip key={item.href} content={item.title} showTooltip={!isOpen}>
+            <ConditionalTooltip
+              key={item.href}
+              content={item.title}
+              showTooltip={!isOpen}
+            >
               <Button
                 variant="ghost"
                 asChild
@@ -209,9 +215,10 @@ export function AppSidebar({
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "sticky top-0 hidden md:flex md:flex-col bg-gradient-to-b from-blue-600 to-blue-700 transition-all h-screen shadow-xl ",
+          "sticky top-0 hidden md:flex md:flex-col bg-gradient-to-b from-blue-600 to-blue-700 transition-all shadow-xl",
           isOpen ? "md:w-64" : "md:w-16"
         )}
+        style={{ height: "100vh" }}
       >
         <SidebarHeader
           href={baseHref}
@@ -288,7 +295,7 @@ function SidebarNav({
   currentSemester,
 }) {
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1 overflow-hidden">
       <nav className="flex flex-col px-3 py-4">
         {groups.map((group) => (
           <NavGroup
@@ -305,9 +312,43 @@ function SidebarNav({
   );
 }
 
+function LogoutButton({ isOpen }) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout");
+      toast.success("Berhasil logout!");
+      router.push("/");
+    } catch {
+      toast.error("Gagal logout");
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleLogout}
+      variant="ghost"
+      className={cn(
+        "flex w-full items-center gap-2 text-red-500 hover:text-red-600 justify-start transition-colors"
+      )}
+    >
+      <LogOut className="h-4 w-4" />
+      <span
+        className={cn(
+          "transition-opacity text-sm",
+          isOpen ? "opacity-100" : "opacity-0"
+        )}
+      >
+        Keluar
+      </span>
+    </Button>
+  );
+}
+
 function SidebarFooter({ role, isOpen }) {
   return (
-    <div className="border-t border-blue-500/30 p-3">
+    <div className="border-t border-blue-500/30 p-3 flex-shrink-0 mt-auto">
       {role === "admin" && <></>}
       <ConditionalTooltip content="Keluar" showTooltip={!isOpen}>
         <Button
@@ -315,17 +356,7 @@ function SidebarFooter({ role, isOpen }) {
           asChild
           className="justify-start w-full text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-colors"
         >
-          <Link href="/login" className="flex items-center gap-3">
-            <LogOut className="h-4 w-4" />
-            <span
-              className={cn(
-                "transition-opacity",
-                isOpen ? "opacity-100" : "opacity-0"
-              )}
-            >
-              Keluar
-            </span>
-          </Link>
+          <LogoutButton isOpen={isOpen} />
         </Button>
       </ConditionalTooltip>
     </div>
