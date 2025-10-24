@@ -61,7 +61,12 @@ export default function StudentOtherScoresPage() {
     {
       header: "Nilai",
       accessorKey: "nilai",
-      cell: (row) => (row.nilai !== null ? `${row.nilai}` : "-"),
+      cell: (row) => {
+        const nilai = row.nilai;
+        return nilai !== null && nilai !== undefined
+          ? parseFloat(nilai).toFixed(2)
+          : "-";
+      },
     },
     {
       header: "Status",
