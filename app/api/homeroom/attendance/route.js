@@ -34,6 +34,13 @@ export async function GET(req) {
       );
     }
 
+    const getStartDate = new Date(tahun, bulan - 1, 1);
+    const getEndDate = new Date(tahun, bulan, 0);
+
+    console.log("DEBUG GET - bulan:", bulan, "tahun:", tahun);
+    console.log("DEBUG GET - startDate:", getStartDate);
+    console.log("DEBUG GET - endDate:", getEndDate);
+
     const kelas = await prisma.class.findFirst({
       where: {
         homeroomTeacherId: tutor.id,
@@ -49,8 +56,8 @@ export async function GET(req) {
             Attendance: {
               where: {
                 date: {
-                  gte: new Date(tahun, bulan - 1, 1),
-                  lte: new Date(tahun, bulan, 0), // Correctly get the last day of the month
+                  gte: getStartDate,
+                  lte: getEndDate,
                 },
               },
               include: {
@@ -62,6 +69,11 @@ export async function GET(req) {
         academicYear: true, // Include academicYear for the class itself
       },
     });
+
+    if (kelas) {
+      const totalAttendances = kelas.students.reduce((sum, student) => sum + student.Attendance.length, 0);
+      console.log("DEBUG GET - Total attendances found:", totalAttendances);
+    }
 
     if (!kelas) {
       // If no class is assigned to the homeroom teacher at all, return empty.
@@ -149,23 +161,56 @@ export async function DELETE(req) {
 
     const studentIds = kelas.students.map((s) => s.id);
     const startDate = new Date(tahun, bulan - 1, 1);
-    const endDate = new Date(tahun, bulan, 0); // hari terakhir bulan tsb
+    const endDate = new Date(tahun, bulan, 0, 23, 59, 59, 999); // hari terakhir bulan + waktu
 
-    // Hapus attendance lewat filter di AttendanceSession.tanggal
-    const deletedAttendances = await prisma.attendance.deleteMany({
+    console.log("DEBUG Delete - classId:", kelas.id);
+    console.log("DEBUG Delete - studentIds:", studentIds);
+    console.log("DEBUG Delete - startDate:", startDate);
+    console.log("DEBUG Delete - endDate:", endDate);
+
+    // Langkah 1: Cek data attendance yang ada
+    const existingAttendances = await prisma.attendance.findMany({
       where: {
         studentId: { in: studentIds },
-        AttendanceSession: { // relasi sesuai schema (huruf besar)
-          tanggal: {
-            gte: startDate,
-            lte: endDate,
-          },
-          classId: kelas.id,
+        classId: kelas.id,
+        date: {
+          gte: startDate,
+          lte: endDate,
         },
       },
     });
 
-    // Hapus session presensi juga
+    console.log("DEBUG - Found attendances:", existingAttendances.length);
+
+    // Langkah 2: Cek session yang ada
+    const existingSessions = await prisma.attendanceSession.findMany({
+      where: {
+        classId: kelas.id,
+        tanggal: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    console.log("DEBUG - Found sessions:", existingSessions.length);
+    console.log("DEBUG - Sessions detail:", existingSessions);
+
+    // Langkah 3: Hapus attendance terlebih dahulu (karena foreign key)
+    const deletedAttendances = await prisma.attendance.deleteMany({
+      where: {
+        studentId: { in: studentIds },
+        classId: kelas.id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    console.log("DEBUG - Deleted attendances count:", deletedAttendances.count);
+
+    // Langkah 4: Hapus session presensi
     const deletedSessions = await prisma.attendanceSession.deleteMany({
       where: {
         classId: kelas.id,
@@ -175,6 +220,8 @@ export async function DELETE(req) {
         },
       },
     });
+
+    console.log("DEBUG - Deleted sessions count:", deletedSessions.count);
 
     return NextResponse.json({
       success: true,
