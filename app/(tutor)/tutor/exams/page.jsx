@@ -74,22 +74,30 @@ export default function TutorExamsPage() {
       const examsData = res.data.data || [];
       setData(examsData);
 
-      // Calculate stats
+      // Calculate stats dengan normalisasi UTC
       const now = new Date();
+      const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+
       const activeExams = examsData.filter((exam) => {
         const startDate = new Date(exam.TanggalMulai);
+        const startDateUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
         const endDate = new Date(exam.TanggalSelesai);
-        return startDate <= now && endDate >= now;
+        const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+        return startDateUTC <= currentDateUTC && endDateUTC >= currentDateUTC;
       });
 
       const upcomingExams = examsData.filter((exam) => {
         const startDate = new Date(exam.TanggalMulai);
-        return startDate > now;
+        const startDateUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        return startDateUTC > currentDateUTC;
       });
 
       const completedExams = examsData.filter((exam) => {
         const endDate = new Date(exam.TanggalSelesai);
-        return endDate < now;
+        const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        return endDateUTC < currentDateUTC;
       });
 
       setStats({
@@ -127,12 +135,18 @@ export default function TutorExamsPage() {
   }, [data, searchQuery]);
 
   const getExamStatus = (exam) => {
+    // Normalisasi ke UTC midnight untuk perbandingan yang konsisten
     const now = new Date();
-    const start = new Date(exam.TanggalMulai);
-    const end = new Date(exam.TanggalSelesai);
+    const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (start > now) return { status: "pending", label: "Akan Datang" };
-    if (start <= now && end >= now)
+    const start = new Date(exam.TanggalMulai);
+    const startDateUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+
+    const end = new Date(exam.TanggalSelesai);
+    const endDateUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+
+    if (startDateUTC > currentDateUTC) return { status: "pending", label: "Akan Datang" };
+    if (startDateUTC <= currentDateUTC && endDateUTC >= currentDateUTC)
       return { status: "active", label: "Sedang Berlangsung" };
     return { status: "completed", label: "Selesai" };
   };
