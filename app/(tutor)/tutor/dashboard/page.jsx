@@ -354,7 +354,7 @@ export default function TutorDashboardPage() {
                       className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                       onClick={() =>
                         router.push(
-                          `/tutor/classes/${cls.classId}/subjects/${cls.subject}`
+                          `/tutor/classes/${cls.classId}/subjects/${encodeURIComponent(cls.subject)}`
                         )
                       }
                     >
