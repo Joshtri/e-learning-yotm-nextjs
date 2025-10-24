@@ -3,14 +3,15 @@
 import { ChevronDown, ChevronRight, LogOut, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { navByRole } from "@/config/navigation";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 
-const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup }) => {
+const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup, currentSemester }) => {
   const pathname = usePathname();
   const isGroupExpanded = expandedGroups[group.title];
 
@@ -43,6 +44,13 @@ const NavGroup = ({ group, isOpen, expandedGroups, toggleGroup }) => {
         )}
       >
         {group.items.map((item) => {
+          // Filter berdasarkan semester untuk homeroom
+          if (item.showOnSemester && currentSemester) {
+            if (item.showOnSemester !== currentSemester) {
+              return null; // Skip item ini
+            }
+          }
+
           const isActive = pathname.startsWith(item.href);
           return (
             <Button
@@ -86,10 +94,30 @@ export function AppSidebar({
   onClose,
 }) {
   const navigationGroups = navByRole[role] || [];
+  const [currentSemester, setCurrentSemester] = useState(null);
 
   const [expandedGroups, setExpandedGroups] = useState(
     Object.fromEntries(navigationGroups.map((g) => [g.title, true]))
   );
+
+  useEffect(() => {
+    // Fetch semester info untuk homeroom
+    if (role === "homeroom") {
+      fetchSemesterInfo();
+    }
+  }, [role]);
+
+  const fetchSemesterInfo = async () => {
+    try {
+      const res = await api.get("/homeroom/dashboard");
+      const classInfo = res.data.data?.classInfo;
+      if (classInfo?.academicYear?.semester) {
+        setCurrentSemester(classInfo.academicYear.semester);
+      }
+    } catch (error) {
+      console.error("Error fetching semester info:", error);
+    }
+  };
 
   const toggleGroup = (title) => {
     setExpandedGroups((prev) => ({
@@ -112,6 +140,7 @@ export function AppSidebar({
             isOpen
             toggleGroup={toggleGroup}
             expandedGroups={expandedGroups}
+            currentSemester={currentSemester}
           />
           <SidebarFooter role={role} isOpen />
         </aside>
@@ -136,6 +165,7 @@ export function AppSidebar({
         isOpen={isOpen}
         toggleGroup={toggleGroup}
         expandedGroups={expandedGroups}
+        currentSemester={currentSemester}
       />
       <SidebarFooter role={role} isOpen={isOpen} />
     </aside>
@@ -185,7 +215,7 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
   );
 }
 
-function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
+function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups, currentSemester }) {
   return (
     <div className="flex-1 overflow-auto custom-scroll">
       <nav className="flex flex-col px-3 py-4">
@@ -196,6 +226,7 @@ function SidebarNav({ groups, isOpen, toggleGroup, expandedGroups }) {
             isOpen={isOpen}
             expandedGroups={expandedGroups}
             toggleGroup={toggleGroup}
+            currentSemester={currentSemester}
           />
         ))}
       </nav>
