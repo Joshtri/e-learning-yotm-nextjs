@@ -76,21 +76,20 @@ export default function StudentSubjectsPage() {
   }, [selectedAcademicYearId]);
 
   const getAssignmentWindowState = (tugas) => {
+    // Normalisasi ke UTC midnight untuk perbandingan yang konsisten
     const now = new Date();
-    const currentDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
+    const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
     if (tugas.TanggalMulai) {
       const startDate = new Date(tugas.TanggalMulai);
-      if (currentDate < startDate) return "not_open"; // belum mulai
+      const startDateUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      if (currentDateUTC < startDateUTC) return "not_open"; // belum mulai
     }
 
     if (tugas.TanggalSelesai) {
       const endDate = new Date(tugas.TanggalSelesai);
-      if (currentDate > endDate) return "closed"; // sudah selesai
+      const endDateUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      if (currentDateUTC > endDateUTC) return "closed"; // sudah selesai
     }
 
     return "open"; // sedang berjalan
