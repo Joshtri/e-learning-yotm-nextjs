@@ -12,13 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
-import { Loader2, Menu } from "lucide-react";
+import { ArrowUp, Loader2, Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { NotificationDropdown } from "../ui/notification-dropdown";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import useScrollTop from "@/hooks/useScrollTop";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
@@ -26,6 +27,9 @@ export default function AppHeader({ onMenuClick, role }) {
   const [user, setUser] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+
+  // Show scroll button after scrolling 200px
+  const scrolled = useScrollTop(200);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -89,35 +93,44 @@ export default function AppHeader({ onMenuClick, role }) {
     role === "student" ? "SI" : role === "tutor" ? "TR" : "AD";
   const displayName = user?.nama || "User";
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
+
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-blue-300 bg-gradient-to-r from-blue-500 to-blue-600 px-4 md:px-6">
-      {/* Left */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMenuClick}
-          className="md:hidden hover:bg-blue-400 text-white"
-        >
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle Menu</span>
-        </Button>
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-blue-300 bg-gradient-to-r from-blue-500 to-blue-600 px-4 md:px-6 shadow-md">
+        {/* Left */}
+        <div className="flex items-center gap-4">
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMenuClick}
+            className="md:hidden hover:bg-blue-400/50 text-white transition-colors"
+            aria-label="Toggle Menu"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
 
-        {/* ✅ GANTI DENGAN WIDGET */}
-        <div className="hidden md:block">
-          <HeaderDateTimeWidget />
-        </div>
-      </div>
-
-      {/* Right */}
-      <div className="flex items-center gap-2 md:gap-4 pr-1">
-        <div className="hidden md:flex relative">
-          <span className="sr-only">Notifikasi</span>
-          {user && <NotificationDropdown userId={user.id} />}
+          {/* Desktop Date/Time Widget */}
+          <div className="hidden md:block">
+            <HeaderDateTimeWidget />
+          </div>
         </div>
 
-        {/* User dropdown */}
-        <DropdownMenu>
+        {/* Right */}
+        <div className="flex items-center gap-2 md:gap-4 pr-1">
+          <div className="hidden md:flex relative">
+            <span className="sr-only">Notifikasi</span>
+            {user && <NotificationDropdown userId={user.id} />}
+          </div>
+
+          {/* User dropdown */}
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -192,19 +205,33 @@ export default function AppHeader({ onMenuClick, role }) {
         </DropdownMenu>
       </div>
 
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        open={showSwitchConfirm}
-        onOpenChange={setShowSwitchConfirm}
-        title="Konfirmasi Perpindahan Mode"
-        description={`Anda akan berpindah ke ${
-          mode === "homeroom" ? "Mode Tutor" : "Mode Wali Kelas"
-        }. Halaman akan dialihkan ke dashboard yang sesuai. Apakah Anda yakin?`}
-        confirmText="Ya, Pindah Mode"
-        cancelText="Batal"
-        onConfirm={handleSwitchMode}
-        isLoading={isSwitching}
-      />
-    </header>
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+          open={showSwitchConfirm}
+          onOpenChange={setShowSwitchConfirm}
+          title="Konfirmasi Perpindahan Mode"
+          description={`Anda akan berpindah ke ${
+            mode === "homeroom" ? "Mode Tutor" : "Mode Wali Kelas"
+          }. Halaman akan dialihkan ke dashboard yang sesuai. Apakah Anda yakin?`}
+          confirmText="Ya, Pindah Mode"
+          cancelText="Batal"
+          onConfirm={handleSwitchMode}
+          isLoading={isSwitching}
+        />
+      </header>
+
+      {/* Floating Scroll to Top Button - Fixed position */}
+      {scrolled && (
+        <Button
+          variant="default"
+          size="icon"
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 md:bottom-8 md:right-8"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
+    </>
   );
 }
