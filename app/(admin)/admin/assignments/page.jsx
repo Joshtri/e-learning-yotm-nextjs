@@ -38,8 +38,12 @@ export default function AssignmentPage() {
     const map = new Map();
     data.forEach((item) => {
       const cls = item.classSubjectTutor?.class;
-      if (cls && cls.id && !map.has(cls.id)) {
-        map.set(cls.id, cls.namaKelas);
+      if (cls?.id && !map.has(cls.id)) {
+        const academicYear = cls.academicYear;
+        const label = academicYear
+          ? `${cls.namaKelas} (${academicYear.tahunMulai}/${academicYear.tahunSelesai} - ${academicYear.semester})`
+          : cls.namaKelas;
+        map.set(cls.id, { name: cls.namaKelas, label, academicYear });
       }
     });
     return Array.from(map.entries()); // [ [id, namaKelas], ... ]
@@ -78,6 +82,19 @@ export default function AssignmentPage() {
     {
       header: "Kelas",
       cell: (row) => row.classSubjectTutor?.class?.namaKelas || "-",
+    },
+    {
+      header: "Tahun Ajaran",
+      cell: (row) => {
+        const academicYear = row.classSubjectTutor?.class?.academicYear;
+        return academicYear
+          ? `${academicYear.tahunMulai}/${academicYear.tahunSelesai}`
+          : "-";
+      },
+    },
+    {
+      header: "Semester",
+      cell: (row) => row.classSubjectTutor?.class?.academicYear?.semester || "-",
     },
     {
       header: "Mapel",
@@ -129,9 +146,9 @@ export default function AssignmentPage() {
           <Tabs value={activeClass} onValueChange={setActiveClass}>
             <TabsList>
               <TabsTrigger value="all">Semua Kelas</TabsTrigger>
-              {classOptions.map(([id, name]) => (
+              {classOptions.map(([id, { label }]) => (
                 <TabsTrigger key={id} value={id}>
-                  {name}
+                  {label}
                 </TabsTrigger>
               ))}
             </TabsList>
