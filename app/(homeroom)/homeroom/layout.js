@@ -23,14 +23,28 @@ export default function HomeroomLayout({ children }) {
 
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      setIsSidebarOpen(window.innerWidth >= 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsSidebarOpen(!mobile);
     };
 
     checkIfMobile();
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobile, isSidebarOpen]);
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
@@ -55,7 +69,7 @@ export default function HomeroomLayout({ children }) {
             />
             <div className="flex-1 flex flex-col overflow-hidden">
               <AppHeader role="tutor" onMenuClick={toggleSidebar} />
-              <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
+              <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
             </div>
           </div>
         {/* </ThemeProvider> */}
