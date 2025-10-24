@@ -66,6 +66,7 @@ export async function GET(request) {
                 tahunMulai: true,
                 tahunSelesai: true,
                 isActive: true,
+                semester: true,
               },
             },
             program: {
