@@ -7,14 +7,14 @@ import { calculateAttendanceScore } from "@/lib/attendance-calculator";
 
 export async function GET(request) {
   try {
-    // const user = await getUserFromCookie();
+    const user = await getUserFromCookie();
 
-    // if (!user || user.role !== "HOMEROOM_TEACHER") {
-    //   return NextResponse.json(
-    //     { success: false, message: "Unauthorized" },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const classId = searchParams.get("classId");
@@ -25,7 +25,7 @@ export async function GET(request) {
         { status: 400 }
       );
     }
-    
+
     const kelas = await prisma.class.findUnique({
       where: { id: classId },
       select: {
@@ -63,7 +63,7 @@ export async function GET(request) {
         BehaviorScore: {
           where: {
             academicYearId,
-            classId
+            classId,
           },
           select: {
             spiritual: true,
@@ -105,12 +105,14 @@ export async function GET(request) {
         id: kelas.academicYear.id,
         tahunAjaran: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
         semester: kelas.academicYear.semester,
-        keterangan: kelas.academicYear.semester === "GENAP"
-          ? "Semester Genap - Digunakan untuk kenaikan kelas"
-          : "Semester Ganjil",
+        keterangan:
+          kelas.academicYear.semester === "GENAP"
+            ? "Semester Genap - Digunakan untuk kenaikan kelas"
+            : "Semester Ganjil",
       },
       kehadiranInfo: {
-        keterangan: "Nilai kehadiran dihitung otomatis dari data absensi siswa sepanjang tahun ajaran ini",
+        keterangan:
+          "Nilai kehadiran dihitung otomatis dari data absensi siswa sepanjang tahun ajaran ini",
         rumus: "Bobot: PRESENT=100, SICK=75, EXCUSED=50, ABSENT=0",
       },
     });
