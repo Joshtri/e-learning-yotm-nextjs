@@ -70,13 +70,19 @@ export default function TutorQuizPage() {
   }, [data, searchQuery]);
 
   const getQuizStatus = (quiz) => {
+    // Normalisasi ke UTC untuk perbandingan yang konsisten
     const now = new Date();
-    const startDate = new Date(quiz.waktuMulai);
-    const endDate = new Date(quiz.waktuSelesai);
+    const currentTime = now.getTime();
 
-    if (startDate > now) {
+    const startDate = new Date(quiz.waktuMulai);
+    const startTime = startDate.getTime();
+
+    const endDate = new Date(quiz.waktuSelesai);
+    const endTime = endDate.getTime();
+
+    if (startTime > currentTime) {
       return { status: "pending", label: "Akan Datang" };
-    } else if (startDate <= now && endDate >= now) {
+    } else if (startTime <= currentTime && endTime >= currentTime) {
       return { status: "active", label: "Sedang Berlangsung" };
     } else {
       return { status: "completed", label: "Selesai" };
