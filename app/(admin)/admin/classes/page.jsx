@@ -42,7 +42,7 @@ export default function ClassesPage() {
   const groupedByYear = classes.reduce((acc, cls) => {
     const ay = cls.academicYear;
     const label = ay
-      ? `${ay.tahunMulai}/${ay.tahunSelesai}`
+      ? `${ay.tahunMulai}/${ay.tahunSelesai} - ${ay.semester}`
       : "Tidak Diketahui";
     if (!acc[label]) acc[label] = [];
     acc[label].push(cls);
@@ -71,6 +71,17 @@ export default function ClassesPage() {
     {
       header: "Program",
       cell: (row) => row.program?.namaPaket || "-",
+    },
+    {
+      header: "Tahun Ajaran",
+      cell: (row) => {
+        const ay = row.academicYear;
+        return ay ? `${ay.tahunMulai}/${ay.tahunSelesai}` : "-";
+      },
+    },
+    {
+      header: "Semester",
+      cell: (row) => row.academicYear?.semester || "-",
     },
     {
       header: "Wali Kelas",
