@@ -19,7 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon, CalendarIcon } from "lucide-react";
+import { InfoIcon, CalendarIcon, Loader2 } from "lucide-react";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 export default function InputBehaviorScoresPage() {
   const { classId } = useParams();
@@ -29,6 +30,8 @@ export default function InputBehaviorScoresPage() {
   const [scores, setScores] = useState({});
   const [academicYearInfo, setAcademicYearInfo] = useState(null);
   const [kehadiranInfo, setKehadiranInfo] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -89,20 +92,27 @@ export default function InputBehaviorScoresPage() {
     toast.success("Nilai default (70) berhasil diterapkan untuk semua siswa");
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     try {
+      setIsSubmitting(true);
+      setShowConfirmDialog(false);
+
       if (students.length === 0) {
         toast.error("Tidak ada data siswa");
         return;
       }
-  
+
       const academicYearId = students[0]?.class?.academicYearId || students[0]?.academicYearId;
-  
+
       if (!academicYearId) {
         toast.error("Tahun ajaran tidak ditemukan di data siswa");
         return;
       }
-  
+
       const payload = Object.entries(scores).map(([studentId, data]) => ({
         studentId,
         spiritual: parseFloat(data.spiritual || 0),
@@ -110,18 +120,20 @@ export default function InputBehaviorScoresPage() {
         kehadiran: parseFloat(data.kehadiran || 0),
         catatan: data.catatan || "",
       }));
-  
+
       await api.post("/homeroom/behavior-scores/submit", {
         classId,
         academicYearId,
         scores: payload,
       });
-  
+
       toast.success("Berhasil menyimpan nilai sikap!");
       router.push("/homeroom/behavior-scores");
     } catch (error) {
       console.error(error);
       toast.error("Gagal menyimpan nilai sikap");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -274,10 +286,34 @@ export default function InputBehaviorScoresPage() {
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={handleSubmit}>Simpan Nilai Sikap</Button>
+            <Button
+              onClick={handleSubmitClick}
+              disabled={isSubmitting || students.length === 0}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                "Simpan Nilai Sikap"
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="Konfirmasi Simpan Nilai Sikap"
+        description={`Anda akan menyimpan nilai sikap untuk ${students.length} siswa. Data yang tersimpan akan digunakan untuk pelaporan nilai semester. Apakah Anda yakin ingin melanjutkan?`}
+        confirmText="Ya, Simpan Data"
+        cancelText="Batal"
+        onConfirm={handleConfirmSubmit}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }
