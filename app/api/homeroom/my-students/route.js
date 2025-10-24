@@ -82,14 +82,40 @@ export async function GET(request) {
       );
     }
 
-    const students = await prisma.student.findMany({
-      where: {
-        classId: kelas.id,
-      },
-      orderBy: {
-        namaLengkap: "asc",
-      },
-    });
+    // Check if this is the current active academic year
+    const isCurrentYear = kelas.academicYear.isActive;
+
+    let students = [];
+
+    if (isCurrentYear) {
+      // For current year, get students directly from classId
+      students = await prisma.student.findMany({
+        where: {
+          classId: kelas.id,
+        },
+        orderBy: {
+          namaLengkap: "asc",
+        },
+      });
+    } else {
+      // For historical years, use StudentClassHistory
+      const studentHistories = await prisma.studentClassHistory.findMany({
+        where: {
+          classId: kelas.id,
+          academicYearId: kelas.academicYear.id,
+        },
+        include: {
+          student: true,
+        },
+        orderBy: {
+          student: {
+            namaLengkap: "asc",
+          },
+        },
+      });
+
+      students = studentHistories.map((history) => history.student);
+    }
 
     return NextResponse.json({
       success: true,
