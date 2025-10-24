@@ -82,12 +82,18 @@ export default function StudentQuizListPage() {
 
   // 🔹 Helper untuk status kuis berdasarkan waktu
   const getQuizStatus = (quiz) => {
+    // Normalisasi ke timestamp untuk perbandingan yang konsisten
     const now = new Date();
-    const start = new Date(quiz.waktuMulai);
-    const end = new Date(quiz.waktuSelesai);
+    const currentTime = now.getTime();
 
-    if (now < start) return "upcoming"; // belum mulai
-    if (now > end) return "ended"; // sudah selesai
+    const start = new Date(quiz.waktuMulai);
+    const startTime = start.getTime();
+
+    const end = new Date(quiz.waktuSelesai);
+    const endTime = end.getTime();
+
+    if (currentTime < startTime) return "upcoming"; // belum mulai
+    if (currentTime > endTime) return "ended"; // sudah selesai
     return "active"; // sedang berlangsung
   };
 
