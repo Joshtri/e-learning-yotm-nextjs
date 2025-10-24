@@ -24,15 +24,11 @@ export async function GET() {
       );
     }
 
-    // 🔥 Cari kelas yang dipegang sebagai wali kelas (kelas terbaru dengan siswa aktif)
-    const kelas = await prisma.class.findFirst({
+    // 🔥 Cari kelas yang dipegang sebagai wali kelas
+    // Prioritas: tahun akademik terbaru, yang punya siswa aktif
+    const allClasses = await prisma.class.findMany({
       where: {
         homeroomTeacherId: tutor.id,
-        students: {
-          some: {
-            status: "ACTIVE",
-          },
-        },
       },
       include: {
         students: {
@@ -43,11 +39,11 @@ export async function GET() {
       },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
+        { academicYear: { semester: "desc" } }, // GENAP dulu, baru GANJIL
       ],
     });
 
-    if (!kelas) {
+    if (!allClasses || allClasses.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -55,6 +51,14 @@ export async function GET() {
         },
         { status: 404 }
       );
+    }
+
+    // Pilih kelas yang punya siswa aktif, jika tidak ada ambil yang terbaru
+    let kelas = allClasses.find((cls) => cls.students.length > 0);
+
+    // Jika tidak ada kelas dengan siswa aktif, ambil kelas terbaru
+    if (!kelas) {
+      kelas = allClasses[0];
     }
 
     const { students } = kelas;
