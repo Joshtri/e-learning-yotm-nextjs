@@ -30,15 +30,26 @@ export default function DailyExamsPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+
+      const params = {};
+      if (selectedYear !== "all") {
+        params.academicYearId = selectedYear;
+      }
+      if (selectedSemester !== "all") {
+        params.semester = selectedSemester;
+      }
+
       const [examRes, subjectRes, yearRes] = await Promise.all([
-        api.get("/student/daily-exams", { params: { academicYearId: selectedYear === "all" ? undefined : selectedYear, semester: selectedSemester === "all" ? undefined : selectedSemester } }),
+        api.get("/student/daily-exams", { params }),
         api.get("/subjects"),
         api.get("/academic-years"),
       ]);
-      setData(examRes.data.data);
+
+      setData(examRes.data.data || []);
       setSubjects(subjectRes.data.data.subjects || []);
-      setAcademicYears(yearRes.data.data.academicYears);
+      setAcademicYears(yearRes.data.data.academicYears || []);
     } catch (err) {
+      console.error("Error fetching daily exams:", err);
       toast.error("Gagal memuat data ujian harian");
     } finally {
       setIsLoading(false);
@@ -51,12 +62,11 @@ export default function DailyExamsPage() {
 
   useEffect(() => {
     if (academicYears.length > 0 && selectedYear === "all") {
-      const activeYear = academicYears.find(ay => ay.isActive);
+      const activeYear = academicYears.find((ay) => ay.isActive);
       if (activeYear) {
         setSelectedYear(activeYear.id);
       } else {
-        const latestYear = academicYears[0];
-        setSelectedYear(latestYear.id);
+        setSelectedYear(academicYears[0].id);
       }
     }
   }, [academicYears, selectedYear]);
@@ -72,17 +82,45 @@ export default function DailyExamsPage() {
     return matchSearch && matchSubject;
   });
 
+  const getExamStatus = (exam) => {
+    const now = new Date();
+    const start = new Date(exam.waktuMulai);
+    const end = new Date(exam.waktuSelesai);
+
+    if (exam.sudahDikerjakan) {
+      return { label: "Selesai", variant: "success" };
+    }
+
+    if (now >= start && now <= end) {
+      return { label: "Sedang Berlangsung", variant: "default" };
+    }
+
+    if (now < start) {
+      return { label: "Belum Dimulai", variant: "secondary" };
+    }
+
+    return { label: "Sudah Berakhir", variant: "destructive" };
+  };
+
   const columns = [
-    { header: "Judul", cell: (row) => row.judul },
+    {
+      header: "Judul",
+      cell: (row) => (
+        <div className="font-medium">{row.judul}</div>
+      )
+    },
     {
       header: "Jenis Ujian",
       cell: (row) => (
-        <Badge variant="secondary">
+        <Badge variant="outline">
           {row.jenis === "DAILY_TEST" ? "Ujian Harian" : "Ujian Awal Semester"}
         </Badge>
       ),
     },
-    { header: "Mata Pelajaran", cell: (row) => row.subject?.namaMapel || "-" },
+    {
+      header: "Mata Pelajaran",
+      cell: (row) => row.subject?.namaMapel || "-"
+    },
     {
       header: "Tahun Ajaran",
       cell: (row) =>
@@ -90,51 +128,64 @@ export default function DailyExamsPage() {
           ? `${row.class.academicYear.tahunMulai}/${row.class.academicYear.tahunSelesai} - ${row.class.academicYear.semester}`
           : "-",
     },
-    { header: "Tutor", cell: (row) => row.tutor?.namaLengkap || "-" },
     {
-      header: "Waktu",
-      cell: (row) =>
-        `${new Date(row.waktuMulai).toLocaleString("id-ID")} - ${new Date(
-          row.waktuSelesai
-        ).toLocaleString("id-ID")}`,
+      header: "Tutor",
+      cell: (row) => row.tutor?.namaLengkap || "-"
+    },
+    {
+      header: "Waktu Mulai",
+      cell: (row) => {
+        const date = new Date(row.waktuMulai);
+        return date.toLocaleString("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      },
+    },
+    {
+      header: "Waktu Selesai",
+      cell: (row) => {
+        const date = new Date(row.waktuSelesai);
+        return date.toLocaleString("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      },
     },
     {
       header: "Status",
       cell: (row) => {
-        const now = new Date();
-        if (row.sudahDikerjakan) return "Selesai";
-        if (
-          now >= new Date(row.waktuMulai) &&
-          now <= new Date(row.waktuSelesai)
-        )
-          return "Sedang Dikerjakan";
-        return "Belum Dikerjakan";
+        const status = getExamStatus(row);
+        return <Badge variant={status.variant}>{status.label}</Badge>;
       },
     },
     {
       header: "Aksi",
       cell: (row) => {
         const now = new Date();
-        const mulai = new Date(row.waktuMulai);
-        const selesai = new Date(row.waktuSelesai);
-        const sudahDikerjakan = row.sudahDikerjakan;
+        const start = new Date(row.waktuMulai);
+        const end = new Date(row.waktuSelesai);
 
-        if (sudahDikerjakan) {
-          return <span className="text-green-600">✅ Selesai</span>;
+        if (row.sudahDikerjakan) {
+          return <span className="text-green-600 font-medium">✓ Selesai</span>;
         }
 
-        if (now >= mulai && now <= selesai) {
+        if (now >= start && now <= end) {
           return (
             <a
               href={`/siswa/daily-exams/${row.id}/start`}
-              className="text-sm text-blue-600 underline hover:text-blue-800"
+              className="text-sm text-blue-600 underline hover:text-blue-800 font-medium"
             >
               Kerjakan
             </a>
           );
         }
 
-        return <span className="text-muted-foreground">Belum tersedia</span>;
+        if (now < start) {
+          return <span className="text-muted-foreground text-sm">Belum dimulai</span>;
+        }
+
+        return <span className="text-muted-foreground text-sm">Sudah berakhir</span>;
       },
     },
   ];
@@ -145,7 +196,7 @@ export default function DailyExamsPage() {
         <main className="p-6 space-y-4">
           <PageHeader
             title="Ujian Harian & Awal Semester"
-            description="Daftar ujian harian dan awal semester Anda"
+            description="Daftar ujian harian dan ujian awal semester yang tersedia"
             breadcrumbs={[
               { label: "Dashboard", href: "/siswa/dashboard" },
               { label: "Ujian Harian & Awal Semester" },
@@ -156,20 +207,20 @@ export default function DailyExamsPage() {
             <DataToolbar
               searchValue={search}
               onSearchChange={setSearch}
-              searchPlaceholder="Cari judul atau mapel..."
+              searchPlaceholder="Cari judul atau mata pelajaran..."
               filterOptions={[
                 {
                   label: "Mata Pelajaran",
                   content: (
                     <Select
                       value={selectedSubject}
-                      onValueChange={(val) => setSelectedSubject(val)}
+                      onValueChange={setSelectedSubject}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Pilih Mapel" />
+                        <SelectValue placeholder="Pilih Mata Pelajaran" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Semua Mapel</SelectItem>
+                        <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
                         {subjects.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.namaMapel}
@@ -184,19 +235,18 @@ export default function DailyExamsPage() {
                   content: (
                     <Select
                       value={selectedYear}
-                      onValueChange={(val) => setSelectedYear(val)}
+                      onValueChange={setSelectedYear}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih Tahun Ajaran" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Semua Tahun</SelectItem>
-                        {Array.isArray(academicYears) &&
-                          academicYears.map((y) => (
-                            <SelectItem key={y.id} value={y.id}>
-                              {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
-                            </SelectItem>
-                          ))}
+                        <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+                        {academicYears.map((y) => (
+                          <SelectItem key={y.id} value={y.id}>
+                            {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   ),
@@ -206,15 +256,15 @@ export default function DailyExamsPage() {
                   content: (
                     <Select
                       value={selectedSemester}
-                      onValueChange={(val) => setSelectedSemester(val)}
+                      onValueChange={setSelectedSemester}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih Semester" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Semua Semester</SelectItem>
-                        <SelectItem value="GANJIL">GANJIL</SelectItem>
-                        <SelectItem value="GENAP">GENAP</SelectItem>
+                        <SelectItem value="GANJIL">Ganjil</SelectItem>
+                        <SelectItem value="GENAP">Genap</SelectItem>
                       </SelectContent>
                     </Select>
                   ),
@@ -228,7 +278,7 @@ export default function DailyExamsPage() {
                 columns={columns}
                 isLoading={isLoading}
                 loadingMessage="Memuat data ujian harian..."
-                emptyMessage="Belum ada ujian tersedia"
+                emptyMessage="Belum ada ujian harian atau ujian awal semester yang tersedia"
                 keyExtractor={(item) => item.id}
               />
             </TabsContent>
@@ -238,20 +288,3 @@ export default function DailyExamsPage() {
     </div>
   );
 }
-
-//             <TabsContent value="all">
-//               <DataTable
-//                 data={filteredData}
-//                 columns={columns}
-//                 isLoading={isLoading}
-//                 loadingMessage="Memuat data ujian harian..."
-//                 emptyMessage="Belum ada ujian tersedia"
-//                 keyExtractor={(item) => item.id}
-//               />
-//             </TabsContent>
-//           </Tabs>
-//         </main>
-//       </div>
-//     </div>
-//   );
-// }
