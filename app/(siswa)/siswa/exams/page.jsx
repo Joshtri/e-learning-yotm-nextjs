@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
-import { DataTable } from "@/components/ui/data-table";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { DataToolbar } from "@/components/ui/data-toolbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectTrigger,
@@ -12,252 +13,401 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import api from "@/lib/axios";
 import { toast } from "sonner";
+import {
+  Clock,
+  Calendar,
+  BookOpen,
+  User,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  PlayCircle,
+  XCircle,
+} from "lucide-react";
 
 export default function StudentExamsPage() {
-  const [data, setData] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [academicYears, setAcademicYears] = useState([]);
-
-  const [search, setSearch] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const [selectedYear, setSelectedYear] = useState("all");
-  const [selectedSemester, setSelectedSemester] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
-
+  const router = useRouter();
+  const [exams, setExams] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
 
-  const fetchData = async () => {
+  // Fetch academic years
+  const fetchAcademicYears = async () => {
     try {
-      setIsLoading(true);
-      const [examRes, subjectRes, yearRes] = await Promise.all([
-        api.get("/student/exams", { params: { academicYearId: selectedYear === "all" ? undefined : selectedYear, semester: selectedSemester === "all" ? undefined : selectedSemester } }),
-        api.get("/subjects"),
-        api.get("/academic-years"),
-      ]);
-      setData(examRes.data.data);
-      setSubjects(subjectRes.data.data);
-      setAcademicYears(yearRes.data.data.academicYears);
+      const res = await api.get("/academic-years");
+      console.log("Academic Years Response:", res.data);
+
+      const fetchedYears = res.data.data?.academicYears || [];
+      setAcademicYears(fetchedYears);
+
+      // Set default to active year or latest year
+      if (fetchedYears.length > 0) {
+        const activeYear = fetchedYears.find((year) => year.isActive);
+        if (activeYear) {
+          setSelectedAcademicYearId(activeYear.id);
+        } else {
+          setSelectedAcademicYearId(fetchedYears[0].id);
+        }
+      }
     } catch (err) {
-      toast.error("Gagal memuat data ujian atau filter");
+      console.error("Gagal memuat tahun ajaran:", err);
+      toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  // Fetch exams based on selected academic year
+  const fetchExams = async (academicYearId) => {
+    if (!academicYearId) return;
+
+    setIsLoading(true);
+    try {
+      console.log("Fetching exams for academicYearId:", academicYearId);
+      const res = await api.get("/student/exams", {
+        params: { academicYearId },
+      });
+      console.log("Exams Response:", res.data);
+
+      if (res.data.success) {
+        setExams(res.data.data || []);
+        toast.success(`Berhasil memuat ${res.data.count || 0} ujian`);
+      } else {
+        console.error("API returned success: false");
+        toast.error(res.data.message || "Gagal memuat ujian");
+        setExams([]);
+      }
+    } catch (err) {
+      console.error("Error fetching exams:", err);
+      console.error("Error response:", err.response?.data);
+      toast.error(
+        err.response?.data?.message ||
+          "Gagal memuat ujian. Cek console untuk detail."
+      );
+      setExams([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Fetch academic years on mount
   useEffect(() => {
-    fetchData();
-  }, [selectedYear, selectedSemester]);
+    fetchAcademicYears();
+  }, []);
 
+  // Fetch exams when selectedAcademicYearId changes
   useEffect(() => {
-    if (academicYears.length > 0 && selectedYear === "all") {
-      const activeYear = academicYears.find(ay => ay.isActive);
-      if (activeYear) {
-        setSelectedYear(activeYear.id);
-      } else {
-        const latestYear = academicYears[0];
-        setSelectedYear(latestYear.id);
-      }
+    if (selectedAcademicYearId) {
+      fetchExams(selectedAcademicYearId);
     }
-  }, [academicYears, selectedYear]);
+  }, [selectedAcademicYearId]);
 
-  const filteredData = data.filter((item) => {
-    const matchSearch =
-      item.judul.toLowerCase().includes(search.toLowerCase()) ||
-      item.subject?.namaMapel.toLowerCase().includes(search.toLowerCase());
+  // Group exams by type
+  const groupedExams = {
+    MIDTERM: exams.filter((e) => e.jenis === "MIDTERM"),
+    FINAL_EXAM: exams.filter((e) => e.jenis === "FINAL_EXAM"),
+  };
 
-    const matchSubject =
-      selectedSubject === "all" || item.subject?.id === selectedSubject;
+  // Get status badge variant
+  const getStatusBadge = (exam) => {
+    if (exam.submission?.status === "GRADED") {
+      return (
+        <Badge variant="outline" className="bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Selesai Dinilai
+        </Badge>
+      );
+    }
+    if (exam.submission?.status === "SUBMITTED") {
+      return (
+        <Badge variant="outline" className="bg-blue-100 text-blue-800">
+          <Clock className="h-3 w-3 mr-1" />
+          Menunggu Penilaian
+        </Badge>
+      );
+    }
+    if (exam.submission?.status === "IN_PROGRESS") {
+      return (
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+          <PlayCircle className="h-3 w-3 mr-1" />
+          Sedang Dikerjakan
+        </Badge>
+      );
+    }
+    if (exam.canStart) {
+      return (
+        <Badge variant="outline" className="bg-purple-100 text-purple-800">
+          <PlayCircle className="h-3 w-3 mr-1" />
+          Tersedia
+        </Badge>
+      );
+    }
+    if (exam.status === "Belum Dimulai") {
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-800">
+          <Clock className="h-3 w-3 mr-1" />
+          Belum Dimulai
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-red-100 text-red-800">
+        <XCircle className="h-3 w-3 mr-1" />
+        Sudah Berakhir
+      </Badge>
+    );
+  };
 
-    const matchYear =
-      selectedYear === "all" || item.class?.academicYearId === selectedYear;
+  // Format date to Indonesian locale
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
-    const matchType =
-      selectedType === "all" ||
-      item.jenis?.toLowerCase() === selectedType.toLowerCase();
+  // Render exam card
+  const renderExamCard = (exam) => (
+    <Card key={exam.id} className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg mb-2">{exam.judul}</h3>
+              {exam.deskripsi && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  {exam.deskripsi}
+                </p>
+              )}
+            </div>
+            {getStatusBadge(exam)}
+          </div>
 
-    return matchSearch && matchSubject && matchYear && matchType;
-  });
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <span>{exam.subject?.namaMapel || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span>{exam.tutor?.namaLengkap || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span>{exam.class?.academicYear?.display || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span>{exam.jumlahSoal || 0} Soal</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span>{exam.batasWaktuMenit || 0} Menit</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <span>Nilai Maksimal: {exam.nilaiMaksimal || 100}</span>
+            </div>
+          </div>
 
-  const columns = [
-    { header: "Judul", cell: (row) => row.judul },
-    {
-      header: "Jenis Ujian",
-      cell: (row) => (
-        <div className="flex flex-col">
-          <Badge
-            variant={row.jenis === "MIDTERM" ? "secondary" : "destructive"}
-          >
-            {row.jenis}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {row.jenisDeskripsi}
-          </span>
+          {/* Date Range */}
+          <div className="border-t pt-3">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>
+                <strong>Mulai:</strong> {formatDate(exam.TanggalMulai)}
+              </div>
+              <div>
+                <strong>Selesai:</strong> {formatDate(exam.TanggalSelesai)}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="pt-2">
+            {exam.submission?.status === "GRADED" && (
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="text-sm font-medium">Nilai Anda:</span>
+                <span className="text-xl font-bold text-green-700">
+                  {exam.submission.nilai?.toFixed(2) || 0}/
+                  {exam.nilaiMaksimal}
+                </span>
+              </div>
+            )}
+            {exam.submission?.status === "SUBMITTED" && (
+              <div className="p-3 bg-blue-50 rounded-lg text-center">
+                <span className="text-sm text-blue-800">
+                  Menunggu penilaian dari guru
+                </span>
+              </div>
+            )}
+            {exam.canStart && !exam.submission && (
+              <Button
+                onClick={() => router.push(`/siswa/exams/${exam.id}/start`)}
+                className="w-full"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Mulai Ujian
+              </Button>
+            )}
+            {exam.submission?.status === "IN_PROGRESS" && (
+              <Button
+                onClick={() => router.push(`/siswa/exams/${exam.id}/start`)}
+                className="w-full"
+                variant="outline"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Lanjutkan Ujian
+              </Button>
+            )}
+            {!exam.canStart &&
+              !exam.submission &&
+              exam.status === "Belum Dimulai" && (
+                <div className="p-3 bg-gray-50 rounded-lg text-center">
+                  <span className="text-sm text-gray-600">
+                    Ujian belum dimulai
+                  </span>
+                </div>
+              )}
+            {!exam.canStart &&
+              !exam.submission &&
+              exam.status === "Sudah Berakhir" && (
+                <div className="p-3 bg-red-50 rounded-lg text-center">
+                  <span className="text-sm text-red-600">
+                    Waktu ujian telah berakhir
+                  </span>
+                </div>
+              )}
+          </div>
         </div>
-      ),
-    },
-    { header: "Mata Pelajaran", cell: (row) => row.subject?.namaMapel || "-" },
-    {
-      header: "Tahun Ajaran",
-      cell: (row) => row.class?.academicYear?.tahunMulai || "-",
-    },
-    { header: "Tutor", cell: (row) => row.tutor?.namaLengkap || "-" },
-    {
-      header: "Waktu",
-      cell: (row) =>
-        `${new Date(row.waktuMulai).toLocaleString("id-ID")} - ${new Date(
-          row.waktuSelesai
-        ).toLocaleString("id-ID")}`,
-    },
-    {
-      header: "Status",
-      cell: (row) => {
-        const now = new Date();
-        if (row.sudahDikerjakan) return "Selesai";
-        if (
-          now >= new Date(row.waktuMulai) &&
-          now <= new Date(row.waktuSelesai)
-        )
-          return "Sedang Dikerjakan";
-        return "Belum Dikerjakan";
-      },
-    },
-    {
-      header: "Aksi",
-      cell: (row) => {
-        const now = new Date();
-        const mulai = new Date(row.waktuMulai);
-        const selesai = new Date(row.waktuSelesai);
-        const sudahDikerjakan = row.sudahDikerjakan;
-
-        if (sudahDikerjakan) {
-          return <span className="text-green-600">✅ Selesai</span>;
-        }
-
-        if (now >= mulai && now <= selesai) {
-          return (
-            <a
-              href={`/siswa/exams/${row.id}/start`}
-              className="text-sm text-blue-600 underline hover:text-blue-800"
-            >
-              Kerjakan
-            </a>
-          );
-        }
-
-        return <span className="text-muted-foreground">Belum tersedia</span>;
-      },
-    },
-  ];
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="flex min-h-screen bg-background">
       <div className="flex-1">
-        <main className="p-6 space-y-4">
+        <main className="p-6 space-y-6">
           <PageHeader
             title="Ujian Anda"
-            description="Daftar ujian (UTS dan UAS) yang tersedia untuk dikerjakan"
+            description="Daftar ujian UTS dan UAS yang tersedia untuk dikerjakan"
             breadcrumbs={[
               { label: "Dashboard", href: "/siswa/dashboard" },
               { label: "Ujian" },
-            ]} // Add breadcrumbs here
+            ]}
           />
 
-          <Tabs defaultValue="all">
-            <DataToolbar
-              searchValue={search}
-              onSearchChange={setSearch}
-              searchPlaceholder="Cari judul atau mapel..."
-            />
-
-            {/* Filter Section */}
-            <div className="flex flex-wrap gap-4">
-              <div className="w-48">
-                <Select
-                  value={selectedSubject}
-                  onValueChange={(val) => setSelectedSubject(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter Mapel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Mapel</SelectItem>
-                    {Array.isArray(subjects) &&
-                      subjects.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.namaMapel}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-48">
-                <Select
-                  value={selectedYear}
-                  onValueChange={(val) => setSelectedYear(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tahun Ajaran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Tahun</SelectItem>
-                    {Array.isArray(academicYears) &&
-                      academicYears.map((y) => (
-                        <SelectItem key={y.id} value={y.id}>
-                          {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-48">
-                <Select
-                  value={selectedSemester}
-                  onValueChange={(val) => setSelectedSemester(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Semester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Semester</SelectItem>
-                    <SelectItem value="GANJIL">GANJIL</SelectItem>
-                    <SelectItem value="GENAP">GENAP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-48">
-                <Select
-                  value={selectedType}
-                  onValueChange={(val) => setSelectedType(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Jenis Ujian" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Jenis</SelectItem>
-                    <SelectItem value="midterm">UTS</SelectItem>
-                    <SelectItem value="final_exam">UAS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Academic Year Filter */}
+          <div className="flex justify-end">
+            <div className="w-full md:w-64">
+              <Select
+                value={selectedAcademicYearId || ""}
+                onValueChange={setSelectedAcademicYearId}
+                disabled={academicYears.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Tahun Ajaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
+                      {year.isActive && " (Aktif)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            <TabsContent value="all">
-              <DataTable
-                data={filteredData}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data ujian..."
-                emptyMessage="Belum ada ujian tersedia"
-                keyExtractor={(item) => item.id}
-              />
-            </TabsContent>
-          </Tabs>
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Memuat ujian...</p>
+            </div>
+          ) : exams.length === 0 ? (
+            /* Empty State */
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center space-y-2">
+                  <p className="text-xl font-semibold">Belum Ada Ujian</p>
+                  <p className="text-muted-foreground">
+                    Belum ada ujian tersedia untuk tahun ajaran yang dipilih.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Exam Lists in Accordion */
+            <Accordion
+              type="multiple"
+              defaultValue={["item-1", "item-2"]}
+              className="space-y-4"
+            >
+              {/* UTS Section */}
+              <AccordionItem value="item-1" className="border rounded-lg overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-slate-50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-2 text-left">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Ujian Tengah Semester (UTS)</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {groupedExams.MIDTERM.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  {groupedExams.MIDTERM.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        Belum ada ujian UTS tersedia
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {groupedExams.MIDTERM.map(renderExamCard)}
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* UAS Section */}
+              <AccordionItem value="item-2" className="border rounded-lg overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-slate-50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-2 text-left">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Ujian Akhir Semester (UAS)</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {groupedExams.FINAL_EXAM.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  {groupedExams.FINAL_EXAM.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        Belum ada ujian UAS tersedia
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {groupedExams.FINAL_EXAM.map(renderExamCard)}
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </main>
       </div>
     </div>
