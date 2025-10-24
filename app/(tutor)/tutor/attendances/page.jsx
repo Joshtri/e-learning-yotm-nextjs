@@ -1,4 +1,4 @@
-// Halaman daftar kelas untuk melihat presensi per kelas
+// Halaman daftar kelas dan mata pelajaran untuk melihat presensi per kombinasi kelas & mapel
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
-import { Calendar, Users, BookOpen, Eye, Filter } from "lucide-react";
+import { Calendar, Users, BookOpen, Eye, Filter, Info } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AttendanceClassListPage() {
   const router = useRouter();
@@ -68,21 +69,29 @@ export default function AttendanceClassListPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Presensi per Kelas"
-        description="Lihat dan kelola sesi presensi berdasarkan kelas."
+        title="Presensi Kelas & Mata Pelajaran"
+        description="Kelola presensi siswa berdasarkan kelas dan mata pelajaran yang Anda ajar. Setiap kombinasi kelas dan mata pelajaran memiliki daftar presensi terpisah."
         breadcrumbs={[
           { label: "Dashboard", href: "/tutor/dashboard" },
           { label: "Presensi", href: "/tutor/attendances" },
-          { label: "Per Kelas" },
+          { label: "Per Kelas & Mapel" },
         ]}
       />
+
+      {/* Info Alert */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Presensi dikelola per <strong>kombinasi kelas dan mata pelajaran</strong>. Jika Anda mengajar beberapa mata pelajaran di kelas yang sama, masing-masing akan memiliki daftar presensi terpisah. Ini memastikan setiap siswa dapat memiliki catatan kehadiran berbeda untuk setiap mata pelajaran.
+        </AlertDescription>
+      </Alert>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
-          title="Total Kelas"
+          title="Total Kelas & Mapel"
           value={classes.length}
-          description="Kelas yang Anda ajar"
+          description="Kombinasi kelas dan mata pelajaran"
           icon={<Users className="h-4 w-4" />}
         />
         <StatsCard
@@ -94,13 +103,13 @@ export default function AttendanceClassListPage() {
                 } - ${academicYears.find((y) => y.id === selectedYearId).semester}`
               : "-"
           }
-          description="Tahun ajaran aktif"
+          description="Periode tahun ajaran"
           icon={<Calendar className="h-4 w-4" />}
         />
         <StatsCard
           title="Mata Pelajaran"
           value={new Set(classes.map((c) => c.subject.namaMapel)).size}
-          description="Mapel yang diampu"
+          description="Total mapel yang diampu"
           icon={<BookOpen className="h-4 w-4" />}
         />
       </div>
@@ -114,7 +123,7 @@ export default function AttendanceClassListPage() {
                 <Filter className="h-5 w-5" />
                 Filter Tahun Ajaran
               </CardTitle>
-              <CardDescription>Pilih tahun ajaran untuk melihat kelas</CardDescription>
+              <CardDescription>Pilih tahun ajaran untuk melihat daftar kelas dan mata pelajaran</CardDescription>
             </div>
             <Select value={selectedYearId} onValueChange={setSelectedYearId}>
               <SelectTrigger className="w-full sm:w-[240px]">
@@ -138,10 +147,10 @@ export default function AttendanceClassListPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Daftar Kelas
+            Daftar Kelas & Mata Pelajaran
           </CardTitle>
           <CardDescription>
-            {classes.length} kelas tersedia untuk presensi
+            {classes.length} kombinasi kelas dan mata pelajaran tersedia. Setiap kartu di bawah mewakili presensi untuk satu mata pelajaran di satu kelas tertentu.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,8 +158,8 @@ export default function AttendanceClassListPage() {
             <SkeletonTable numRows={5} numCols={4} showHeader={true} />
           ) : classes.length === 0 ? (
             <EmptyState
-              title="Tidak ada kelas"
-              description="Belum ada kelas yang tersedia untuk tahun ajaran ini."
+              title="Tidak ada kelas & mata pelajaran"
+              description="Belum ada kelas dan mata pelajaran yang Anda ampu untuk tahun ajaran ini."
               icon={<Users className="h-6 w-6 text-muted-foreground" />}
             />
           ) : (
@@ -159,17 +168,19 @@ export default function AttendanceClassListPage() {
                 <Card key={item.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        {/* <Badge variant="secondary" className="mb-2">
-                          Kelas {index + 1}
-                        </Badge> */}
+                      <div className="space-y-2 w-full">
+                        <Badge variant="outline" className="w-fit">
+                          Kelas & Mapel #{index + 1}
+                        </Badge>
                         <CardTitle className="text-lg">
                           {item.class.namaKelas}
                         </CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {item.subject.namaMapel}
-                        </CardDescription>
+                        <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">
+                            {item.subject.namaMapel}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -194,7 +205,7 @@ export default function AttendanceClassListPage() {
                         }
                       >
                         <Eye className="h-4 w-4 mr-2" />
-                        Lihat Presensi
+                        Kelola Presensi
                       </Button>
                     </div>
                   </CardContent>
