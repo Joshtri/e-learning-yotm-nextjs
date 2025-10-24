@@ -1,5 +1,6 @@
 // /config/navigation.js
 import {
+  ArrowRight,
   BarChart3,
   BookOpen,
   Calendar,
@@ -15,7 +16,7 @@ import {
   NotebookPen,
   Users,
   Users2,
-  Volleyball
+  Volleyball,
 } from "lucide-react";
 
 export const navByRole = {
@@ -166,7 +167,7 @@ export const navByRole = {
           title: "Kalender Hari Libur",
           href: "/admin/holidays/calendar",
           icon: <Calendar className="h-4 w-4" />,
-        }
+        },
       ],
     },
     {
@@ -357,7 +358,6 @@ export const navByRole = {
     {
       title: "Komunikasi",
       items: [
-
         {
           title: "Pesan Langsung",
           href: "/siswa/messages",
@@ -412,6 +412,11 @@ export const navByRole = {
           icon: <BarChart3 className="h-4 w-4" />,
         },
         {
+          title: "Rekap Nilai Ujian",
+          href: "/homeroom/exams-scores",
+          icon: <BarChart3 className="h-4 w-4" />,
+        },
+        {
           title: "Nilai Sikap & Kehadiran",
           href: "/homeroom/behavior-scores",
           icon: <FileCheck2 className="h-4 w-4" />,
@@ -426,16 +431,18 @@ export const navByRole = {
         //   href: "/homeroom/attendance-recap",
         //   icon: <CalendarCheck className="h-4 w-4" />,
         // },
-        {
-          title: "Rekap Nilai Ujian",
-          href: "/homeroom/exams-scores",
-          icon: <BarChart3 className="h-4 w-4" />,
-        },
 
         {
-          title: "Manajemen Naik Kelas", // 🔥 Tambahan ini
+          title: "Manajemen Naik Kelas", // 🔥 Untuk semester GENAP
           href: "/homeroom/promote-students",
           icon: <GraduationCap className="h-4 w-4" />,
+          showOnSemester: "GENAP", // 🔥 Custom property
+        },
+        {
+          title: "Pindah ke Semester Baru", // 🔥 Untuk semester GANJIL
+          href: "/homeroom/move-semester",
+          icon: <ArrowRight className="h-4 w-4" />,
+          showOnSemester: "GANJIL", // 🔥 Custom property
         },
       ],
     },
@@ -447,7 +454,7 @@ export const navByRole = {
     //       href: "/homeroom/submissions",
     //       icon: <NotebookPen className="h-4 w-4" />,
     //     },
- 
+
     //   ],
     // },
     // {
