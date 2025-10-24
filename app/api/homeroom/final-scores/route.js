@@ -26,68 +26,60 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const academicYearId = searchParams.get("academicYearId");
 
-    let whereClause = {
-      homeroomTeacherId: tutor.id,
-    };
+    // Get the class - if academicYearId specified, use it. Otherwise get the most recent class with students
+    let kelas;
 
     if (academicYearId) {
-      whereClause.academicYearId = academicYearId;
-    } else {
-      whereClause.students = {
-        some: {
-          status: "ACTIVE",
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
         },
-      };
-    }
-
-    // Get the class where this tutor is homeroom teacher (kelas terbaru dengan siswa aktif)
-    const kelas = await prisma.class.findFirst({
-      where: whereClause,
-      include: {
-        program: true,
-        academicYear: true,
-        students: {
-          where: { status: "ACTIVE" },
-          include: {
-            user: true,
-            submissions: {
-              include: {
-                assignment: {
-                  include: {
-                    classSubjectTutor: {
-                      include: { subject: true },
-                    },
-                  },
-                },
-                quiz: {
-                  include: {
-                    classSubjectTutor: {
-                      include: { subject: true },
-                    },
-                  },
-                },
-              },
-            },
-            SkillScore: { include: { subject: true } },
+        include: {
+          program: true,
+          academicYear: true,
+          students: {
+            where: { status: "ACTIVE" },
+            include: { user: true },
+          },
+          classSubjectTutors: {
+            include: { subject: true },
+            distinct: ["subjectId"],
           },
         },
-        classSubjectTutors: {
-          include: { subject: true },
-          distinct: ["subjectId"], // Only get unique subjects
+      });
+    } else {
+      // Get all classes for this homeroom teacher, prioritize most recent with students
+      const allClasses = await prisma.class.findMany({
+        where: { homeroomTeacherId: tutor.id },
+        include: {
+          program: true,
+          academicYear: true,
+          students: {
+            where: { status: "ACTIVE" },
+            include: { user: true },
+          },
+          classSubjectTutors: {
+            include: { subject: true },
+            distinct: ["subjectId"],
+          },
         },
-      },
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
-      ],
-    });
+        orderBy: [
+          { academicYear: { tahunMulai: "desc" } },
+          { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
+        ],
+      });
+
+      // Select the class that has active students, or the most recent one
+      kelas = allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
+    }
 
     const homeroomClasses = await prisma.class.findMany({
       where: { homeroomTeacherId: tutor.id },
       include: { academicYear: true },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
@@ -116,11 +108,65 @@ export async function GET(request) {
       namaMapel: cst.subject.namaMapel,
     }));
 
-    // Get behavior scores for all students
+    const studentIds = kelas.students.map((s) => s.id);
+
+    // Get submissions for this academic year only - CRITICAL FIX!
+    const submissions = await prisma.submission.findMany({
+      where: {
+        studentId: { in: studentIds },
+        OR: [
+          {
+            assignment: {
+              classSubjectTutor: {
+                class: {
+                  academicYearId: kelas.academicYearId,
+                },
+              },
+            },
+          },
+          {
+            quiz: {
+              classSubjectTutor: {
+                class: {
+                  academicYearId: kelas.academicYearId,
+                },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        assignment: {
+          include: {
+            classSubjectTutor: {
+              include: { subject: true },
+            },
+          },
+        },
+        quiz: {
+          include: {
+            classSubjectTutor: {
+              include: { subject: true },
+            },
+          },
+        },
+      },
+    });
+
+    // Get skill scores for these students
+    // Note: SkillScore doesn't have academicYearId field
+    const skillScores = await prisma.skillScore.findMany({
+      where: {
+        studentId: { in: studentIds },
+      },
+      include: { subject: true },
+    });
+
+    // Get behavior scores for all students in this academic year
     const behaviorScores = await prisma.behaviorScore.findMany({
       where: {
         academicYearId: kelas.academicYearId,
-        studentId: { in: kelas.students.map((s) => s.id) },
+        studentId: { in: studentIds },
       },
     });
 
@@ -137,8 +183,11 @@ export async function GET(request) {
         skill: null,
       }));
 
+      // Get submissions for this student only
+      const studentSubmissions = submissions.filter((s) => s.studentId === student.id);
+
       // Process submissions
-      student.submissions.forEach((submission) => {
+      studentSubmissions.forEach((submission) => {
         let mapelName = null;
         let type = null;
         let nilai = submission.nilai ?? null;
@@ -165,8 +214,11 @@ export async function GET(request) {
         if (type === "FINAL_EXAM") mapelDetails[mapelIndex].finalExam = nilai;
       });
 
+      // Get skill scores for this student only
+      const studentSkills = skillScores.filter((s) => s.studentId === student.id);
+
       // Process skill scores
-      student.SkillScore.forEach((skill) => {
+      studentSkills.forEach((skill) => {
         const mapelIndex = mapelDetails.findIndex(
           (m) => m.namaMapel === skill.subject.namaMapel
         );
@@ -243,6 +295,8 @@ export async function GET(request) {
       success: true,
       data: {
         tahunAjaranId: kelas.academicYearId,
+        tahunAjaran: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
+        semester: kelas.academicYear.semester, // GENAP or GANJIL - clearly visible in response
         students,
         subjects,
         classInfo: {
