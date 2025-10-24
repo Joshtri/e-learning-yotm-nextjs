@@ -339,16 +339,11 @@ export async function PATCH(req) {
       }
     });
 
-    // ✅ Update tahun akademik: set current jadi inactive, target jadi active
-    await prisma.academicYear.update({
-      where: { id: currentClass.academicYearId },
-      data: { isActive: false },
-    });
+    // ❌ JANGAN update status tahun akademik otomatis
+    // Biarkan admin yang mengelola aktivasi tahun akademik secara manual
+    // Karena wali kelas/tutor lain mungkin belum selesai memproses kenaikan kelas siswa mereka
 
-    await prisma.academicYear.update({
-      where: { id: targetAcademicYearId },
-      data: { isActive: true },
-    });
+    // Note: Admin yang akan mengaktifkan tahun akademik baru ketika SEMUA kelas sudah selesai naik kelas
 
     return new Response(
       JSON.stringify({
