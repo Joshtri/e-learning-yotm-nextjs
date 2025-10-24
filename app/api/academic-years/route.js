@@ -33,6 +33,13 @@ export async function GET(request) {
         orderBy: { tahunMulai: "desc" },
         skip,
         take: limit,
+        include: {
+          _count: {
+            select: {
+              classes: true,
+            },
+          },
+        },
       }),
       prisma.academicYear.count({ where }),
     ]);
