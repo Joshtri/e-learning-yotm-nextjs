@@ -39,10 +39,14 @@ export default function AdminQuizPage() {
     data.forEach((item) => {
       const cls = item.classSubjectTutor?.class;
       if (cls?.id && !unique.has(cls.id)) {
-        unique.set(cls.id, cls.namaKelas);
+        const academicYear = cls.academicYear;
+        const label = academicYear
+          ? `${cls.namaKelas} (${academicYear.tahunMulai}/${academicYear.tahunSelesai} - ${academicYear.semester})`
+          : cls.namaKelas;
+        unique.set(cls.id, { name: cls.namaKelas, label, academicYear });
       }
     });
-    return Array.from(unique.entries()); // [ [id, namaKelas], ... ]
+    return Array.from(unique.entries()); // [ [id, { name, label, academicYear }], ... ]
   }, [data]);
 
   const filterBySearch = (list) => {
@@ -78,6 +82,19 @@ export default function AdminQuizPage() {
     {
       header: "Kelas",
       cell: (row) => row.classSubjectTutor?.class?.namaKelas || "-",
+    },
+    {
+      header: "Tahun Ajaran",
+      cell: (row) => {
+        const academicYear = row.classSubjectTutor?.class?.academicYear;
+        return academicYear
+          ? `${academicYear.tahunMulai}/${academicYear.tahunSelesai}`
+          : "-";
+      },
+    },
+    {
+      header: "Semester",
+      cell: (row) => row.classSubjectTutor?.class?.academicYear?.semester || "-",
     },
     {
       header: "Mapel",
@@ -129,9 +146,9 @@ export default function AdminQuizPage() {
           <Tabs value={activeClass} onValueChange={setActiveClass}>
             <TabsList>
               <TabsTrigger value="all">Semua Kelas</TabsTrigger>
-              {classOptions.map(([id, name]) => (
+              {classOptions.map(([id, { label }]) => (
                 <TabsTrigger key={id} value={id}>
-                  {name}
+                  {label}
                 </TabsTrigger>
               ))}
             </TabsList>
