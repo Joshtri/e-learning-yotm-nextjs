@@ -2,9 +2,6 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
-// Increase timeout for this route
-export const maxDuration = 300; // 5 minutes
-
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();
@@ -115,18 +112,29 @@ export async function GET(request) {
         classId: kelas.id,
         status: "ACTIVE",
       },
-      include: {
-        user: true,
+      select: {
+        id: true,
+        namaLengkap: true,
         class: {
-          include: {
-            academicYear: true,
-            program: true,
-          },
-        },
+          select: {
+            namaKelas: true,
+            academicYear: {
+              select: {
+                tahunMulai: true,
+                tahunSelesai: true,
+              }
+            },
+            program: {
+              select: {
+                namaPaket: true,
+              }
+            }
+          }
+        }
       },
     });
 
-    // Get submissions separately for better performance
+    // Get submissions with optimized query
     const allSubmissions = await prisma.submission.findMany({
       where: {
         student: {
@@ -134,29 +142,20 @@ export async function GET(request) {
           status: "ACTIVE",
         },
       },
-      include: {
+      select: {
+        id: true,
+        nilai: true,
+        quizId: true,
+        assignmentId: true,
         assignment: {
-          include: {
-            classSubjectTutor: {
-              include: {
-                subject: true,
-              },
-            },
-          },
-        },
-        quiz: {
-          include: {
-            classSubjectTutor: {
-              include: {
-                subject: true,
-              },
-            },
-          },
-        },
+          select: {
+            jenis: true,
+          }
+        }
       },
     });
 
-    // Group submissions by studentId for efficient lookup
+    // Pre-group submissions by studentId for efficient lookup
     const submissionsByStudent = {};
     allSubmissions.forEach(sub => {
       if (!submissionsByStudent[sub.studentId]) {
@@ -164,6 +163,13 @@ export async function GET(request) {
       }
       submissionsByStudent[sub.studentId].push(sub);
     });
+
+    // Function to calculate average
+    const calculateAverage = (nilaiList) => {
+      const validNilai = nilaiList.filter(n => n !== null);
+      if (validNilai.length === 0) return null;
+      return parseFloat((validNilai.reduce((a, b) => a + b, 0) / validNilai.length).toFixed(2));
+    };
 
     const result = students.map((student) => {
       // Get submissions for this student
@@ -207,16 +213,8 @@ export async function GET(request) {
         ...tugasNilai.map((t) => t.nilai),
         nilaiUTS,
         nilaiUAS,
-      ].filter((n) => n !== null);
-
-      const totalNilai =
-        nilaiList.length > 0
-          ? parseFloat(
-              (nilaiList.reduce((a, b) => a + b, 0) / nilaiList.length).toFixed(
-                2
-              )
-            )
-          : null;
+      ];
+      const totalNilai = calculateAverage(nilaiList);
 
       return {
         studentId: student.id,
