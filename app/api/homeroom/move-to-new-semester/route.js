@@ -54,7 +54,7 @@ export async function POST(request) {
       },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } }, // GANJIL dulu baru GENAP
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
@@ -274,19 +274,11 @@ export async function POST(request) {
       }
     });
 
-    // Update tahun akademik: set current jadi inactive, target jadi active (jika belum)
-    await prisma.academicYear.update({
-      where: { id: currentClass.academicYearId },
-      data: { isActive: false },
-    });
+    // ❌ JANGAN update status tahun akademik otomatis
+    // Biarkan admin yang mengelola aktivasi tahun akademik secara manual
+    // Karena wali kelas/tutor lain mungkin belum siap memindahkan siswa mereka
 
-    // Set target active jika belum
-    if (!targetAcademicYear.isActive) {
-      await prisma.academicYear.update({
-        where: { id: targetAcademicYearId },
-        data: { isActive: true },
-      });
-    }
+    // Note: Admin yang akan mengaktifkan tahun akademik GENAP ketika semua kelas sudah siap
 
     return NextResponse.json({
       success: true,
