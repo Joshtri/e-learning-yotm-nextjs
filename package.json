@@ -9,7 +9,12 @@
     "postinstall": "prisma generate",
     "lint": "eslint .",
     "seed": "node prisma/seed.js",
-    "db-seed": "prisma db seed"
+    "db-seed": "prisma db seed",
+
+    "seed:materi": "node prisma/seed-genap-materi.js",
+    "seed:tugas": "node prisma/seed-genap-tugas.js", 
+    "seed:uts-uas": "node prisma/seed-genap-uts-uas.js",
+    "seed:genap-all": "npm run seed:materi && npm run seed:tugas && npm run seed:uts-uas"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
