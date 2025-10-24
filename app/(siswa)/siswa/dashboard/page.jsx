@@ -22,6 +22,9 @@ import {
   AlertCircle,
   BarChart3,
   Book,
+  Play,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -317,34 +320,78 @@ export default function StudentDashboardPage() {
                 <TabsContent value="assignments">
                   {upcomingAssignments.length > 0 ? (
                     <div className="space-y-4">
-                      {upcomingAssignments.map((assignment) => (
-                        <div
-                          key={assignment.id}
-                          className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/student/assignments/${assignment.id}`)
-                          }
-                        >
-                          <div className="p-2 bg-blue-100 rounded-full mr-3">
-                            <FileText className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{assignment.title}</h4>
-                            <p className="text-sm text-gray-600">
-                              {assignment.subject}
-                            </p>
-                            <div className="flex items-center mt-1 text-xs text-gray-500">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              <span>{formatDate(assignment.dueDate)}</span>
+                      {upcomingAssignments.map((assignment) => {
+                        const now = new Date();
+                        const startDate = new Date(assignment.startDate);
+                        const isAvailable = now >= startDate;
+
+                        return (
+                          <div
+                            key={assignment.id}
+                            className={`flex items-start p-3 border rounded-lg relative ${
+                              isAvailable
+                                ? "hover:bg-gray-50 cursor-pointer"
+                                : "opacity-60 cursor-not-allowed bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              if (isAvailable) {
+                                router.push(`/siswa/assignments/${assignment.id}`);
+                              }
+                            }}
+                          >
+                            {!isAvailable && (
+                              <div className="absolute top-2 right-2 z-10">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Belum Bisa Dikerjakan
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className={`p-2 rounded-full mr-3 ${
+                                isAvailable ? "bg-blue-100" : "bg-gray-200"
+                              }`}
+                            >
+                              <FileText
+                                className={`h-5 w-5 ${
+                                  isAvailable ? "text-blue-600" : "text-gray-400"
+                                }`}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{assignment.title}</h4>
+                              <p className="text-sm text-gray-600">
+                                {assignment.subject}
+                              </p>
+                              <div className="flex flex-col gap-1 mt-1">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  <span>
+                                    Mulai: {formatDate(assignment.startDate)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  <span>
+                                    Deadline: {formatDate(assignment.dueDate)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="ml-2 text-xs font-medium">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full ${
+                                  isAvailable
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-gray-200 text-gray-600"
+                                }`}
+                              >
+                                {assignment.type}
+                              </span>
                             </div>
                           </div>
-                          <div className="ml-2 text-xs font-medium">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                              {assignment.type}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
@@ -356,31 +403,67 @@ export default function StudentDashboardPage() {
                 <TabsContent value="quizzes">
                   {upcomingQuizzes.length > 0 ? (
                     <div className="space-y-4">
-                      {upcomingQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.id}
-                          className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/student/quizzes/${quiz.id}`)
-                          }
-                        >
-                          <div className="p-2 bg-purple-100 rounded-full mr-3">
-                            <FileText className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{quiz.title}</h4>
-                            <p className="text-sm text-gray-600">
-                              {quiz.subject}
-                            </p>
-                            <div className="flex items-center mt-1 text-xs text-gray-500">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              <span>{formatDate(quiz.dueDate)}</span>
-                              <Clock className="h-3 w-3 ml-2 mr-1" />
-                              <span>{quiz.duration} menit</span>
+                      {upcomingQuizzes.map((quiz) => {
+                        const now = new Date();
+                        const startDate = new Date(quiz.startDate);
+                        const isAvailable = now >= startDate;
+
+                        return (
+                          <div
+                            key={quiz.id}
+                            className={`flex items-start p-3 border rounded-lg relative ${
+                              isAvailable
+                                ? "hover:bg-gray-50 cursor-pointer"
+                                : "opacity-60 cursor-not-allowed bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              if (isAvailable) {
+                                router.push(`/siswa/quizzes/${quiz.id}`);
+                              }
+                            }}
+                          >
+                            {!isAvailable && (
+                              <div className="absolute top-2 right-2 z-10">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Belum Bisa Dikerjakan
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className={`p-2 rounded-full mr-3 ${
+                                isAvailable ? "bg-purple-100" : "bg-gray-200"
+                              }`}
+                            >
+                              <FileText
+                                className={`h-5 w-5 ${
+                                  isAvailable ? "text-purple-600" : "text-gray-400"
+                                }`}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{quiz.title}</h4>
+                              <p className="text-sm text-gray-600">
+                                {quiz.subject}
+                              </p>
+                              <div className="flex flex-col gap-1 mt-1">
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  <span>
+                                    Mulai: {formatDate(quiz.startDate)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  <span>
+                                    Deadline: {formatDate(quiz.dueDate)} • {quiz.duration} menit
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
@@ -501,29 +584,78 @@ export default function StudentDashboardPage() {
             <CardContent>
               {recentMaterials.length > 0 ? (
                 <div className="space-y-4">
-                  {recentMaterials.map((material) => (
-                    <div
-                      key={material.id}
-                      className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/student/materials/${material.id}`)
-                      }
-                    >
-                      <div className="p-2 bg-green-100 rounded-full mr-3">
-                        <BookOpen className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{material.title}</h4>
-                        <p className="text-sm text-gray-600">
-                          {material.subject}
-                        </p>
-                        <div className="flex items-center mt-1 text-xs text-gray-500">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          <span>{formatDate(material.createdAt)}</span>
+                  {recentMaterials.map((material) => {
+                    const isYouTube = material.type === "LINK_YOUTUBE";
+                    const hasUrl = !!material.url;
+
+                    return (
+                      <div
+                        key={material.id}
+                        className="flex items-start p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div
+                          className={`p-2 rounded-full mr-3 ${
+                            isYouTube
+                              ? "bg-red-100"
+                              : "bg-green-100"
+                          }`}
+                        >
+                          {isYouTube ? (
+                            <Play className="h-5 w-5 text-red-600" />
+                          ) : (
+                            <BookOpen className="h-5 w-5 text-green-600" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{material.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            {material.subject}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              <span>{formatDate(material.createdAt)}</span>
+                            </div>
+                            {hasUrl && (
+                              <div className="flex items-center gap-2">
+                                {isYouTube ? (
+                                  <a
+                                    href={material.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
+                                  >
+                                    <Play className="h-3 w-3" />
+                                    Buka YouTube
+                                  </a>
+                                ) : (
+                                  <>
+                                    <a
+                                      href={material.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      Lihat
+                                    </a>
+                                    <a
+                                      href={material.url}
+                                      download
+                                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors"
+                                    >
+                                      <Download className="h-3 w-3" />
+                                      Unduh
+                                    </a>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6">
