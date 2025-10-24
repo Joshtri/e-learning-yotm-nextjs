@@ -88,6 +88,11 @@ export default function NilaiSiswaPage() {
         return acc;
       }, {});
 
+  // Helper function to format numbers to 2 decimal places
+  const formatNumber = (num) => {
+    return num !== null && num !== undefined ? Number(num).toFixed(2) : "-";
+  };
+
   return (
     <Card className="p-4">
       <CardHeader>
@@ -339,12 +344,14 @@ export default function NilaiSiswaPage() {
                             );
                             return (
                               <TableCell key={quiz.id}>
-                                {studentQuiz?.nilai ?? "-"}
+                                {formatNumber(studentQuiz?.nilai)}
                               </TableCell>
                             );
                           })
                       : item.kuis.map((k) => (
-                          <TableCell key={k.id}>{k.nilai ?? "-"}</TableCell>
+                          <TableCell key={k.id}>
+                            {formatNumber(k.nilai)}
+                          </TableCell>
                         ))}
 
                     {/* Display assignment scores */}
@@ -357,23 +364,25 @@ export default function NilaiSiswaPage() {
                             );
                             return (
                               <TableCell key={assignment.id}>
-                                {studentAssignment?.nilai ?? "-"}
+                                {formatNumber(studentAssignment?.nilai)}
                               </TableCell>
                             );
                           })
                       : item.tugas.map((t) => (
-                          <TableCell key={t.id}>{t.nilai ?? "-"}</TableCell>
+                          <TableCell key={t.id}>
+                            {formatNumber(t.nilai)}
+                          </TableCell>
                         ))}
 
                     {filters.subjectId && (
                       <>
-                        <TableCell>{item.nilaiUTS ?? "-"}</TableCell>
-                        <TableCell>{item.nilaiUAS ?? "-"}</TableCell>
+                        <TableCell>{formatNumber(item.nilaiUTS)}</TableCell>
+                        <TableCell>{formatNumber(item.nilaiUAS)}</TableCell>
                       </>
                     )}
 
                     <TableCell className="font-bold">
-                      {item.totalNilai ?? "-"}
+                      {formatNumber(item.totalNilai)}
                     </TableCell>
                   </TableRow>
                 ))
