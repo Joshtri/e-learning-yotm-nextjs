@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const user = await getUserFromCookie(); // <-- JANGAN LUPA await
+    const user = await getUserFromCookie();
 
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
@@ -13,7 +13,6 @@ export async function GET() {
       );
     }
 
-    // Cari profil student berdasarkan userId
     const student = await prisma.student.findFirst({
       where: { userId: user.id },
       include: {
@@ -28,7 +27,6 @@ export async function GET() {
       },
     });
 
-    // Validasi data student
     if (!student) {
       return NextResponse.json(
         { success: false, message: "Profil siswa tidak ditemukan." },
@@ -38,7 +36,11 @@ export async function GET() {
 
     if (!student.class || !student.class.academicYear.isActive) {
       return NextResponse.json(
-        { success: false, message: "Anda tidak terdaftar di kelas pada tahun ajaran aktif saat ini." },
+        {
+          success: false,
+          message:
+            "Anda tidak terdaftar di kelas pada tahun ajaran aktif saat ini.",
+        },
         { status: 404 }
       );
     }
@@ -47,7 +49,6 @@ export async function GET() {
     const now = new Date();
     const cstIds = student.class.classSubjectTutors.map((cst) => cst.id);
 
-    // Proses paralel query
     const [
       upcomingAssignments,
       upcomingQuizzes,
@@ -60,7 +61,8 @@ export async function GET() {
         where: {
           classSubjectTutorId: { in: cstIds },
           TanggalSelesai: { gte: now },
-          jenis: "EXERCISE", // hanya tugas latihan
+          // TanggalMulai: { lte: now },
+          jenis: "EXERCISE",
           classSubjectTutor: {
             class: {
               academicYearId: student.class.academicYearId,
@@ -190,7 +192,6 @@ export async function GET() {
       }),
     ]);
 
-    // Hitung nilai
     const scoresBySubject = {};
     let totalScore = 0;
     let totalItems = 0;
@@ -242,6 +243,7 @@ export async function GET() {
         id: a.id,
         title: a.judul,
         subject: a.classSubjectTutor.subject.namaMapel,
+        startDate: a.TanggalMulai, // ✅ ditambahkan
         dueDate: a.TanggalSelesai,
         type: a.jenis,
       })),
@@ -249,6 +251,7 @@ export async function GET() {
         id: q.id,
         title: q.judul,
         subject: q.classSubjectTutor.subject.namaMapel,
+        startDate: q.waktuMulai, // ✅ ditambahkan juga biar konsisten
         dueDate: q.waktuSelesai,
         duration: q.durasiMenit,
       })),
@@ -269,14 +272,32 @@ export async function GET() {
           status: s.status,
           score: s.nilai,
         })),
+      recentMaterials: recentMaterials.map((m) => {
+        const tipeMateri = (m.tipeMateri || m.tipe || "").toString().trim().toUpperCase();
+        const extractFirstUrl = (text = "") => {
+          const match = String(text).match(/https?:\/\/[^\s)]+/i);
+          return match ? match[0] : null;
+        };
+        const isYouTubeUrl = (url = "") =>
+          /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url);
 
-      recentMaterials: recentMaterials.map((m) => ({
-        id: m.id,
-        title: m.judul,
-        subject: m.classSubjectTutor.subject.namaMapel,
-        createdAt: m.createdAt,
-        hasFile: !!m.fileUrl,
-      })),
+        const url = m.fileUrl || extractFirstUrl(m.konten) || null;
+        let type = "FILE";
+
+        if (tipeMateri === "LINK_YOUTUBE" || isYouTubeUrl(url)) {
+          type = "LINK_YOUTUBE";
+        }
+
+        return {
+          id: m.id,
+          title: m.judul,
+          subject: m.classSubjectTutor.subject.namaMapel,
+          createdAt: m.createdAt,
+          hasFile: !!m.fileUrl,
+          url: url,
+          type: type,
+        };
+      }),
       statistics: {
         submissions: submissionStats,
         subjects,
