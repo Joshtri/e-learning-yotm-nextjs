@@ -17,6 +17,8 @@ import {
   Users,
   Users2,
   Volleyball,
+  Download,
+  Printer,
 } from "lucide-react";
 
 export const navByRole = {
@@ -276,6 +278,16 @@ export const navByRole = {
         },
       ],
     },
+    {
+      title: "Laporan",
+      items: [
+        {
+          title: "Cetak Laporan",
+          href: "/tutor/reports",
+          icon: <Printer className="h-4 w-4" />,
+        },
+      ],
+    },
   ],
 
   student: [
@@ -443,6 +455,16 @@ export const navByRole = {
           href: "/homeroom/move-semester",
           icon: <ArrowRight className="h-4 w-4" />,
           showOnSemester: "GANJIL", // 🔥 Custom property
+        },
+      ],
+    },
+    {
+      title: "Laporan",
+      items: [
+        {
+          title: "Cetak Laporan",
+          href: "/homeroom/reports",
+          icon: <Printer className="h-4 w-4" />,
         },
       ],
     },
