@@ -18,12 +18,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { NotificationDropdown } from "../ui/notification-dropdown";
+import { ConfirmationDialog } from "../ui/confirmation-dialog";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
   const [mode, setMode] = useState("default");
   const [user, setUser] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -45,6 +47,7 @@ export default function AppHeader({ onMenuClick, role }) {
   }, []);
 
   const handleSwitchMode = async () => {
+    setShowSwitchConfirm(false);
     setIsSwitching(true);
 
     try {
@@ -65,6 +68,10 @@ export default function AppHeader({ onMenuClick, role }) {
       // Reset switching state setelah navigasi selesai
       setTimeout(() => setIsSwitching(false), 500);
     }
+  };
+
+  const handleSwitchModeClick = () => {
+    setShowSwitchConfirm(true);
   };
 
   const getRolePrefix = () => {
@@ -147,7 +154,7 @@ export default function AppHeader({ onMenuClick, role }) {
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleSwitchMode}
+                  onClick={handleSwitchModeClick}
                   disabled={isSwitching}
                   className="cursor-pointer"
                 >
@@ -184,6 +191,20 @@ export default function AppHeader({ onMenuClick, role }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showSwitchConfirm}
+        onOpenChange={setShowSwitchConfirm}
+        title="Konfirmasi Perpindahan Mode"
+        description={`Anda akan berpindah ke ${
+          mode === "homeroom" ? "Mode Tutor" : "Mode Wali Kelas"
+        }. Halaman akan dialihkan ke dashboard yang sesuai. Apakah Anda yakin?`}
+        confirmText="Ya, Pindah Mode"
+        cancelText="Batal"
+        onConfirm={handleSwitchMode}
+        isLoading={isSwitching}
+      />
     </header>
   );
 }
