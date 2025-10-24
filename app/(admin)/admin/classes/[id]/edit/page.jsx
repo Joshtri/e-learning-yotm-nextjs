@@ -32,6 +32,7 @@ export default function EditClassPage() {
   const [academicYears, setAcademicYears] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(null);
 
   // Ambil data awal
   useEffect(() => {
@@ -94,7 +95,10 @@ export default function EditClassPage() {
       setAcademicYears(
         yearsArr.map((y) => ({
           id: String(y.id),
-          label: `${y.tahunMulai}/${y.tahunSelesai}`,
+          label: `${y.tahunMulai}/${y.tahunSelesai} - ${y.semester}`,
+          semester: y.semester,
+          tahunMulai: y.tahunMulai,
+          tahunSelesai: y.tahunSelesai,
           isActive: !!y.isActive,
         }))
       );
@@ -121,6 +125,12 @@ export default function EditClassPage() {
       ...prev,
       [name]: value != null ? String(value) : "",
     }));
+
+    // Update selected year untuk menampilkan info
+    if (name === "academicYearId" && value) {
+      const year = academicYears.find((y) => y.id === String(value));
+      setSelectedYear(year);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -202,19 +212,19 @@ export default function EditClassPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium">Tahun Ajaran</label>
+              <label className="block text-sm font-medium">Tahun Ajaran & Semester</label>
               <Select
                 value={form.academicYearId}
                 onValueChange={(val) => handleSelect("academicYearId", val)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih Tahun Ajaran" />
+                  <SelectValue placeholder="Pilih Tahun Ajaran & Semester" />
                 </SelectTrigger>
                 <SelectContent>
                   {academicYears.length ? (
                     academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
-                        {y.label}
+                        {y.label}{y.isActive ? " (Aktif)" : ""}
                       </SelectItem>
                     ))
                   ) : (
@@ -224,6 +234,32 @@ export default function EditClassPage() {
                   )}
                 </SelectContent>
               </Select>
+
+              {selectedYear && (
+                <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm font-medium text-blue-900">
+                    📅 Informasi Tahun Ajaran yang Dipilih:
+                  </p>
+                  <ul className="mt-2 text-sm text-blue-800 space-y-1">
+                    <li>
+                      • <span className="font-medium">Tahun:</span>{" "}
+                      {selectedYear.tahunMulai}/{selectedYear.tahunSelesai}
+                    </li>
+                    <li>
+                      • <span className="font-medium">Semester:</span>{" "}
+                      {selectedYear.semester}
+                    </li>
+                    <li>
+                      • <span className="font-medium">Status:</span>{" "}
+                      {selectedYear.isActive ? (
+                        <span className="text-green-600 font-semibold">Aktif</span>
+                      ) : (
+                        <span className="text-gray-600">Tidak Aktif</span>
+                      )}
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div>
