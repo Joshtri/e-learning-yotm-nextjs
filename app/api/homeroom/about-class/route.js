@@ -33,7 +33,7 @@ export async function GET(request) {
       include: { academicYear: true },
       orderBy: [
         { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "asc" } },
+        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
       ],
     });
 
@@ -45,37 +45,67 @@ export async function GET(request) {
 
     const filterOptions = { academicYears };
 
-    let whereClause = {
-      homeroomTeacherId: tutor.id,
-    };
+    let kelas;
 
     if (academicYearId) {
-      whereClause.academicYearId = academicYearId;
+      // Jika ada parameter academicYearId, cari kelas berdasarkan tahun akademik tersebut
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          program: true,
+          academicYear: true,
+          homeroomTeacher: {
+            include: { user: true },
+          },
+          students: {
+            where: { status: 'ACTIVE' },
+            include: {
+              user: true,
+            },
+          },
+          classSubjectTutors: {
+            include: {
+              subject: true,
+            },
+          },
+        },
+      });
     } else {
-      whereClause.academicYear = { isActive: true };
-    }
+      // Jika tidak ada parameter, cari kelas terbaru yang punya siswa aktif
+      const allClasses = await prisma.class.findMany({
+        where: {
+          homeroomTeacherId: tutor.id,
+        },
+        include: {
+          program: true,
+          academicYear: true,
+          homeroomTeacher: {
+            include: { user: true },
+          },
+          students: {
+            where: { status: 'ACTIVE' },
+            include: {
+              user: true,
+            },
+          },
+          classSubjectTutors: {
+            include: {
+              subject: true,
+            },
+          },
+        },
+        orderBy: [
+          { academicYear: { tahunMulai: "desc" } },
+          { academicYear: { semester: "desc" } }, // GENAP dulu
+        ],
+      });
 
-    const kelas = await prisma.class.findFirst({
-      where: whereClause,
-      include: {
-        program: true,
-        academicYear: true,
-        homeroomTeacher: {
-          include: { user: true },
-        },
-        students: {
-          where: { status: 'ACTIVE' },
-          include: {
-            user: true,
-          },
-        },
-        classSubjectTutors: {
-          include: {
-            subject: true,
-          },
-        },
-      },
-    });
+      // Pilih kelas yang punya siswa aktif, jika tidak ada ambil yang terbaru
+      kelas = allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
+    }
 
     if (!kelas) {
       return NextResponse.json(
