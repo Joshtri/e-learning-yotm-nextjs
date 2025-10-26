@@ -53,20 +53,66 @@ export default function HomeroomAttendancePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [academicYearInfo, setAcademicYearInfo] = useState(null);
 
+  // ✅ New state for academic year filter
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState("");
+  const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
+
   // Set locale Indonesia untuk dayjs
   dayjs.locale("id");
 
+  // Fetch academic years on mount
   useEffect(() => {
-    fetchAttendance();
-  }, [currentMonth, currentYear]);
+    fetchAcademicYears();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadingAcademicYears) {
+      fetchAttendance();
+    }
+  }, [currentMonth, currentYear, selectedAcademicYearId, isLoadingAcademicYears]);
+
+  const fetchAcademicYears = async () => {
+    try {
+      setIsLoadingAcademicYears(true);
+      console.log("Fetching academic years...");
+      const res = await api.get("/homeroom/academic-years");
+      console.log("Academic years response:", res.data);
+      const years = res.data.data || [];
+      console.log("Academic years data:", years);
+      setAcademicYears(years);
+
+      // Set default to the active academic year (or the first one if no active)
+      const activeYear = years.find((y) => y.isActive);
+      console.log("Active year found:", activeYear);
+      if (activeYear) {
+        setSelectedAcademicYearId(activeYear.id);
+      } else if (years.length > 0) {
+        setSelectedAcademicYearId(years[0].id);
+        console.log("No active year, using first:", years[0]);
+      } else {
+        console.log("No academic years found!");
+      }
+    } catch (error) {
+      console.error("Error fetching academic years:", error);
+      toast.error("Gagal memuat data tahun ajaran");
+    } finally {
+      setIsLoadingAcademicYears(false);
+    }
+  };
 
   const fetchAttendance = async () => {
     try {
       setIsLoading(true);
       setAcademicYearInfo(null);
-      const res = await api.get(
-        `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`
-      );
+
+      // Build query string with optional academicYearId
+      let queryString = `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`;
+      if (selectedAcademicYearId) {
+        queryString += `&academicYearId=${selectedAcademicYearId}`;
+      }
+
+      const res = await api.get(queryString);
       const responseData = res.data.data || {};
       const studentData = responseData.students || [];
       setStudents(studentData);
@@ -112,9 +158,14 @@ export default function HomeroomAttendancePage() {
   const handleDeleteAttendance = async () => {
     try {
       setIsDeleting(true);
-      await api.delete(
-        `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`
-      );
+
+      // Build query string with optional academicYearId
+      let queryString = `/homeroom/attendance?bulan=${currentMonth}&tahun=${currentYear}`;
+      if (selectedAcademicYearId) {
+        queryString += `&academicYearId=${selectedAcademicYearId}`;
+      }
+
+      await api.delete(queryString);
       toast.success("Presensi bulan ini berhasil dihapus");
       setModalOpen(false);
       fetchAttendance();
@@ -170,13 +221,18 @@ export default function HomeroomAttendancePage() {
     }
   };
 
-  const pageDescription = `Kelola presensi siswa bulan ${dayjs()
+  // Check if viewing active academic year
+  const isViewingActiveYear = academicYears.find((y) => y.id === selectedAcademicYearId)?.isActive;
+
+  const pageDescription = `${
+    isViewingActiveYear ? "Kelola" : "Lihat"
+  } presensi siswa bulan ${dayjs()
     .month(currentMonth - 1)
     .format("MMMM")} ${currentYear}. ${
     academicYearInfo
       ? `T.A ${academicYearInfo.tahunMulai}/${academicYearInfo.tahunSelesai} Semester ${academicYearInfo.semester}`
       : ""
-  }`;
+  }${!isViewingActiveYear && academicYearInfo ? " (Arsip)" : ""}`;
 
   return (
     <div className="p-6 space-y-6">
@@ -189,8 +245,52 @@ export default function HomeroomAttendancePage() {
         ]}
       />
 
+      {/* ✅ Show info banner when viewing archived data */}
+      {!isViewingActiveYear && academicYearInfo && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="font-medium text-amber-900">
+                Mode Arsip - Hanya Lihat
+              </p>
+              <p className="text-sm text-amber-700">
+                Anda sedang melihat data presensi dari tahun ajaran sebelumnya. Generate dan hapus presensi hanya tersedia untuk tahun ajaran aktif.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* ✅ Academic Year Filter */}
+          {isLoadingAcademicYears ? (
+            <div className="w-[220px] h-10 bg-gray-100 animate-pulse rounded-md" />
+          ) : academicYears.length === 0 ? (
+            <div className="w-[220px] h-10 px-3 py-2 border rounded-md bg-gray-50 text-sm text-muted-foreground flex items-center">
+              Tidak ada tahun ajaran
+            </div>
+          ) : (
+            <Select
+              value={selectedAcademicYearId}
+              onValueChange={(val) => setSelectedAcademicYearId(val)}
+              disabled={isLoadingAcademicYears}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Pilih Tahun Ajaran" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year) => (
+                  <SelectItem key={year.id} value={year.id}>
+                    T.A {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
+                    {year.isActive && " (Aktif)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <Select
             value={String(currentMonth)}
             onValueChange={(val) => setCurrentMonth(Number(val))}
@@ -228,20 +328,23 @@ export default function HomeroomAttendancePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating || students.length === 0}
-          >
-            {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isGenerating ? "Mengenerate..." : "Generate Presensi Bulan Ini"}
-          </Button>
-
-          <AlertDialog open={modalOpen} onOpenChange={setModalOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={students.length === 0}>
-                Hapus Semua Presensi
+          {/* ✅ Only show generate/delete buttons for active academic year */}
+          {academicYears.find((y) => y.id === selectedAcademicYearId)?.isActive && (
+            <>
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || students.length === 0}
+              >
+                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isGenerating ? "Mengenerate..." : "Generate Presensi Bulan Ini"}
               </Button>
-            </AlertDialogTrigger>
+
+              <AlertDialog open={modalOpen} onOpenChange={setModalOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={students.length === 0}>
+                    Hapus Semua Presensi
+                  </Button>
+                </AlertDialogTrigger>
 
             <AlertDialogContent>
               <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
@@ -266,6 +369,8 @@ export default function HomeroomAttendancePage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+            </>
+          )}
         </div>
       </div>
 

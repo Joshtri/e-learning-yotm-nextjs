@@ -31,11 +31,8 @@ export async function GET(request) {
     // Ambil kelas yang di-wali oleh homeroom teacher
     const whereClause = {
       homeroomTeacherId: tutor.id,
+      ...(academicYearId && { academicYearId }),
     };
-
-    if (academicYearId) {
-      whereClause.academicYearId = academicYearId;
-    }
 
     const classes = await prisma.class.findMany({
       where: whereClause,
@@ -60,36 +57,30 @@ export async function GET(request) {
           select: { id: true },
         },
       },
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { namaKelas: "asc" },
-      ],
+      orderBy: [{ academicYear: { tahunMulai: "desc" } }, { namaKelas: "asc" }],
     });
 
-    // Untuk historical data, count dari BehaviorScore jika ada
     const enrichedClasses = await Promise.all(
       classes.map(async (kelas) => {
-        // Jika kelas punya students active, pakai itu
         let studentCount = kelas.students.length;
 
-        // Jika tidak ada students (historical data), cek dari BehaviorScore
+        // Jika tidak ada siswa aktif, ambil dari BehaviorScore
         if (studentCount === 0) {
-          const behaviorScoreCount = await prisma.behaviorScore.count({
+          const grouped = await prisma.behaviorScore.groupBy({
+            by: ["studentId"],
             where: {
               classId: kelas.id,
               academicYearId: kelas.academicYearId,
             },
-            distinct: ['studentId'],
           });
-          studentCount = behaviorScoreCount;
+
+          studentCount = grouped.length;
         }
 
         return {
           ...kelas,
-          _count: {
-            students: studentCount,
-          },
-          students: undefined, // Remove students array from response
+          _count: { students: studentCount },
+          students: undefined, // jangan kirim array siswa
         };
       })
     );
