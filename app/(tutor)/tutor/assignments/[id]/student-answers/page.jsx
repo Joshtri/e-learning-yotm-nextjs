@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Eye, Edit, CheckCircle } from "lucide-react";
 
 export default function AssignmentSubmissionsPage() {
   const { id } = useParams(); // assignmentId
@@ -19,7 +20,7 @@ export default function AssignmentSubmissionsPage() {
 
   const fetchData = async () => {
     try {
-      const res = await api.get(`/tutor/assignments/${id}/submissions`);
+      const res = await api.get(`/tutor/assignments/${id}/student-answers`);
       setSubmissions(res.data.data.submissions || []);
       setAssignment(res.data.data.assignment || null);
     } catch {
@@ -49,7 +50,12 @@ export default function AssignmentSubmissionsPage() {
     },
     {
       header: "Nama Siswa",
-      cell: (row) => row.nama,
+      cell: (row) => (
+        <div>
+          <div className="font-medium">{row.nama}</div>
+          <div className="text-xs text-muted-foreground">NISN: {row.nisn}</div>
+        </div>
+      ),
     },
     {
       header: "Status",
@@ -61,50 +67,66 @@ export default function AssignmentSubmissionsPage() {
     },
     {
       header: "Nilai",
-      cell: (row) => (row.nilai != null ? row.nilai : "-"),
+      cell: (row) => {
+        if (row.nilai !== null && row.nilai !== undefined) {
+          return (
+            <div className="font-bold text-lg text-primary">
+              {Number(row.nilai).toFixed(2)}
+            </div>
+          );
+        }
+        return <span className="text-muted-foreground">-</span>;
+      },
+      className: "text-center",
     },
     {
       header: "Waktu Kumpul",
       cell: (row) =>
         row.waktuKumpul
-          ? new Date(row.waktuKumpul).toLocaleString("id-ID")
+          ? new Date(row.waktuKumpul).toLocaleString("id-ID", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })
           : "-",
     },
     {
       header: "Aksi",
       cell: (row) => {
-        if (row.status === "NOT_STARTED") {
-          return (
-            <span className="text-sm text-muted-foreground italic">
-              Belum mengerjakan
-            </span>
-          );
-        }
-
-        if (row.nilai != null) {
-          return (
-            <span className="text-sm text-green-600 font-medium">
-              Sudah dinilai
-            </span>
-          );
-        }
-
         return (
           <div className="flex gap-2 flex-wrap">
+            {/* Tombol Edit/Input Jawaban - selalu ada */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/tutor/submissions/${row.id}/review`)}
+              onClick={() => router.push(`/tutor/assignments/${id}/input-answer/${row.studentId}`)}
             >
-              Review
+              <Edit className="h-4 w-4 mr-1" />
+              {row.status === "NOT_STARTED" ? "Input Jawaban" : "Edit Jawaban"}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/tutor/submissions/${row.id}/review`)}
-            >
-              Beri Nilai
-            </Button>
+
+            {/* Tombol Lihat Jawaban - hanya jika sudah ada submission */}
+            {row.status !== "NOT_STARTED" && row.submissionId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/tutor/assignments/${id}/student-answers/${row.submissionId}/view`)}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Lihat Jawaban
+              </Button>
+            )}
+
+            {/* Tombol Beri Nilai - hanya jika sudah ada submission tapi belum dinilai */}
+            {row.status !== "NOT_STARTED" && row.submissionId && row.nilai == null && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => router.push(`/tutor/assignments/${id}/student-answers/${row.submissionId}/grade`)}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Beri Nilai
+              </Button>
+            )}
           </div>
         );
       },

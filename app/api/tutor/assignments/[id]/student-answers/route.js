@@ -41,7 +41,12 @@ export async function GET(req, { params }) {
       );
     }
 
-    const allStudents = assignment.classSubjectTutor.class.students;
+    // Ambil semua siswa dari kelas dan urutkan berdasarkan nama
+    const allStudents = assignment.classSubjectTutor.class.students.sort((a, b) => {
+      const nameA = a.namaLengkap || a.user?.nama || "";
+      const nameB = b.namaLengkap || b.user?.nama || "";
+      return nameA.localeCompare(nameB);
+    });
 
     const submissions = await prisma.submission.findMany({
       where: { assignmentId },
@@ -57,13 +62,20 @@ export async function GET(req, { params }) {
     const submissionsMap = new Map(submissions.map((s) => [s.studentId, s]));
 
     const result = allStudents.map((student) => {
-      const s = submissionsMap.get(student.id);
+      const submission = submissionsMap.get(student.id);
+
       return {
-        id: s?.id || `pending_${student.id}`,
+        id: submission?.id || `pending_${student.id}`,
+        submissionId: submission?.id || null,
+        studentId: student.id,
         nama: student.namaLengkap || student.user?.nama || "-",
-        status: s?.status || "NOT_STARTED",
-        nilai: s?.nilai ?? null,
-        waktuKumpul: s?.waktuKumpul ?? null,
+        nisn: student.nisn || "-",
+        status: submission?.status || "NOT_STARTED",
+        nilai: submission?.nilai !== undefined && submission?.nilai !== null ? Number(submission.nilai) : null,
+        waktuMulai: submission?.waktuMulai || null,
+        waktuKumpul: submission?.waktuKumpul || null,
+        waktuDinilai: submission?.waktuDinilai || null,
+        feedback: submission?.feedback || null,
       };
     });
 

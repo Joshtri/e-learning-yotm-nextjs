@@ -261,7 +261,7 @@ export default function TutorAssignmentPage() {
             size="sm"
             variant="default"
             onClick={() =>
-              router.push(`/tutor/assignments/${row.id}/submissions`)
+              router.push(`/tutor/assignments/${row.id}/student-answers`)
             }
           >
             <FileText className="h-4 w-4 mr-1" />

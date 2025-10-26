@@ -1,7 +1,10 @@
+// File: app/api/tutor/submissions/[submissionId]/route.js
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
+// GET: Get submission detail dengan answers
 export async function GET(req, { params }) {
   try {
     const user = await getUserFromCookie();
@@ -30,17 +33,15 @@ export async function GET(req, { params }) {
                 subject: true,
               },
             },
-          },
-        },
-        quiz: {
-          include: {
-            classSubjectTutor: {
+            questions: {
               include: {
-                class: true,
-                subject: true,
+                options: true,
               },
+              // orderBy: {
+              //   createdAt: "asc",
+              // },
             },
-          },
+          },  
         },
         answers: {
           include: {
@@ -60,55 +61,11 @@ export async function GET(req, { params }) {
     return NextResponse.json({
       success: true,
       data: {
-        id: submission.id,
-        status: submission.status,
-        nilai: submission.nilai,
-        feedback: submission.feedback,
-        waktuKumpul: submission.waktuKumpul,
-        waktuMulai: submission.waktuMulai,
-        createdAt: submission.createdAt,
-        answerPdf: submission.answerPdf, // Include answerPdf for review
-        student: {
-          id: submission.student.id,
-          nama:
-            submission.student.namaLengkap ||
-            submission.student.user?.nama ||
-            "Unknown",
-          email: submission.student.user?.email || "",
-        },
-        assignment: submission.assignment
-          ? {
-              id: submission.assignment.id,
-              judul: submission.assignment.judul,
-              deskripsi: submission.assignment.deskripsi,
-              waktuMulai: submission.assignment.waktuMulai,
-              waktuSelesai: submission.assignment.waktuSelesai,
-              classSubjectTutor: submission.assignment.classSubjectTutor,
-            }
-          : null,
-        quiz: submission.quiz
-          ? {
-              id: submission.quiz.id,
-              judul: submission.quiz.judul,
-              deskripsi: submission.quiz.deskripsi,
-              waktuMulai: submission.quiz.waktuMulai,
-              waktuSelesai: submission.quiz.waktuSelesai,
-              classSubjectTutor: submission.quiz.classSubjectTutor,
-            }
-          : null,
-        answers: submission.answers.map((ans) => ({
-          id: ans.id,
-          jawaban: ans.jawaban,
-          isCorrect: ans.isCorrect,
-          question: {
-            id: ans.question.id,
-            teks: ans.question.teks,
-            jenis: ans.question.jenis,
-          },
-        })),
+        submission,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Error fetching submission:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }
@@ -116,7 +73,8 @@ export async function GET(req, { params }) {
   }
 }
 
-export async function PATCH(req, { params }) {
+// PUT: Update nilai dan feedback untuk submission
+export async function PUT(req, { params }) {
   try {
     const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -128,29 +86,59 @@ export async function PATCH(req, { params }) {
 
     const submissionId = params.id;
     const body = await req.json();
-    const { nilai, feedback } = body;
+    const { nilai, feedback, answers } = body;
 
-    if (nilai == null) {
+    const submission = await prisma.submission.findUnique({
+      where: { id: submissionId },
+    });
+
+    if (!submission) {
       return NextResponse.json(
-        { success: false, message: "Nilai wajib diisi" },
-        { status: 400 }
+        { success: false, message: "Submission tidak ditemukan" },
+        { status: 404 }
       );
     }
 
-    const updated = await prisma.submission.update({
+    const now = new Date();
+
+    // Update submission
+    const updatedSubmission = await prisma.submission.update({
       where: { id: submissionId },
       data: {
-        nilai: Number(nilai),
-        feedback: feedback || null,
-        status: "GRADED",
-        waktuDinilai: new Date(),
+        nilai: nilai != null ? parseFloat(nilai) : submission.nilai,
+        feedback: feedback || submission.feedback,
+        waktuDinilai: nilai != null ? now : submission.waktuDinilai,
+        status: nilai != null ? "GRADED" : submission.status,
       },
     });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch {
+    // Update individual answer grades if provided
+    if (answers && Array.isArray(answers)) {
+      for (const answerUpdate of answers) {
+        if (answerUpdate.answerId) {
+          await prisma.answer.update({
+            where: { id: answerUpdate.answerId },
+            data: {
+              nilai: answerUpdate.nilai != null ? parseFloat(answerUpdate.nilai) : undefined,
+              feedback: answerUpdate.feedback || undefined,
+              adalahBenar: answerUpdate.adalahBenar !== undefined ? answerUpdate.adalahBenar : undefined,
+            },
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Penilaian berhasil disimpan",
+      data: {
+        submission: updatedSubmission,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating submission:", error);
     return NextResponse.json(
-      { success: false, message: "Terjadi kesalahan server" },
+      { success: false, message: "Gagal menyimpan penilaian", error: error.message },
       { status: 500 }
     );
   }

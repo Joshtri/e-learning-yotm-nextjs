@@ -14,7 +14,9 @@
       "Bash(ls:*)",
       "Bash(dir:*)",
       "Bash(npm install:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(move \"app\\(tutor)\\tutor\\assignments\\[id]\\submissions\\[studentId]\\edit\\page.jsx\" \"app\\(tutor)\\tutor\\assignments\\[id]\\input-answer\\[studentId]\\page.jsx\")",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
