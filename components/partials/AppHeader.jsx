@@ -108,7 +108,7 @@ export default function AppHeader({ onMenuClick, role }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-blue-300 bg-gradient-to-r from-blue-500 to-blue-600 px-4 md:px-6 shadow-md">
+      <header className="fixed top-0 left-0 right-0 z-[200] flex h-16 items-center justify-between border-b border-blue-300 bg-gradient-to-r from-blue-500 to-blue-600 px-4 md:px-6 shadow-md">
         {/* Left */}
         <div className="flex items-center gap-4">
           {/* Mobile Menu Button */}
@@ -232,7 +232,7 @@ export default function AppHeader({ onMenuClick, role }) {
           variant="default"
           size="icon"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 md:bottom-8 md:right-8"
+          className="fixed bottom-6 right-6 z-[100] h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 md:bottom-8 md:right-8"
           aria-label="Scroll to top"
         >
           <ArrowUp className="h-5 w-5" />
