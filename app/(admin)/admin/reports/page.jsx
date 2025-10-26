@@ -30,11 +30,11 @@ import { PageHeader } from "@/components/ui/page-header";
 export default function AdminReportsPage() {
   const [reportType, setReportType] = useState("attendance");
   const [selectedClassId, setSelectedClassId] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [reportFormat, setReportFormat] = useState("pdf");
   const [loadingReport, setLoadingReport] = useState(false);
   const [classes, setClasses] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [currentAcademicYear, setCurrentAcademicYear] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,9 +45,10 @@ export default function AdminReportsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [classesRes, overviewRes] = await Promise.all([
+      const [classesRes, overviewRes, academicYearsRes] = await Promise.all([
         fetch("/api/admin/dashboard/classes"),
         fetch("/api/admin/dashboard/overview"),
+        fetch("/api/academic-years"),
       ]);
 
       if (classesRes.ok) {
@@ -58,6 +59,17 @@ export default function AdminReportsPage() {
       if (overviewRes.ok) {
         const overviewData = await overviewRes.json();
         setCurrentAcademicYear(overviewData.currentAcademicYear);
+      }
+
+      if (academicYearsRes.ok) {
+        const academicYearsData = await academicYearsRes.json();
+        setAcademicYears(academicYearsData.data?.academicYears || []);
+
+        // Set default to active year
+        const activeYear = academicYearsData.data?.academicYears?.find(y => y.isActive);
+        if (activeYear) {
+          setSelectedAcademicYear(activeYear.id);
+        }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -70,9 +82,15 @@ export default function AdminReportsPage() {
     try {
       setLoadingReport(true);
 
+      if (!selectedAcademicYear) {
+        alert("Pilih tahun ajaran terlebih dahulu");
+        setLoadingReport(false);
+        return;
+      }
+
       let url = "";
       const params = new URLSearchParams({
-        academicYearId: currentAcademicYear?.id || "",
+        academicYearId: selectedAcademicYear,
         format: reportFormat,
       });
 
@@ -80,8 +98,6 @@ export default function AdminReportsPage() {
         if (selectedClassId && selectedClassId !== "all") {
           params.append("classId", selectedClassId);
         }
-        params.append("month", selectedMonth.toString());
-        params.append("year", selectedYear.toString());
         url = `/api/admin/reports/attendance?${params.toString()}`;
       } else if (reportType === "scores") {
         if (selectedClassId && selectedClassId !== "all") {
@@ -89,6 +105,11 @@ export default function AdminReportsPage() {
         }
         url = `/api/admin/reports/class-scores?${params.toString()}`;
       }
+
+      console.log("Generating report with URL:", url);
+      console.log("Selected Academic Year:", selectedAcademicYear);
+      console.log("Report Type:", reportType);
+      console.log("Format:", reportFormat);
 
       const response = await fetch(url);
 
@@ -119,7 +140,7 @@ export default function AdminReportsPage() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error("Error generating report:", error);
-      alert(`Gagal membuat laporan: ${error.message}`);
+      // alert(`Gagal membuat laporan: ${error.message}`);
     } finally {
       setLoadingReport(false);
     }
@@ -189,6 +210,27 @@ export default function AdminReportsPage() {
               </Select>
             </div>
 
+            {/* Academic Year Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tahun Ajaran / Semester</label>
+              <Select
+                value={selectedAcademicYear}
+                onValueChange={setSelectedAcademicYear}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tahun ajaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
+                      {year.isActive && " (Aktif)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Class Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Kelas</label>
@@ -210,56 +252,6 @@ export default function AdminReportsPage() {
               </Select>
             </div>
 
-            {/* Month and Year for Attendance Report */}
-            {reportType === "attendance" && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bulan</label>
-                  <Select
-                    value={selectedMonth.toString()}
-                    onValueChange={(value) => setSelectedMonth(parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Januari</SelectItem>
-                      <SelectItem value="2">Februari</SelectItem>
-                      <SelectItem value="3">Maret</SelectItem>
-                      <SelectItem value="4">April</SelectItem>
-                      <SelectItem value="5">Mei</SelectItem>
-                      <SelectItem value="6">Juni</SelectItem>
-                      <SelectItem value="7">Juli</SelectItem>
-                      <SelectItem value="8">Agustus</SelectItem>
-                      <SelectItem value="9">September</SelectItem>
-                      <SelectItem value="10">Oktober</SelectItem>
-                      <SelectItem value="11">November</SelectItem>
-                      <SelectItem value="12">Desember</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Tahun</label>
-                  <Select
-                    value={selectedYear.toString()}
-                    onValueChange={(value) => setSelectedYear(parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[2024, 2025, 2026, 2027].map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
             {/* Format Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Format File</label>
@@ -277,7 +269,7 @@ export default function AdminReportsPage() {
             {/* Generate Button */}
             <Button
               onClick={generateReport}
-              disabled={loadingReport || !currentAcademicYear}
+              disabled={loadingReport || !selectedAcademicYear}
               className="w-full"
               size="lg"
             >
@@ -308,7 +300,7 @@ export default function AdminReportsPage() {
                   <Info className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-blue-700">
                     <strong>Laporan Presensi:</strong> Menampilkan rekap
-                    kehadiran siswa per bulan dengan rincian hadir, sakit, izin,
+                    kehadiran siswa per semester dengan rincian hadir, sakit, izin,
                     dan alpha.
                   </div>
                 </div>
@@ -384,11 +376,11 @@ export default function AdminReportsPage() {
                 setReportFormat("pdf");
                 setTimeout(() => generateReport(), 100);
               }}
-              disabled={loadingReport || !currentAcademicYear}
+              disabled={loadingReport || !selectedAcademicYear}
             >
               <FileBarChart className="h-5 w-5 mb-2 text-blue-500" />
               <div className="text-left">
-                <div className="font-medium">Presensi Bulan Ini</div>
+                <div className="font-medium">Presensi Semester</div>
                 <div className="text-xs text-gray-500">Semua Kelas</div>
               </div>
             </Button>
@@ -402,7 +394,7 @@ export default function AdminReportsPage() {
                 setReportFormat("pdf");
                 setTimeout(() => generateReport(), 100);
               }}
-              disabled={loadingReport || !currentAcademicYear}
+              disabled={loadingReport || !selectedAcademicYear}
             >
               <BookOpenCheck className="h-5 w-5 mb-2 text-green-500" />
               <div className="text-left">
@@ -420,7 +412,7 @@ export default function AdminReportsPage() {
                 setReportFormat("excel");
                 setTimeout(() => generateReport(), 100);
               }}
-              disabled={loadingReport || !currentAcademicYear}
+              disabled={loadingReport || !selectedAcademicYear}
             >
               <Download className="h-5 w-5 mb-2 text-purple-500" />
               <div className="text-left">
@@ -438,7 +430,7 @@ export default function AdminReportsPage() {
                 setReportFormat("excel");
                 setTimeout(() => generateReport(), 100);
               }}
-              disabled={loadingReport || !currentAcademicYear}
+              disabled={loadingReport || !selectedAcademicYear}
             >
               <Download className="h-5 w-5 mb-2 text-amber-500" />
               <div className="text-left">

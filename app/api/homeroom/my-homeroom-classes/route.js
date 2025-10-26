@@ -55,10 +55,9 @@ export async function GET(request) {
             isActive: true,
           },
         },
-        _count: {
-          select: {
-            students: true,
-          },
+        students: {
+          where: { status: "ACTIVE" },
+          select: { id: true },
         },
       },
       orderBy: [
@@ -67,9 +66,37 @@ export async function GET(request) {
       ],
     });
 
+    // Untuk historical data, count dari BehaviorScore jika ada
+    const enrichedClasses = await Promise.all(
+      classes.map(async (kelas) => {
+        // Jika kelas punya students active, pakai itu
+        let studentCount = kelas.students.length;
+
+        // Jika tidak ada students (historical data), cek dari BehaviorScore
+        if (studentCount === 0) {
+          const behaviorScoreCount = await prisma.behaviorScore.count({
+            where: {
+              classId: kelas.id,
+              academicYearId: kelas.academicYearId,
+            },
+            distinct: ['studentId'],
+          });
+          studentCount = behaviorScoreCount;
+        }
+
+        return {
+          ...kelas,
+          _count: {
+            students: studentCount,
+          },
+          students: undefined, // Remove students array from response
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      data: classes,
+      data: enrichedClasses,
     });
   } catch (error) {
     console.error("Error fetching homeroom classes:", error);

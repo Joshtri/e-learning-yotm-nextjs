@@ -59,6 +59,10 @@ export async function GET(req) {
                   gte: getStartDate,
                   lte: getEndDate,
                 },
+                // ✅ FILTER: Hanya tampilkan attendance dari homeroom session (subjectId = NULL)
+                AttendanceSession: {
+                  subjectId: null,
+                },
               },
               include: {
                 academicYear: true,

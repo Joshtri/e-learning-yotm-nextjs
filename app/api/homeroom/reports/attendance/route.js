@@ -8,7 +8,6 @@ import {
   createAutoTable,
   pdfToBuffer,
   createPDFResponse,
-  getMonthName,
 } from "@/lib/pdf-helper";
 
 export async function GET(request) {
@@ -22,13 +21,12 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const month = searchParams.get("month");
-    const year = searchParams.get("year");
+    const academicYearId = searchParams.get("academicYearId");
     const format = searchParams.get("format") || "pdf";
 
-    if (!month || !year) {
+    if (!academicYearId) {
       return NextResponse.json(
-        { success: false, message: "Month and year are required" },
+        { success: false, message: "Academic Year ID is required" },
         { status: 400 }
       );
     }
@@ -45,13 +43,12 @@ export async function GET(request) {
       );
     }
 
-    // Get homeroom class
+    // Get homeroom class for the specified academic year
     const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id },
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "desc" } },
-      ],
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYearId: academicYearId
+      },
       include: {
         academicYear: true,
         program: true,
@@ -64,22 +61,15 @@ export async function GET(request) {
 
     if (!kelas) {
       return NextResponse.json(
-        { success: false, message: "Class not found" },
+        { success: false, message: "Class not found for this academic year" },
         { status: 404 }
       );
     }
 
-    // Get attendance data for the month
-    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-
+    // Get all attendance data for this academic year/semester
     const attendances = await prisma.attendance.findMany({
       where: {
         classId: kelas.id,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
       },
       include: {
         student: true,
@@ -114,9 +104,9 @@ export async function GET(request) {
 
     // Generate report based on format
     if (format === "pdf") {
-      return generatePDFAttendance(kelas, studentAttendance, month, year);
+      return generatePDFAttendance(kelas, studentAttendance);
     } else {
-      return generateExcelAttendance(kelas, studentAttendance, month, year);
+      return generateExcelAttendance(kelas, studentAttendance);
     }
   } catch (error) {
     console.error("Error generating attendance report:", error);
@@ -127,7 +117,7 @@ export async function GET(request) {
   }
 }
 
-function generatePDFAttendance(kelas, studentAttendance, month, year) {
+function generatePDFAttendance(kelas, studentAttendance) {
   const doc = createPDF();
 
   // Header
@@ -141,11 +131,10 @@ function generatePDFAttendance(kelas, studentAttendance, month, year) {
   addText(doc, `Program: ${kelas.program?.namaPaket || "-"}`, 14, 32);
   addText(
     doc,
-    `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - ${kelas.academicYear?.semester}`,
+    `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - Semester ${kelas.academicYear?.semester}`,
     14,
     39
   );
-  addText(doc, `Periode: ${getMonthName(month)} ${year}`, 14, 46);
 
   // Table
   const tableData = Object.values(studentAttendance).map((student, index) => [
@@ -160,7 +149,7 @@ function generatePDFAttendance(kelas, studentAttendance, month, year) {
   ]);
 
   createAutoTable(doc, {
-    startY: 52,
+    startY: 46,
     head: [
       ["No", "Nama Siswa", "NISN", "Hadir", "Sakit", "Izin", "Alpha", "Total"],
     ],
@@ -191,21 +180,20 @@ function generatePDFAttendance(kelas, studentAttendance, month, year) {
   );
 
   const pdfBuffer = pdfToBuffer(doc);
-  const filename = `laporan-presensi-${month}-${year}.pdf`;
+  const filename = `laporan-presensi-${kelas.academicYear?.tahunMulai}-${kelas.academicYear?.semester}.pdf`;
 
   return createPDFResponse(pdfBuffer, filename);
 }
 
-function generateExcelAttendance(kelas, studentAttendance, month, year) {
+function generateExcelAttendance(kelas, studentAttendance) {
   const worksheetData = [
     ["LAPORAN PRESENSI SISWA"],
     [],
     [`Kelas: ${kelas.namaKelas}`],
     [`Program: ${kelas.program?.namaPaket || "-"}`],
     [
-      `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - ${kelas.academicYear?.semester}`,
+      `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - Semester ${kelas.academicYear?.semester}`,
     ],
-    [`Periode: ${getMonthName(month)} ${year}`],
     [],
     ["No", "Nama Siswa", "NISN", "Hadir", "Sakit", "Izin", "Alpha", "Total"],
   ];
@@ -244,7 +232,7 @@ function generateExcelAttendance(kelas, studentAttendance, month, year) {
   return new NextResponse(excelBuffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=laporan-presensi-${month}-${year}.xlsx`,
+      "Content-Disposition": `attachment; filename=laporan-presensi-${kelas.academicYear?.tahunMulai}-${kelas.academicYear?.semester}.xlsx`,
     },
   });
 }

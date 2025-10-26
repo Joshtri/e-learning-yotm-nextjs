@@ -24,8 +24,6 @@ export default function HomeroomReportsPage() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedYear, setSelectedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [myClass, setMyClass] = useState(null);
 
@@ -85,8 +83,8 @@ export default function HomeroomReportsPage() {
 
   // Download handlers
   const downloadAttendanceReport = async (format) => {
-    if (!selectedMonth || !selectedYear) {
-      toast.error("Pilih bulan dan tahun terlebih dahulu");
+    if (!selectedAcademicYear) {
+      toast.error("Pilih tahun ajaran terlebih dahulu");
       return;
     }
 
@@ -95,17 +93,18 @@ export default function HomeroomReportsPage() {
       const res = await api.get("/homeroom/reports/attendance", {
         params: {
           academicYearId: selectedAcademicYear,
-          month: selectedMonth,
-          year: selectedYear,
           format
         },
         responseType: 'blob'
       });
 
+      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
+      const filename = `laporan-presensi-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
+
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `laporan-presensi-${selectedMonth}-${selectedYear}.${format}`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -113,6 +112,7 @@ export default function HomeroomReportsPage() {
       toast.success(`Laporan presensi berhasil diunduh (${format.toUpperCase()})`);
     } catch (err) {
       toast.error("Gagal mengunduh laporan presensi");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -195,23 +195,6 @@ export default function HomeroomReportsPage() {
     }
   };
 
-  const months = [
-    { value: "1", label: "Januari" },
-    { value: "2", label: "Februari" },
-    { value: "3", label: "Maret" },
-    { value: "4", label: "April" },
-    { value: "5", label: "Mei" },
-    { value: "6", label: "Juni" },
-    { value: "7", label: "Juli" },
-    { value: "8", label: "Agustus" },
-    { value: "9", label: "September" },
-    { value: "10", label: "Oktober" },
-    { value: "11", label: "November" },
-    { value: "12", label: "Desember" },
-  ];
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   return (
     <div className="p-6 space-y-6">
@@ -270,48 +253,30 @@ export default function HomeroomReportsPage() {
             <CardHeader>
               <CardTitle>Laporan Presensi Kelas</CardTitle>
               <CardDescription>
-                Unduh rekap presensi seluruh siswa dalam periode tertentu
+                Unduh rekap presensi seluruh siswa per semester/tahun ajaran
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Bulan</label>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih bulan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map(m => (
-                        <SelectItem key={m.value} value={m.value}>
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Tahun</label>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih tahun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => (
-                        <SelectItem key={y} value={y.toString()}>
-                          {y}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Tahun Ajaran</label>
+                <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih tahun ajaran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.map(y => (
+                      <SelectItem key={y.id} value={y.id}>
+                        {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex gap-4 pt-4">
                 <Button
                   onClick={() => downloadAttendanceReport('pdf')}
-                  disabled={loading || !selectedMonth || !selectedYear}
+                  disabled={loading || !selectedAcademicYear}
                   className="flex-1"
                 >
                   {loading ? (
@@ -323,7 +288,7 @@ export default function HomeroomReportsPage() {
                 </Button>
                 <Button
                   onClick={() => downloadAttendanceReport('xlsx')}
-                  disabled={loading || !selectedMonth || !selectedYear}
+                  disabled={loading || !selectedAcademicYear}
                   variant="outline"
                   className="flex-1"
                 >

@@ -243,10 +243,11 @@ model Subject {
   classSubjectTutors ClassSubjectTutor[]
   ProgramSubject     ProgramSubject[]
 
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  SkillScore SkillScore[]
-  FinalScore FinalScore[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  SkillScore        SkillScore[]
+  FinalScore        FinalScore[]
+  AttendanceSession AttendanceSession[]
 
   // Index
   @@unique([namaMapel])
@@ -459,6 +460,7 @@ model AttendanceSession {
   tutorId        String
   classId        String
   academicYearId String // ❗ Terkait Tahun Ajaran
+  subjectId      String? // ❗ OPTIONAL: Untuk tutor attendance per mata pelajaran, NULL untuk homeroom attendance
   tanggal        DateTime
   keterangan     String?  @db.VarChar(255)
   createdAt      DateTime @default(now())
@@ -467,9 +469,11 @@ model AttendanceSession {
   tutor        Tutor        @relation(fields: [tutorId], references: [id])
   class        Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  subject      Subject?     @relation(fields: [subjectId], references: [id])
   attendances  Attendance[]
 
   @@index([academicYearId])
+  @@index([subjectId])
 }
 
 model SkillScore {

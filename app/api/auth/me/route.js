@@ -52,6 +52,12 @@ export async function GET() {
             telepon: true,
             fotoUrl: true,
             status: true,
+            homeroomClasses: {
+              select: {
+                id: true,
+                namaKelas: true,
+              },
+            },
           },
         },
       },

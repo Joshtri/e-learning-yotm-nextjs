@@ -93,6 +93,12 @@ export default function AppHeader({ onMenuClick, role }) {
     role === "student" ? "SI" : role === "tutor" ? "TR" : "AD";
   const displayName = user?.nama || "User";
 
+  // Check if tutor is a homeroom teacher
+  const isHomeroomTeacher =
+    role === "tutor" &&
+    user?.tutor?.homeroomClasses &&
+    user.tutor.homeroomClasses.length > 0;
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -163,7 +169,7 @@ export default function AppHeader({ onMenuClick, role }) {
                 Log Aktivitas
               </Link>
             </DropdownMenuItem>
-            {role === "tutor" && (
+            {isHomeroomTeacher && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

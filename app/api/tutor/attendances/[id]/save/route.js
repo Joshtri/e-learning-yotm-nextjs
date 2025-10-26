@@ -36,10 +36,21 @@ export async function POST(request, { params }) {
     }
 
     // 🔥 Cari session
-    const session = await prisma.attendanceSession.findFirst({
-      where: {
-        id: id,
-        tutorId: tutor.id,
+    const session = await prisma.attendanceSession.findUnique({
+      where: { id },
+      include: {
+        class: {
+          select: {
+            id: true,
+            classSubjectTutors: {
+              where: { tutorId: tutor.id },
+              select: { id: true },
+            },
+            homeroomTeacher: {
+              select: { id: true },
+            },
+          },
+        },
       },
     });
 
@@ -47,6 +58,18 @@ export async function POST(request, { params }) {
       return NextResponse.json(
         { success: false, message: "Sesi presensi tidak ditemukan" },
         { status: 404 }
+      );
+    }
+
+    // Check if tutor has access to save attendance for this session
+    const isSessionOwner = session.tutorId === tutor.id;
+    const isTeachingInClass = session.class.classSubjectTutors.length > 0;
+    const isHomeroomTeacher = session.class.homeroomTeacher?.id === tutor.id;
+
+    if (!isSessionOwner && !isTeachingInClass && !isHomeroomTeacher) {
+      return NextResponse.json(
+        { success: false, message: "Anda tidak memiliki akses untuk menyimpan presensi ini" },
+        { status: 403 }
       );
     }
 

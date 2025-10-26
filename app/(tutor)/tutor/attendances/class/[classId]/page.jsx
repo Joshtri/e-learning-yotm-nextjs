@@ -310,6 +310,7 @@ export default function AttendancePerClassPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="min-w-[120px]">Tanggal</TableHead>
+                  <TableHead className="min-w-[180px]">Mata Pelajaran</TableHead>
                   <TableHead className="min-w-[140px]">Tahun Ajaran</TableHead>
                   <TableHead className="min-w-[220px]">Keterangan</TableHead>
                   <TableHead className="w-[160px]">Aksi</TableHead>
@@ -318,14 +319,14 @@ export default function AttendancePerClassPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
                 ) : sessions.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="text-center text-muted-foreground"
                     >
                       Tidak ada sesi presensi
@@ -359,7 +360,7 @@ export default function AttendancePerClassPage() {
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(session.tanggal).toLocaleDateString(
-                                  "id-ID", 
+                                  "id-ID",
                                   { weekday: "long" }
                                 )}
                               </span>
@@ -367,6 +368,19 @@ export default function AttendancePerClassPage() {
                             {isTodayRow && (
                               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                                 Hari ini
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {session.subject?.namaMapel || "Homeroom"}
+                            </span>
+                            {session.tutor && (
+                              <span className="text-xs text-muted-foreground">
+                                oleh {session.tutor.user.nama}
                               </span>
                             )}
                           </div>

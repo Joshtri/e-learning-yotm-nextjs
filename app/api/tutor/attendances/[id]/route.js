@@ -14,20 +14,31 @@ export async function GET(request, { params }) {
       );
     }
 
-    const attendanceSession = await prisma.attendanceSession.findFirst({
-      where: {
-        id: id,
-        tutor: { userId: user.id },
-      },
+    // First, get tutor info
+    const tutor = await prisma.tutor.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Tutor tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    // Get attendance session
+    const attendanceSession = await prisma.attendanceSession.findUnique({
+      where: { id },
       include: {
         tutor: { select: { user: { select: { nama: true } } } },
+        subject: { select: { id: true, namaMapel: true, kodeMapel: true } }, // ✅ Include mata pelajaran
         class: {
           select: {
             id: true,
             namaKelas: true,
             program: { select: { namaPaket: true } },
             students: {
-              // 🔥 Tambahkan ambil semua siswa aktif di kelas
               where: { status: "ACTIVE" },
               select: {
                 id: true,
@@ -35,11 +46,19 @@ export async function GET(request, { params }) {
                 user: { select: { email: true } },
               },
             },
+            // Check if current tutor teaches in this class
+            classSubjectTutors: {
+              where: { tutorId: tutor.id },
+              select: { id: true },
+            },
+            // Check if current tutor is homeroom teacher
+            homeroomTeacher: {
+              select: { id: true },
+            },
           },
         },
         academicYear: { select: { tahunMulai: true, tahunSelesai: true } },
         attendances: {
-          // yang sudah ada presensinya
           select: {
             id: true,
             studentId: true,
@@ -57,11 +76,61 @@ export async function GET(request, { params }) {
       );
     }
 
-    // 🔥 Gabungkan siswa + data attendance existing
+    // Check if tutor has access to this attendance session
+    const isSessionOwner = attendanceSession.tutorId === tutor.id;
+    const isTeachingInClass = attendanceSession.class.classSubjectTutors.length > 0;
+    const isHomeroomTeacher = attendanceSession.class.homeroomTeacher?.id === tutor.id;
+
+    if (!isSessionOwner && !isTeachingInClass && !isHomeroomTeacher) {
+      return NextResponse.json(
+        { success: false, message: "Anda tidak memiliki akses ke sesi ini" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ Get attendance history for the same day (for context)
+    const sessionDate = new Date(attendanceSession.tanggal);
+    const startOfDay = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate());
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const otherSessionsToday = await prisma.attendanceSession.findMany({
+      where: {
+        classId: attendanceSession.classId,
+        tanggal: {
+          gte: startOfDay,
+          lt: endOfDay,
+        },
+        id: { not: id }, // Exclude current session
+      },
+      include: {
+        subject: { select: { namaMapel: true, kodeMapel: true } },
+        tutor: { select: { user: { select: { nama: true } } } },
+        attendances: {
+          select: {
+            studentId: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { tanggal: "asc" },
+    });
+
+    // 🔥 Gabungkan siswa + data attendance existing + history dari sesi lain di hari yang sama
     const daftarHadir = attendanceSession.class.students.map((student) => {
       const existingAttendance = attendanceSession.attendances.find(
         (att) => att.studentId === student.id
       );
+
+      // Get attendance history from other sessions today
+      const attendanceHistory = otherSessionsToday.map(session => {
+        const studentAttendance = session.attendances.find(att => att.studentId === student.id);
+        return {
+          subjectName: session.subject?.namaMapel || "Homeroom",
+          tutorName: session.tutor.user.nama,
+          status: studentAttendance?.status || null,
+        };
+      }).filter(h => h.status !== null); // Only include sessions where student has attendance
 
       return {
         id: existingAttendance?.id ?? null, // bisa null kalau belum ada
@@ -70,8 +139,12 @@ export async function GET(request, { params }) {
         email: student.user.email,
         status: existingAttendance?.status ?? null,
         tanggal: existingAttendance?.date ?? null,
+        attendanceHistory, // ✅ History attendance di hari yang sama
       };
     });
+
+    // Clean up the class data before sending response
+    const { classSubjectTutors, homeroomTeacher, ...cleanClassData } = attendanceSession.class;
 
     const responseData = {
       id: attendanceSession.id,
@@ -81,10 +154,15 @@ export async function GET(request, { params }) {
         id: user.id,
         nama: attendanceSession.tutor.user.nama,
       },
+      subject: attendanceSession.subject ? { // ✅ Include mata pelajaran
+        id: attendanceSession.subject.id,
+        namaMapel: attendanceSession.subject.namaMapel,
+        kodeMapel: attendanceSession.subject.kodeMapel,
+      } : null,
       kelas: {
-        id: attendanceSession.class.id,
-        namaKelas: attendanceSession.class.namaKelas,
-        program: attendanceSession.class.program.namaPaket,
+        id: cleanClassData.id,
+        namaKelas: cleanClassData.namaKelas,
+        program: cleanClassData.program.namaPaket,
       },
       tahunAjaran: `${attendanceSession.academicYear.tahunMulai}/${attendanceSession.academicYear.tahunSelesai}`,
       daftarHadir,

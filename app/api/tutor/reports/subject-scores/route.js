@@ -48,12 +48,15 @@ export async function GET(request) {
       );
     }
 
-    // Verify tutor teaches this class-subject
+    // Verify tutor teaches this class-subject AND it matches the academic year
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
       where: {
         tutorId: tutor.id,
         classId: classId,
         subjectId: subjectId,
+        class: {
+          academicYearId: academicYearId, // ✅ FILTER: Class must be from selected academic year!
+        },
       },
       include: {
         class: {
@@ -71,45 +74,111 @@ export async function GET(request) {
       return NextResponse.json(
         {
           success: false,
-          message: "You don't teach this subject in this class",
+          message: "You don't teach this subject in this class for the selected academic year",
         },
         { status: 403 }
       );
     }
 
-    // Get all students in the class with their scores for this subject
-    const students = await prisma.student.findMany({
+    // ✅ VALIDATION: Ensure class is from the correct academic year
+    if (classSubjectTutor.class.academicYearId !== academicYearId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Class does not match the selected academic year",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Get students from class history for this academic year
+    // Use StudentClassHistory to get students who were in this class during this academic year
+    const classHistory = await prisma.studentClassHistory.findMany({
       where: {
         classId: classId,
-        status: "ACTIVE",
+        academicYearId: academicYearId,
       },
       include: {
-        FinalScore: {
-          where: {
-            subjectId: subjectId,
-            tahunAjaranId: academicYearId,
-          },
-        },
-        submissions: {
-          where: {
-            assignment: {
-              classSubjectTutorId: classSubjectTutor.id,
-            },
-          },
+        student: {
           include: {
-            assignment: {
-              select: {
-                judul: true,
-                jenis: true,
+            FinalScore: {
+              where: {
+                subjectId: subjectId,
+                tahunAjaranId: academicYearId,
+              },
+            },
+            submissions: {
+              where: {
+                assignment: {
+                  classSubjectTutorId: classSubjectTutor.id,
+                },
+              },
+              include: {
+                assignment: {
+                  select: {
+                    judul: true,
+                    jenis: true,
+                  },
+                },
               },
             },
           },
         },
       },
       orderBy: {
-        namaLengkap: "asc",
+        student: {
+          namaLengkap: "asc",
+        },
       },
     });
+
+    // Extract students from history
+    let students = classHistory.map((history) => history.student);
+
+    // ✅ FALLBACK: If no history (current academic year), get current students in class
+    if (students.length === 0) {
+      students = await prisma.student.findMany({
+        where: {
+          classId: classId,
+          status: "ACTIVE",
+        },
+        include: {
+          FinalScore: {
+            where: {
+              subjectId: subjectId,
+              tahunAjaranId: academicYearId,
+            },
+          },
+          submissions: {
+            where: {
+              assignment: {
+                classSubjectTutorId: classSubjectTutor.id,
+              },
+            },
+            include: {
+              assignment: {
+                select: {
+                  judul: true,
+                  jenis: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          namaLengkap: "asc",
+        },
+      });
+    }
+
+    // ✅ DEBUG: Log untuk troubleshooting
+    console.log("\n========== DEBUG Report Generation ==========");
+    console.log("Academic Year ID:", academicYearId);
+    console.log("Academic Year:", `${classSubjectTutor.class.academicYear.tahunMulai}/${classSubjectTutor.class.academicYear.tahunSelesai} - ${classSubjectTutor.class.academicYear.semester}`);
+    console.log("Class:", classSubjectTutor.class.namaKelas, `(ID: ${classId})`);
+    console.log("Subject:", classSubjectTutor.subject.namaMapel, `(ID: ${subjectId})`);
+    console.log("Students found:", students.length);
+    console.log("Using history?:", classHistory.length > 0 ? `Yes (${classHistory.length} records)` : "No (using current students)");
 
     // Get all assignments for this class-subject
     const assignments = await prisma.assignment.findMany({
@@ -126,6 +195,9 @@ export async function GET(request) {
         nilaiMaksimal: true,
       },
     });
+
+    console.log("Assignments found:", assignments.length);
+    console.log("============================================\n");
 
     // Organize student data
     const studentsData = students.map((student) => {

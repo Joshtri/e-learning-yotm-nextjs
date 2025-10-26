@@ -51,15 +51,33 @@ export async function GET(request) {
 
     const academicYearId = kelas.academicYearId;
 
+    // First, get all students who have behavior scores for this class and academic year (historical data)
+    const historicalBehaviorScores = await prisma.behaviorScore.findMany({
+      where: {
+        classId,
+        academicYearId,
+      },
+      select: {
+        studentId: true,
+      },
+    });
+
+    const historicalStudentIds = historicalBehaviorScores.map(bs => bs.studentId);
+
+    // Get current active students OR students who had behavior scores (historical)
     const students = await prisma.student.findMany({
       where: {
         classId,
-        status: "ACTIVE",
+        OR: [
+          { status: "ACTIVE" }, // Current active students
+          { id: { in: historicalStudentIds } }, // Historical students with behavior scores
+        ],
       },
       select: {
         id: true,
         namaLengkap: true,
         nisn: true,
+        status: true,
         BehaviorScore: {
           where: {
             academicYearId,
