@@ -117,11 +117,11 @@ export default function EditSubmissionPage() {
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
           {/* Soal Text */}
-          <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-            <Label className="text-blue-900 dark:text-blue-100 font-semibold">
+          <div className=" rounded-lg">
+            <Label className="text-blue-900  font-semibold">
               Pertanyaan:
             </Label>
-            <p className="mt-2 whitespace-pre-wrap text-blue-900 dark:text-blue-100 text-base">
+            <p className="mt-2 text-blue-900 text-base">
               {question.teks}
             </p>
           </div>
@@ -235,11 +235,11 @@ export default function EditSubmissionPage() {
 
           {/* Preview Jawaban */}
           {currentAnswer && (
-            <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border-2 border-green-300 dark:border-green-700">
-              <Label className="text-green-900 dark:text-green-100 text-sm font-semibold">
+            <div className="bg-green-50  p-4 rounded-lg border-2 border-green-300 dark:border-green-700">
+              <Label className="text-green-900 text-sm font-semibold">
                 ✓ Jawaban Terpilih:
               </Label>
-              <p className="text-green-800 dark:text-green-200 mt-2 font-medium text-base whitespace-pre-wrap">
+              <p className="text-green-800  mt-2 font-medium text-base whitespace-pre-wrap">
                 {currentAnswer}
               </p>
             </div>

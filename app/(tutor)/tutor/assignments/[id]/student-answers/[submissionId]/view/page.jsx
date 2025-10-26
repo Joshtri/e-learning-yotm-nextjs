@@ -83,7 +83,7 @@ export default function ViewSubmissionPage() {
             )}
             {hasGrade && (
               <div className="text-sm font-medium mt-1">
-                Nilai: {answer.nilai} / {question.poin}
+                Nilai: {Number(answer.nilai).toFixed(2)} / {question.poin}
               </div>
             )}
           </div>
@@ -172,8 +172,8 @@ export default function ViewSubmissionPage() {
             <div>
               <Label className="text-muted-foreground">Nilai</Label>
               <p className="font-bold text-lg">
-                {submission.nilai != null ? submission.nilai : "-"}
-                {assignment?.nilaiMaksimal && ` / ${assignment.nilaiMaksimal}`}
+                {submission.nilai != null ? Number(submission.nilai).toFixed(2) : "-"}
+                {assignment?.nilaiMaksimal && ` / ${Number(assignment.nilaiMaksimal).toFixed(2)}`}
               </p>
             </div>
           </div>
