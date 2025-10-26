@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LogIn, EyeOff, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -25,7 +25,42 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    checkExistingAuth();
+  }, []);
+
+  const checkExistingAuth = async () => {
+    try {
+      const response = await axios.get("/api/auth/me", {
+        timeout: 5000, // 5 second timeout
+      });
+
+      const user = response.data.user;
+
+      // If user exists, redirect to their dashboard
+      if (user && user.role) {
+        const dashboardMap = {
+          ADMIN: "/admin/dashboard",
+          TUTOR: "/tutor/dashboard",
+          STUDENT: "/siswa/dashboard",
+        };
+
+        const dashboard = dashboardMap[user.role] || "/";
+        router.push(dashboard);
+      } else {
+        // No user, show login page
+        setIsCheckingAuth(false);
+      }
+    } catch (error) {
+      // Error or timeout, show login page
+      console.error("Auth check error:", error);
+      setIsCheckingAuth(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,6 +107,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <p className="mt-4 text-gray-600">Memeriksa autentikasi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

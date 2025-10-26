@@ -29,6 +29,7 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import axios from "axios";
+import { StudentDashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 
 export default function StudentDashboardPage() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -94,11 +95,7 @@ export default function StudentDashboardPage() {
   }, [router]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <StudentDashboardSkeleton />;
   }
 
   if (error) {

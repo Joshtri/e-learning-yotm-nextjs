@@ -6,6 +6,7 @@ import "../../globals.css";
 import AppHeader from "@/components/partials/AppHeader";
 import { AppSidebar } from "@/components/partials/AppSidebar";
 import { ThemeProvider } from "@/providers/themes-provider";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,27 +53,29 @@ export default function StudentLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-          <div className="flex min-h-screen bg-background">
-            <AppSidebar
-              role="student"
-              isOpen={isSidebarOpen}
-              isMobile={isMobile}
-              onToggleSidebar={toggleSidebar}
-              onClose={() => setIsSidebarOpen(false)}
-            />
+        <AuthGuard allowedRoles={["STUDENT"]}>
+          {/* <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          > */}
+            <div className="flex min-h-screen bg-background">
+              <AppSidebar
+                role="student"
+                isOpen={isSidebarOpen}
+                isMobile={isMobile}
+                onToggleSidebar={toggleSidebar}
+                onClose={() => setIsSidebarOpen(false)}
+              />
 
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <AppHeader role="student" onMenuClick={toggleSidebar} />
-              <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <AppHeader role="student" onMenuClick={toggleSidebar} />
+                <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+              </div>
             </div>
-          </div>
-        {/* </ThemeProvider> */}
+          {/* </ThemeProvider> */}
+        </AuthGuard>
       </body>
     </html>
   );

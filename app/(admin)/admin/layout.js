@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { useEffect, useState } from "react";
 import "../../globals.css";
 import { AppSidebar } from "@/components/partials/AppSidebar";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,34 +53,36 @@ export default function AdminLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-          <div className="flex min-h-screen bg-background">
-            {/* Sidebar */}
-            <AppSidebar
-              role="admin"
-              isOpen={isSidebarOpen}
-              onToggleSidebar={toggleSidebar}
-              isMobile={isMobile}
-              onClose={() => setIsSidebarOpen(false)}
-            />
+        <AuthGuard allowedRoles={["ADMIN"]}>
+          {/* <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          > */}
+            <div className="flex min-h-screen bg-background">
+              {/* Sidebar */}
+              <AppSidebar
+                role="admin"
+                isOpen={isSidebarOpen}
+                onToggleSidebar={toggleSidebar}
+                isMobile={isMobile}
+                onClose={() => setIsSidebarOpen(false)}
+              />
 
-            {/* Right Content */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-              {/* Header */}
-              <AppHeader role="admin" onMenuClick={toggleSidebar} />
+              {/* Right Content */}
+              <div className="flex flex-1 flex-col overflow-hidden">
+                {/* Header */}
+                <AppHeader role="admin" onMenuClick={toggleSidebar} />
 
-              {/* Scrollable content with padding-top for fixed header */}
-              <main className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">
-                {children}
-              </main>
+                {/* Scrollable content with padding-top for fixed header */}
+                <main className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-        {/* </ThemeProvider> */}
+          {/* </ThemeProvider> */}
+        </AuthGuard>
       </body>
     </html>
   );

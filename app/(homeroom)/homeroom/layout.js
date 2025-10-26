@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { useEffect, useState } from "react";
 import "../../globals.css";
 import { AppSidebar } from "@/components/partials/AppSidebar";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,26 +54,28 @@ export default function HomeroomLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-          <div className="flex min-h-screen bg-background">
-            <AppSidebar
-              role="homeroom"
-              isOpen={isSidebarOpen}
-              onToggleSidebar={toggleSidebar}
-              isMobile={isMobile}
-              onClose={() => setIsSidebarOpen(false)}
-            />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <AppHeader role="tutor" onMenuClick={toggleSidebar} />
-              <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+        <AuthGuard allowedRoles={["TUTOR"]}>
+          {/* <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          > */}
+            <div className="flex min-h-screen bg-background">
+              <AppSidebar
+                role="homeroom"
+                isOpen={isSidebarOpen}
+                onToggleSidebar={toggleSidebar}
+                isMobile={isMobile}
+                onClose={() => setIsSidebarOpen(false)}
+              />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <AppHeader role="tutor" onMenuClick={toggleSidebar} />
+                <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+              </div>
             </div>
-          </div>
-        {/* </ThemeProvider> */}
+          {/* </ThemeProvider> */}
+        </AuthGuard>
       </body>
     </html>
   );

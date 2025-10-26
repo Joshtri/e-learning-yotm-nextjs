@@ -27,6 +27,7 @@ export default function AppHeader({ onMenuClick, role }) {
   const [user, setUser] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Show scroll button after scrolling 200px
   const scrolled = useScrollTop(200);
@@ -50,32 +51,42 @@ export default function AppHeader({ onMenuClick, role }) {
     fetchUser();
   }, []);
 
-  const handleSwitchMode = async () => {
+  const handleSwitchMode = () => {
+    // Close dropdown immediately
+    setIsDropdownOpen(false);
     setShowSwitchConfirm(false);
     setIsSwitching(true);
 
-    try {
-      if (mode === "default") {
-        localStorage.setItem("mode", "homeroom");
-        setMode("homeroom");
-        toast.success("Berpindah ke Mode Wali Kelas");
-        await router.push("/homeroom/dashboard");
-        router.refresh();
-      } else {
-        localStorage.setItem("mode", "default");
-        setMode("default");
-        toast.success("Berpindah ke Mode Tutor");
-        await router.push("/tutor/dashboard");
-        router.refresh();
+    // Small delay to ensure dropdown closes
+    setTimeout(() => {
+      try {
+        if (mode === "default") {
+          localStorage.setItem("mode", "homeroom");
+          setMode("homeroom");
+          toast.success("Berpindah ke Mode Wali Kelas");
+          router.replace("/homeroom/dashboard");
+        } else {
+          localStorage.setItem("mode", "default");
+          setMode("default");
+          toast.success("Berpindah ke Mode Tutor");
+          router.replace("/tutor/dashboard");
+        }
+      } catch (error) {
+        console.error("Error switching mode:", error);
+        toast.error("Gagal berpindah mode");
+        setIsSwitching(false);
       }
-    } finally {
-      // Reset switching state setelah navigasi selesai
-      setTimeout(() => setIsSwitching(false), 500);
-    }
+    }, 100);
   };
 
   const handleSwitchModeClick = () => {
-    setShowSwitchConfirm(true);
+    // Close dropdown first
+    setIsDropdownOpen(false);
+
+    // Wait for dropdown to close, then show confirmation
+    setTimeout(() => {
+      setShowSwitchConfirm(true);
+    }, 150);
   };
 
   const getRolePrefix = () => {
@@ -136,7 +147,7 @@ export default function AppHeader({ onMenuClick, role }) {
           </div>
 
           {/* User dropdown */}
-          <DropdownMenu>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"

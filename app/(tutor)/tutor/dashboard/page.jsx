@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/loading/loading-spinner";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -178,7 +178,7 @@ export default function TutorDashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <DashboardSkeleton variant="tutor" />;
   }
 
   if (error) {

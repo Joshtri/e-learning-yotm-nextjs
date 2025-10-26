@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/partials/AppSidebar"; // ✅ pakai AppS
 import AppHeader from "@/components/partials/AppHeader";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/providers/themes-provider";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,30 +55,32 @@ export default function TutorLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-        <div className="flex min-h-screen bg-background">
-          {/* Sidebar (desktop & mobile) */}
-          <AppSidebar
-            role="tutor"
-            isOpen={isSidebarOpen}
-            isMobile={isMobile}
-            onToggleSidebar={toggleSidebar}
-            onClose={() => setIsSidebarOpen(false)}
-          />
+        <AuthGuard allowedRoles={["TUTOR"]}>
+          {/* <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          > */}
+          <div className="flex min-h-screen bg-background">
+            {/* Sidebar (desktop & mobile) */}
+            <AppSidebar
+              role="tutor"
+              isOpen={isSidebarOpen}
+              isMobile={isMobile}
+              onToggleSidebar={toggleSidebar}
+              onClose={() => setIsSidebarOpen(false)}
+            />
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <AppHeader role="tutor" onMenuClick={toggleSidebar} />
-            <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <AppHeader role="tutor" onMenuClick={toggleSidebar} />
+              <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
+            </div>
           </div>
-        </div>
-        <Toaster richColors position="top-right" />
-        {/* </ThemeProvider> */}
+          <Toaster richColors position="top-right" />
+          {/* </ThemeProvider> */}
+        </AuthGuard>
       </body>
     </html>
   );

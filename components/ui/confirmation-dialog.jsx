@@ -20,6 +20,13 @@ export function ConfirmationDialog({
   variant = "default", // "default" | "destructive"
   isLoading = false,
 }) {
+  const handleConfirm = () => {
+    // Call the onConfirm handler
+    if (onConfirm) {
+      onConfirm();
+    }
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -30,10 +37,7 @@ export function ConfirmationDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
+            onClick={handleConfirm}
             disabled={isLoading}
             className={
               variant === "destructive"
