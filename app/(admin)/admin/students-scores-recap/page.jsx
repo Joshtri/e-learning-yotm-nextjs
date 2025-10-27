@@ -199,7 +199,7 @@ export default function NilaiSiswaPage() {
                 {filterOptions.classes.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
                     {cls.namaKelas} ({cls.academicYear.tahunMulai}/
-                    {cls.academicYear.tahunSelesai})
+                    {cls.academicYear.tahunSelesai} - {cls.academicYear.semester})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -219,7 +219,7 @@ export default function NilaiSiswaPage() {
               <SelectContent>
                 {filterOptions.academicYears.map((year) => (
                   <SelectItem key={year.id} value={year.id}>
-                    {year.tahunMulai}/{year.tahunSelesai}
+                    {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
                   </SelectItem>
                 ))}
               </SelectContent>

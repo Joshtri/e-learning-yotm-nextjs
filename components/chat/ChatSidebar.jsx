@@ -21,6 +21,20 @@ export function ChatSidebar({
 }) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = React.useState(false);
+  const [currentUserId, setCurrentUserId] = React.useState(null);
+
+  // Ambil user login dari /auth/me
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("/api/auth/me");
+        setCurrentUserId(res.data.user?.id || null);
+      } catch (err) {
+        console.error("Gagal ambil user login:", err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["chat-rooms"],
@@ -31,22 +45,24 @@ export function ChatSidebar({
   });
 
 const filteredRooms = React.useMemo(() => {
-  if (!data) return [];
+  if (!data || !currentUserId) return [];
 
   return data.filter((room) => {
-    const otherUser = room.users.find((u) => u.id !== selectedUserId);
+    const otherUser = room.users.find((u) => u.id !== currentUserId);
 
-    // Jika admin, tampilkan semua room
-    if (currentUserRole === "ADMIN") return true;
+    // Skip jika otherUser tidak ditemukan
+    if (!otherUser) return false;
 
-    // Jika bukan admin, hanya tampilkan room yang relevan
+    // Jika tidak ada search query, tampilkan semua room
+    if (!searchQuery) return true;
+
+    // Jika ada search query, filter berdasarkan nama atau role
     return (
-      !searchQuery ||
-      otherUser?.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      otherUser?.role.toLowerCase().includes(searchQuery.toLowerCase())
+      otherUser.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      otherUser.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
-}, [data, searchQuery, selectedUserId, currentUserRole]);
+}, [data, searchQuery, currentUserId, currentUserRole]);
 
   const handleCreateNewChat = (selectedUser) => {
     onSelectUser(selectedUser.id);
@@ -101,9 +117,12 @@ const filteredRooms = React.useMemo(() => {
               ) : (
                 filteredRooms.map((room) => {
                   const otherUser = room.users.find(
-                    (u) => u.id !== selectedUserId
+                    (u) => u.id !== currentUserId
                   );
                   const lastMessage = room.messages[0];
+
+                  // Skip room jika otherUser tidak ditemukan
+                  if (!otherUser) return null;
 
                   return (
                     <button
@@ -119,16 +138,16 @@ const filteredRooms = React.useMemo(() => {
                       <Avatar>
                         <AvatarImage
                           src="/placeholder.svg"
-                          alt={otherUser.nama}
+                          alt={otherUser?.nama || "User"}
                         />
                         <AvatarFallback>
-                          {otherUser.nama.slice(0, 2)}
+                          {otherUser?.nama?.slice(0, 2).toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex items-center justify-between">
                           <p className="truncate font-medium">
-                            {otherUser.nama}
+                            {otherUser?.nama || "Unknown"}
                           </p>
                           <span className="text-xs text-muted-foreground">
                             {lastMessage
@@ -150,7 +169,7 @@ const filteredRooms = React.useMemo(() => {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {otherUser.role}
+                          {otherUser?.role || ""}
                         </p>
                       </div>
                     </button>

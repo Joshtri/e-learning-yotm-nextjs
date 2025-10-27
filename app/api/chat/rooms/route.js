@@ -70,16 +70,27 @@ export async function POST(req) {
     // Cek apakah room sudah ada
     const existingRoom = await prisma.chatRoom.findFirst({
       where: {
-        users: {
-          every: {
-            id: {
-              in: [user.id, targetUserId],
+        AND: [
+          {
+            users: {
+              some: { id: user.id },
             },
           },
-        },
+          {
+            users: {
+              some: { id: targetUserId },
+            },
+          },
+        ],
       },
       include: {
-        users: true,
+        users: {
+          select: { id: true, nama: true, role: true },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
@@ -94,7 +105,13 @@ export async function POST(req) {
         },
       },
       include: {
-        users: true,
+        users: {
+          select: { id: true, nama: true, role: true },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 

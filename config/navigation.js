@@ -94,11 +94,11 @@ export const navByRole = {
           icon: <Users className="h-4 w-4" />,
         },
 
-        {
-          title: "Riwayat Akademik",
-          href: "/admin/academic-history",
-          icon: <FileText className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Riwayat Akademik",
+        //   href: "/admin/academic-history",
+        //   icon: <FileText className="h-4 w-4" />,
+        // },
       ],
     },
     {

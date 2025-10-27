@@ -38,11 +38,15 @@ export default function LearningMaterialPage() {
     const unique = new Map();
     data.forEach((item) => {
       const cls = item.classSubjectTutor?.class;
-      if (cls && !unique.has(cls.id)) {
-        unique.set(cls.id, cls.namaKelas);
+      if (cls?.id && !unique.has(cls.id)) {
+        const academicYear = cls.academicYear;
+        const label = academicYear
+          ? `${cls.namaKelas} (${academicYear.tahunMulai}/${academicYear.tahunSelesai} - ${academicYear.semester})`
+          : cls.namaKelas;
+        unique.set(cls.id, { name: cls.namaKelas, label, academicYear });
       }
     });
-    return Array.from(unique.entries()); // [ [id, namaKelas], ... ]
+    return Array.from(unique.entries()); // [ [id, { name, label, academicYear }], ... ]
   }, [data]);
 
   const filterBySearch = (list) => {
@@ -132,9 +136,9 @@ export default function LearningMaterialPage() {
           <Tabs value={activeClass} onValueChange={setActiveClass}>
             <TabsList>
               <TabsTrigger value="all">Semua Kelas</TabsTrigger>
-              {classOptions.map(([id, name]) => (
+              {classOptions.map(([id, { label }]) => (
                 <TabsTrigger key={id} value={id}>
-                  {name}
+                  {label}
                 </TabsTrigger>
               ))}
             </TabsList>

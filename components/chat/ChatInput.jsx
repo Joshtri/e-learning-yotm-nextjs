@@ -22,11 +22,18 @@ export function ChatInput({ onSendMessage, className }) {
   const [message, setMessage] = React.useState("");
   const textareaRef = React.useRef(null);
 
+  // List of some common emojis
+  const emojiList = ["😀", "😂", "😊", "😍", "👍", "🙏", "😎", "😭", "🔥", "🥳"];
+
+  // Show/hide emoji picker
+  const [showEmojis, setShowEmojis] = React.useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim()) {
       onSendMessage(message);
       setMessage("");
+      setShowEmojis(false);
       // Focus back on textarea after sending
       setTimeout(() => {
         textareaRef.current?.focus();
@@ -42,10 +49,47 @@ export function ChatInput({ onSendMessage, className }) {
     }
   };
 
+  const handleEmojiButtonClick = () => {
+    setShowEmojis((v) => !v);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    // Option 1: Instantly send the emoji as a message
+    onSendMessage(emoji);
+    setShowEmojis(false);
+    setMessage("");
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+
+    // Option 2: Insert emoji into current textarea
+    // setMessage((m) => m + emoji);
+    // setShowEmojis(false);
+    // setTimeout(() => {
+    //   textareaRef.current?.focus();
+    // }, 0);
+  };
+
+  // Dismiss emoji picker when clicking outside
+  React.useEffect(() => {
+    if (!showEmojis) return;
+    function handleClickOutside(e) {
+      if (
+        textareaRef.current &&
+        !textareaRef.current.contains(e.target) &&
+        !document.getElementById("chat-emoji-picker")?.contains(e.target)
+      ) {
+        setShowEmojis(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojis]);
+
   return (
     <div className={cn("border-t p-4", className)}>
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <TooltipProvider>
+        {/* <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -60,7 +104,7 @@ export function ChatInput({ onSendMessage, className }) {
             </TooltipTrigger>
             <TooltipContent side="top">Lampirkan file</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
 
         <div className="relative flex-1">
           <Textarea
@@ -71,15 +115,41 @@ export function ChatInput({ onSendMessage, className }) {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute bottom-2 right-2"
-          >
-            <Smile className="h-5 w-5" />
-            <span className="sr-only">Emoji</span>
-          </Button>
+          <div className="absolute bottom-2 right-2 flex flex-col items-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleEmojiButtonClick}
+              aria-pressed={showEmojis}
+            >
+              <Smile className="h-5 w-5" />
+              <span className="sr-only">Emoji</span>
+            </Button>
+            {showEmojis && (
+              <div
+                id="chat-emoji-picker"
+                className="z-50 mt-2 rounded-lg border bg-popover p-2 shadow-lg flex flex-wrap gap-1 max-w-[220px]"
+                style={{
+                  position: "absolute",
+                  bottom: "110%",
+                  right: 0,
+                }}
+              >
+                {emojiList.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className="text-lg hover:bg-accent rounded p-1 transition"
+                    onClick={() => handleEmojiSelect(emoji)}
+                    tabIndex={0}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <Button

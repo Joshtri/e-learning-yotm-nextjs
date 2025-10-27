@@ -16,7 +16,11 @@ export async function GET(req) {
       include: {
         classSubjectTutor: {
           include: {
-            class: { select: { id: true, namaKelas: true, academicYearId: true } },
+            class: {
+              include: {
+                academicYear: true,
+              },
+            },
             subject: { select: { namaMapel: true } },
             tutor: { select: { namaLengkap: true } },
           },

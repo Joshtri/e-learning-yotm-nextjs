@@ -36,6 +36,20 @@ export function ChatWindow({ roomId, onBackClick, isMobileView, className }) {
     },
   });
 
+  // Ambil info room untuk mendapatkan detail penerima pesan
+  const { data: roomData } = useQuery({
+    queryKey: ["chatRoom", roomId],
+    enabled: !!roomId && !!currentUserId,
+    queryFn: async () => {
+      const res = await axios.get("/api/chat/rooms");
+      const rooms = res.data.data;
+      return rooms.find((r) => r.id === roomId);
+    },
+  });
+
+  // Cari user lawan bicara (bukan current user)
+  const otherUser = roomData?.users?.find((u) => u.id !== currentUserId);
+
   const sendMessageMutation = useMutation({
     mutationFn: async (content) => {
       const res = await axios.post("/api/chat/messages", { roomId, content });
@@ -93,15 +107,21 @@ export function ChatWindow({ roomId, onBackClick, isMobileView, className }) {
             </Button>
           )}
           <Avatar>
-            <AvatarImage src="/placeholder.svg" alt="User" />
-            <AvatarFallback>US</AvatarFallback>
+            <AvatarImage src="/placeholder.svg" alt={otherUser?.nama || "User"} />
+            <AvatarFallback>
+              {otherUser?.nama?.substring(0, 2).toUpperCase() || "US"}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">Percakapan</h3>
-            <p className="text-xs text-muted-foreground">Online</p>
+            <h3 className="font-medium">
+              {otherUser?.nama || "Percakapan"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {otherUser?.role || "Online"}
+            </p>
           </div>
         </div>
- 
+
       </div>
 
       {/* Messages */}
