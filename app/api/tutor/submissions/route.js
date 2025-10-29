@@ -36,12 +36,16 @@ export async function GET(request) {
     const subjectId = searchParams.get("subjectId");
 
     // 5. Query data submissions berdasarkan class.academicYearId dan optional subjectId
+    // Exclude MIDTERM dan FINAL_EXAM karena itu khusus untuk ujian sekolah
     const submissions = await prisma.submission.findMany({
       where: {
         OR: [
           {
             assignmentId: { not: null },
             assignment: {
+              jenis: {
+                notIn: ["MIDTERM", "FINAL_EXAM"], // Exclude UTS dan UAS
+              },
               classSubjectTutor: {
                 tutorId: tutor.id,
                 class: academicYearId ? { academicYearId } : undefined,
@@ -168,13 +172,22 @@ export async function GET(request) {
         groupedSubmissions[subjectKey] = {
           subjectId: subject.id,
           subjectName: subject.namaMapel,
-          assignments: [],
+          assignmentsByType: {
+            MATERIAL: [],
+            EXERCISE: [],
+            QUIZ: [],
+            DAILY_TEST: [],
+            START_SEMESTER_TEST: [],
+          },
           quizzes: [],
         };
       }
 
       if (submission.assignment) {
-        groupedSubmissions[subjectKey].assignments.push(submission);
+        const jenis = submission.assignment.jenis;
+        if (groupedSubmissions[subjectKey].assignmentsByType[jenis]) {
+          groupedSubmissions[subjectKey].assignmentsByType[jenis].push(submission);
+        }
       } else if (submission.quiz) {
         groupedSubmissions[subjectKey].quizzes.push(submission);
       }

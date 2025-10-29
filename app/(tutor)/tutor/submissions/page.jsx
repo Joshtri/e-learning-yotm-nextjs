@@ -41,7 +41,7 @@ import {
   Clock,
   Filter,
   Eye,
-  Award
+  Award,
 } from "lucide-react";
 
 const statusMap = {
@@ -52,10 +52,11 @@ const statusMap = {
 };
 
 const jenisUjianMap = {
-  MIDTERM: "Ujian Tengah Semester",
-  FINAL: "Ujian Akhir Semester",
+  MATERIAL: "Materi",
   EXERCISE: "Latihan",
-  DAILY: "Ulangan Harian",
+  QUIZ: "Kuis",
+  DAILY_TEST: "Ulangan Harian",
+  START_SEMESTER_TEST: "Ujian Awal Semester",
 };
 
 const statusColor = {
@@ -88,7 +89,11 @@ function SubmissionCard({ submission }) {
               {submission.student.namaLengkap}
             </CardDescription>
           </div>
-          <Badge className={`${statusColor[submission.status] || "bg-gray-100"} flex items-center gap-1 px-2`}>
+          <Badge
+            className={`${
+              statusColor[submission.status] || "bg-gray-100"
+            } flex items-center gap-1 px-2`}
+          >
             {statusIcon[submission.status]}
             {statusMap[submission.status] || submission.status}
           </Badge>
@@ -106,7 +111,9 @@ function SubmissionCard({ submission }) {
                 <Award className="h-3 w-3" />
                 Nilai
               </p>
-              <p className="font-bold text-lg text-green-600">{submission.nilai}</p>
+              <p className="font-bold text-lg text-green-600">
+                {submission.nilai.toFixed(2)}
+              </p>
             </div>
           )}
           {submission.assignment?.jenis && (
@@ -210,26 +217,35 @@ export default function SubmissionsPage() {
     ? Array.isArray(submissions)
       ? submissions.length
       : 0
-    : Object.values(submissions).reduce(
-        (acc, curr) =>
-          acc +
-          (curr.assignments?.length || 0) +
-          (curr.quizzes?.length || 0),
-        0
-      );
+    : Object.values(submissions).reduce((acc, curr) => {
+        let count = 0;
+        // Count from assignmentsByType
+        if (curr.assignmentsByType) {
+          Object.values(curr.assignmentsByType).forEach((typeArray) => {
+            count += typeArray?.length || 0;
+          });
+        }
+        // Count from quizzes
+        count += curr.quizzes?.length || 0;
+        return acc + count;
+      }, 0);
 
   const gradedCount = isFiltered
     ? Array.isArray(submissions)
       ? submissions.filter((s) => s.status === "GRADED").length
       : 0
-    : Object.values(submissions).reduce(
-        (acc, curr) =>
-          acc +
-          (curr.assignments?.filter((s) => s.status === "GRADED").length ||
-            0) +
-          (curr.quizzes?.filter((s) => s.status === "GRADED").length || 0),
-        0
-      );
+    : Object.values(submissions).reduce((acc, curr) => {
+        let count = 0;
+        // Count graded from assignmentsByType
+        if (curr.assignmentsByType) {
+          Object.values(curr.assignmentsByType).forEach((typeArray) => {
+            count += typeArray?.filter((s) => s.status === "GRADED").length || 0;
+          });
+        }
+        // Count graded from quizzes
+        count += curr.quizzes?.filter((s) => s.status === "GRADED").length || 0;
+        return acc + count;
+      }, 0);
 
   const pendingCount = totalSubmissions - gradedCount;
 
@@ -354,7 +370,9 @@ export default function SubmissionsPage() {
                   <EmptyState
                     title="Tidak ada pengumpulan"
                     description="Belum ada submission untuk filter yang dipilih."
-                    icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+                    icon={
+                      <FileText className="h-6 w-6 text-muted-foreground" />
+                    }
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -372,18 +390,28 @@ export default function SubmissionsPage() {
                   <EmptyState
                     title="Tidak ada pengumpulan"
                     description="Belum ada submission untuk tahun ajaran ini."
-                    icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+                    icon={
+                      <FileText className="h-6 w-6 text-muted-foreground" />
+                    }
                   />
                 ) : (
                   <Accordion type="multiple" className="w-full">
                     {Object.entries(submissions).map(
                       ([subjectName, subjectData], index) => {
-                        const totalItems =
-                          (subjectData.assignments?.length || 0) +
-                          (subjectData.quizzes?.length || 0);
+                        // Count total submissions across all types
+                        let totalItems = 0;
+                        if (subjectData.assignmentsByType) {
+                          Object.values(subjectData.assignmentsByType).forEach((typeArray) => {
+                            totalItems += typeArray?.length || 0;
+                          });
+                        }
+                        totalItems += subjectData.quizzes?.length || 0;
 
                         return (
-                          <AccordionItem key={subjectName} value={`subject-${index}`}>
+                          <AccordionItem
+                            key={subjectName}
+                            value={`subject-${index}`}
+                          >
                             <AccordionTrigger className="hover:no-underline">
                               <div className="flex items-center justify-between w-full pr-4">
                                 <div className="flex items-center gap-2">
@@ -399,45 +427,99 @@ export default function SubmissionsPage() {
                             </AccordionTrigger>
                             <AccordionContent>
                               <div className="space-y-4 pt-4">
-                                {/* Assignments Section */}
-                                {subjectData.assignments &&
-                                  subjectData.assignments.length > 0 && (
-                                    <div className="space-y-3">
-                                      <div className="flex items-center gap-2 px-2">
-                                        <FileText className="h-4 w-4 text-green-600" />
-                                        <h3 className="text-sm font-semibold text-green-700">
-                                          Tugas ({subjectData.assignments.length})
-                                        </h3>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {subjectData.assignments.map((sub) => (
-                                          <SubmissionCard
-                                            key={sub.id}
-                                            submission={sub}
-                                          />
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
+                                {/* Nested Accordion for Assignment Types */}
+                                {subjectData.assignmentsByType && (
+                                  <Accordion type="multiple" className="w-full pl-4">
+                                    {Object.entries(subjectData.assignmentsByType).map(
+                                      ([typeName, typeSubmissions]) => {
+                                        if (!typeSubmissions || typeSubmissions.length === 0) {
+                                          return null;
+                                        }
+
+                                        const typeColor = {
+                                          MATERIAL: "text-purple-700 bg-purple-50",
+                                          EXERCISE: "text-green-700 bg-green-50",
+                                          QUIZ: "text-orange-700 bg-orange-50",
+                                          DAILY_TEST: "text-blue-700 bg-blue-50",
+                                          START_SEMESTER_TEST: "text-red-700 bg-red-50",
+                                        };
+
+                                        const typeIcon = {
+                                          MATERIAL: <BookOpen className="h-4 w-4" />,
+                                          EXERCISE: <FileText className="h-4 w-4" />,
+                                          QUIZ: <Award className="h-4 w-4" />,
+                                          DAILY_TEST: <CheckCircle2 className="h-4 w-4" />,
+                                          START_SEMESTER_TEST: <Award className="h-4 w-4" />,
+                                        };
+
+                                        return (
+                                          <AccordionItem
+                                            key={typeName}
+                                            value={`type-${typeName}`}
+                                          >
+                                            <AccordionTrigger className="hover:no-underline py-3">
+                                              <div className="flex items-center justify-between w-full pr-4">
+                                                <div className="flex items-center gap-2">
+                                                  {typeIcon[typeName]}
+                                                  <span className="text-sm font-medium">
+                                                    {jenisUjianMap[typeName] || typeName}
+                                                  </span>
+                                                </div>
+                                                <Badge
+                                                  className={`ml-2 ${typeColor[typeName] || ""}`}
+                                                >
+                                                  {typeSubmissions.length}
+                                                </Badge>
+                                              </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                                                {typeSubmissions.map((sub) => (
+                                                  <SubmissionCard
+                                                    key={sub.id}
+                                                    submission={sub}
+                                                  />
+                                                ))}
+                                              </div>
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        );
+                                      }
+                                    )}
+                                  </Accordion>
+                                )}
 
                                 {/* Quizzes Section */}
                                 {subjectData.quizzes &&
                                   subjectData.quizzes.length > 0 && (
-                                    <div className="space-y-3">
-                                      <div className="flex items-center gap-2 px-2">
-                                        <Award className="h-4 w-4 text-blue-600" />
-                                        <h3 className="text-sm font-semibold text-blue-700">
-                                          Kuis ({subjectData.quizzes.length})
-                                        </h3>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {subjectData.quizzes.map((sub) => (
-                                          <SubmissionCard
-                                            key={sub.id}
-                                            submission={sub}
-                                          />
-                                        ))}
-                                      </div>
+                                    <div className="space-y-3 pl-4">
+                                      <Accordion type="multiple" className="w-full">
+                                        <AccordionItem value="quiz-section">
+                                          <AccordionTrigger className="hover:no-underline py-3">
+                                            <div className="flex items-center justify-between w-full pr-4">
+                                              <div className="flex items-center gap-2">
+                                                <Award className="h-4 w-4" />
+                                                <span className="text-sm font-medium">
+                                                  Kuis
+                                                </span>
+                                              </div>
+                                              <Badge className="ml-2 text-indigo-700 bg-indigo-50">
+                                                {subjectData.quizzes.length}
+                                              </Badge>
+                                            </div>
+                                          </AccordionTrigger>
+                                          <AccordionContent>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                                              {subjectData.quizzes.map((sub) => (
+                                                <SubmissionCard
+                                                  key={sub.id}
+                                                  submission={sub}
+                                                />
+                                              ))}
+                                            </div>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      </Accordion>
                                     </div>
                                   )}
                               </div>

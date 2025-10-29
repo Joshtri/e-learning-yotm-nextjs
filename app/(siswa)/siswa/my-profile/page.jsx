@@ -5,6 +5,7 @@ import ProfileCard from "@/components/Profile/ProfileCard";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -15,14 +16,16 @@ export default function ProfilePage() {
       .catch(() => {
         console.log("Error fetching user data");
     });
-  }, []);
+  }, [refreshKey]);
 
   const handleEdit = () => {
-    console.log("Redirect to edit profile");
-  };  
+    // Refresh data setelah edit
+    setRefreshKey((prev) => prev + 1);
+  };
 
   const handleLogout = () => {
     // delete cookie logic here
+    document.cookie = "auth_token=; Max-Age=0; path=/; SameSite=Strict; secure;";
     window.location.href = "/login";
   };
 
