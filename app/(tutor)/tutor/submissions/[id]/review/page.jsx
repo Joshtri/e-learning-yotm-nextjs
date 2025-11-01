@@ -461,7 +461,7 @@ export default function SubmissionReviewPage() {
                 </p>
                 <Input
                   type="number"
-                  value={nilai}
+                  value={nilai.toFixed(2) || ""}
                   min={0}
                   max={100}
                   onChange={(e) => setNilai(e.target.value)}
