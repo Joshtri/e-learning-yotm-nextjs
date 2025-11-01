@@ -36,7 +36,7 @@ export default function SubmissionReviewPage() {
     const fetchSubmission = async () => {
       try {
         const res = await api.get(`/tutor/submissions/${id}`);
-        const fetched = res.data.data;
+        const fetched = res.data.data.submission;
         setData(fetched);
         setNilai(fetched.nilai ?? "");
         setFeedback(fetched.feedback ?? "");
@@ -117,7 +117,13 @@ export default function SubmissionReviewPage() {
     <div className="p-6 space-y-6">
       <PageHeader
         title={`Review Jawaban Siswa`}
-        description={`Tugas: ${data.assignment?.judul}`}
+        description={
+          data.assignment?.judul
+            ? `Tugas: ${data.assignment.judul}`
+            : data.quiz?.judul
+            ? `Kuis: ${data.quiz.judul}`
+            : "Review Submission"
+        }
         actions={
           <Button onClick={() => router.back()} variant="outline">
             Kembali
@@ -141,7 +147,7 @@ export default function SubmissionReviewPage() {
                     variant="outline"
                     className={getScoreColor(data.nilai)}
                   >
-                    Nilai: {data.nilai}
+                    Nilai: {data.nilai.toFixed(2)}
                   </Badge>
                 )}
               </div>
@@ -172,8 +178,8 @@ export default function SubmissionReviewPage() {
                       <div className="flex gap-3">
                         <EnhancedPDFViewer
                           pdfData={data.answerPdf}
-                          title={`Jawaban PDF - ${data.student?.nama}`}
-                          downloadFileName={`jawaban_${data.student?.nama?.replace(
+                          title={`Jawaban PDF - ${data.student?.namaLengkap || data.student?.user?.nama}`}
+                          downloadFileName={`jawaban_${(data.student?.namaLengkap || data.student?.user?.nama)?.replace(
                             /\s+/g,
                             "_"
                           )}.pdf`}
@@ -213,7 +219,7 @@ export default function SubmissionReviewPage() {
                               const url = URL.createObjectURL(blob);
                               const link = document.createElement("a");
                               link.href = url;
-                              link.download = `jawaban_${data.student?.nama?.replace(
+                              link.download = `jawaban_${(data.student?.namaLengkap || data.student?.user?.nama)?.replace(
                                 /\s+/g,
                                 "_"
                               )}.pdf`;
@@ -244,20 +250,41 @@ export default function SubmissionReviewPage() {
                           <Badge variant="outline" className="bg-primary/10">
                             Soal {i + 1}
                           </Badge>
-                          {ans.isCorrect === true && (
+                          {ans.question?.jenis && (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:text-blue-400">
+                              {ans.question.jenis === 'TRUE_FALSE' ? 'Benar/Salah' :
+                               ans.question.jenis === 'ESSAY' ? 'Essay' :
+                               ans.question.jenis === 'MULTIPLE_CHOICE' ? 'Pilihan Ganda' :
+                               ans.question.jenis}Nilai: 
+                            </Badge>
+                          )}
+                          {ans.question?.poin && (
+                            <Badge variant="outline" className="bg-purple-100 text-purple-800  dark:text-purple-400">
+                              {ans.question.poin} poin
+                            </Badge>
+                          )}
+                          {ans.adalahBenar === true && (
                             <Badge
                               variant="outline"
-                              className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              className="bg-green-100 text-green-800  dark:text-green-400"
                             >
                               Benar
                             </Badge>
                           )}
-                          {ans.isCorrect === false && (
+                          {ans.adalahBenar === false && (
                             <Badge
                               variant="outline"
-                              className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                              className="bg-red-100 text-red-800  dark:text-red-400"
                             >
                               Salah
+                            </Badge>
+                          )}
+                          {ans.nilai !== null && ans.nilai !== undefined && (
+                            <Badge
+                              variant="outline"
+                              className="bg-yellow-200 text-yellow-800  dark:text-yellow-400"
+                            >
+                              Nilai: {ans.nilai.toFixed(2)}
                             </Badge>
                           )}
                         </div>
@@ -270,6 +297,14 @@ export default function SubmissionReviewPage() {
                           </p>
                           <p className="text-sm">{ans.jawaban || "-"}</p>
                         </div>
+                        {ans.feedback && (
+                          <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                            <p className="font-medium text-sm mb-1 text-blue-800 dark:text-blue-400">
+                              Feedback:
+                            </p>
+                            <p className="text-sm text-blue-700 dark:text-blue-300">{ans.feedback}</p>
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : !data.answerPdf ? (
@@ -284,34 +319,71 @@ export default function SubmissionReviewPage() {
 
                 <TabsContent value="assignment">
                   <div className="space-y-4">
-                    <div>
-                      <h3 className="font-medium">Judul Tugas</h3>
-                      <p>{data.assignment?.judul}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Deskripsi</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {data.assignment?.deskripsi || "-"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="font-medium">Waktu Mulai</h3>
-                        <p className="text-sm">
-                          {new Date(data.assignment?.waktuMulai).toLocaleString(
-                            "id-ID"
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Waktu Selesai</h3>
-                        <p className="text-sm">
-                          {new Date(
-                            data.assignment?.waktuSelesai
-                          ).toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                    </div>
+                    {data.assignment ? (
+                      <>
+                        <div>
+                          <h3 className="font-medium">Judul Tugas</h3>
+                          <p>{data.assignment.judul}</p>
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Deskripsi</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {data.assignment.deskripsi || "-"}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="font-medium">Waktu Mulai</h3>
+                            <p className="text-sm">
+                              {new Date(data.assignment.waktuMulai).toLocaleString(
+                                "id-ID"
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">Waktu Selesai</h3>
+                            <p className="text-sm">
+                              {new Date(
+                                data.assignment.waktuSelesai
+                              ).toLocaleString("id-ID")}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : data.quiz ? (
+                      <>
+                        <div>
+                          <h3 className="font-medium">Judul Kuis</h3>
+                          <p>{data.quiz.judul}</p>
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Deskripsi</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {data.quiz.deskripsi || "-"}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="font-medium">Waktu Mulai</h3>
+                            <p className="text-sm">
+                              {new Date(data.quiz.waktuMulai).toLocaleString(
+                                "id-ID"
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">Waktu Selesai</h3>
+                            <p className="text-sm">
+                              {new Date(
+                                data.quiz.waktuSelesai
+                              ).toLocaleString("id-ID")}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Tidak ada detail tugas/kuis</p>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -328,25 +400,38 @@ export default function SubmissionReviewPage() {
               <div className="flex items-center space-x-4 mb-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage
-                    src="/placeholder.svg"
-                    alt={data.student?.nama}
+                    src={data.student?.fotoUrl || "/placeholder.svg"}
+                    alt={data.student?.namaLengkap || data.student?.user?.nama}
                   />
                   <AvatarFallback>
-                    {data.student?.nama?.charAt(0) || "S"}
+                    {(data.student?.namaLengkap || data.student?.user?.nama)?.charAt(0) || "S"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{data.student?.nama}</p>
+                  <p className="font-medium">{data.student?.namaLengkap || data.student?.user?.nama}</p>
                   <p className="text-sm text-muted-foreground">
-                    {data.student?.email}
+                    {data.student?.user?.email || data.student?.email}
                   </p>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">NISN:</span>
+                  <span>{data.student?.nisn || "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">NIS:</span>
+                  <span>{data.student?.nis || "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Jenis Kelamin:</span>
+                  <span>{data.student?.jenisKelamin === 'MALE' ? 'Laki-laki' : data.student?.jenisKelamin === 'FEMALE' ? 'Perempuan' : '-'}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Kelas:</span>
                   <span>
                     {data.assignment?.classSubjectTutor?.class?.namaKelas ||
+                     data.quiz?.classSubjectTutor?.class?.namaKelas ||
                       "-"}
                   </span>
                 </div>
@@ -354,6 +439,7 @@ export default function SubmissionReviewPage() {
                   <span className="text-muted-foreground">Mata Pelajaran:</span>
                   <span>
                     {data.assignment?.classSubjectTutor?.subject?.namaMapel ||
+                     data.quiz?.classSubjectTutor?.subject?.namaMapel ||
                       "-"}
                   </span>
                 </div>
