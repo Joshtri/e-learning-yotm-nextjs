@@ -23,6 +23,12 @@ export async function GET(req, { params }) {
         student: {
           include: {
             user: true,
+            class: {
+              select: {
+                namaKelas: true,
+              },
+            },
+
           },
         },
         assignment: {
@@ -45,7 +51,46 @@ export async function GET(req, { params }) {
         },
         answers: {
           include: {
-            question: true,
+            question: {
+              include: {
+                assignment: {
+                  select: {
+                    classSubjectTutor: {
+                      select: {
+                        subject: {
+                          select: {
+                            namaMapel: true,
+                          },
+                        },
+                        class: {
+                          select: {
+                            namaKelas: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                quiz: {
+                  select: {
+                    classSubjectTutor: {
+                      select: {
+                        subject: {
+                          select: {
+                            namaMapel: true,
+                          },
+                        },
+                        class: {
+                          select: {
+                            namaKelas: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

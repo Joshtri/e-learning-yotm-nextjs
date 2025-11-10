@@ -173,7 +173,7 @@ export default function DailyExamsPage() {
         if (now >= start && now <= end) {
           return (
             <a
-              href={`/siswa/daily-exams/${row.id}/start`}
+              href={`/siswa/assignments/${row.id}/start`}
               className="text-sm text-blue-600 underline hover:text-blue-800 font-medium"
             >
               Kerjakan

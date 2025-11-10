@@ -432,6 +432,7 @@ export default function SubmissionReviewPage() {
                   <span>
                     {data.assignment?.classSubjectTutor?.class?.namaKelas ||
                      data.quiz?.classSubjectTutor?.class?.namaKelas ||
+                     data.student?.class?.namaKelas ||
                       "-"}
                   </span>
                 </div>
@@ -440,6 +441,8 @@ export default function SubmissionReviewPage() {
                   <span>
                     {data.assignment?.classSubjectTutor?.subject?.namaMapel ||
                      data.quiz?.classSubjectTutor?.subject?.namaMapel ||
+                     data.student?.classSubjectTutor?.subject?.namaMapel ||
+                     data.answers?.[0]?.question?.quiz?.classSubjectTutor?.subject?.namaMapel ||
                       "-"}
                   </span>
                 </div>

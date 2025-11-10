@@ -40,11 +40,10 @@ export async function GET(req, { params }) {
 
     // Check if assignment is within the allowed date range
     const now = new Date();
-    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     if (assignment.TanggalMulai) {
       const startDate = new Date(assignment.TanggalMulai);
-      if (currentDate < startDate) {
+      if (now < startDate) {
         return NextResponse.json(
           {
             success: false,
@@ -58,7 +57,7 @@ export async function GET(req, { params }) {
 
     if (assignment.TanggalSelesai) {
       const endDate = new Date(assignment.TanggalSelesai);
-      if (currentDate > endDate) {
+      if (now > endDate) {
         return NextResponse.json(
           {
             success: false,
