@@ -266,13 +266,92 @@ export default function AssignmentStartPage() {
               <CardHeader>
                 <CardTitle>Soal {i + 1}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-muted-foreground">{q.teks}</p>
-                <Textarea
-                  placeholder="Tulis jawaban Anda di sini"
-                  value={answers[q.id] || ""}
-                  onChange={(e) => handleChange(q.id, e.target.value)}
-                />
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground whitespace-pre-wrap">{q.teks}</p>
+
+                {/* Multiple Choice */}
+                {q.jenis === "MULTIPLE_CHOICE" && q.options && q.options.length > 0 && (
+                  <div className="space-y-2">
+                    {q.options.map((option, optIndex) => (
+                      <div key={option.id} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id={`${q.id}-${option.id}`}
+                          name={q.id}
+                          value={option.id}
+                          checked={answers[q.id] === option.id}
+                          onChange={(e) => handleChange(q.id, e.target.value)}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <label
+                          htmlFor={`${q.id}-${option.id}`}
+                          className="flex-1 cursor-pointer p-2 rounded hover:bg-gray-50"
+                        >
+                          {String.fromCharCode(65 + optIndex)}. {option.teks}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* True/False */}
+                {q.jenis === "TRUE_FALSE" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id={`${q.id}-true`}
+                        name={q.id}
+                        value="true"
+                        checked={answers[q.id] === "true"}
+                        onChange={(e) => handleChange(q.id, e.target.value)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <label
+                        htmlFor={`${q.id}-true`}
+                        className="flex-1 cursor-pointer p-2 rounded hover:bg-gray-50"
+                      >
+                        Benar
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id={`${q.id}-false`}
+                        name={q.id}
+                        value="false"
+                        checked={answers[q.id] === "false"}
+                        onChange={(e) => handleChange(q.id, e.target.value)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <label
+                        htmlFor={`${q.id}-false`}
+                        className="flex-1 cursor-pointer p-2 rounded hover:bg-gray-50"
+                      >
+                        Salah
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Short Answer */}
+                {q.jenis === "SHORT_ANSWER" && (
+                  <Input
+                    placeholder="Tulis jawaban singkat Anda"
+                    value={answers[q.id] || ""}
+                    onChange={(e) => handleChange(q.id, e.target.value)}
+                  />
+                )}
+
+                {/* Essay */}
+                {q.jenis === "ESSAY" && (
+                  <Textarea
+                    placeholder="Tulis jawaban essay Anda di sini"
+                    value={answers[q.id] || ""}
+                    onChange={(e) => handleChange(q.id, e.target.value)}
+                    rows={6}
+                  />
+                )}
               </CardContent>
             </Card>
           ))}

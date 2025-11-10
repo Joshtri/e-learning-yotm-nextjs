@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Link from "next/link";
+import { Edit as EditIcon } from "lucide-react";
 
 const JENIS_UJIAN_OPTIONS = [
   { label: "Ujian Harian", value: "DAILY_TEST" },
@@ -157,6 +159,15 @@ export default function ExamEditPage() {
           { label: "Edit Ujian" },
         ]}
       />
+
+      <div className="mb-4">
+        <Button variant="default" asChild>
+          <Link href={`/tutor/exams/${examId}/questions`}>
+            <EditIcon className="h-4 w-4 mr-2" />
+            Edit Soal
+          </Link>
+        </Button>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>

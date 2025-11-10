@@ -71,6 +71,9 @@ export async function GET(req, { params }) {
 
     const questions = await prisma.question.findMany({
       where: { assignmentId: assignment.id },
+      include: {
+        options: true,
+      },
       orderBy: { id: "asc" },
     });
 
