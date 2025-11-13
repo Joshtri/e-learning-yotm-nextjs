@@ -21,7 +21,7 @@ export async function POST(req) {
       );
     }
 
-    const { bulan, tahun } = await req.json(); // bulan 1..12
+    const { bulan, tahun, academicYearId } = await req.json(); // bulan 1..12
     if (!bulan || !tahun) {
       return new Response(
         JSON.stringify({
@@ -46,28 +46,9 @@ export async function POST(req) {
     const monthStart = new Date(tahun, monthIdx, 1);
     const monthEnd = new Date(tahun, monthIdx, daysInMonth);
 
-    // OPTIMIZED: Single query to get tutor + homeroom class + students + check existing sessions
+    // Get tutor first
     const tutor = await prisma.tutor.findUnique({
       where: { userId: user.id },
-      include: {
-        homeroomClasses: {
-          where: {
-            academicYear: { isActive: true },
-          },
-          include: {
-            academicYear: true,
-            students: {
-              select: { id: true }, // Only need student IDs
-            },
-            AttendanceSession: {
-              where: {
-                tanggal: { gte: monthStart, lte: monthEnd },
-              },
-              select: { id: true }, // Just check if exists
-            },
-          },
-        },
-      },
     });
 
     if (!tutor) {
@@ -77,8 +58,37 @@ export async function POST(req) {
       );
     }
 
-    // Get the homeroom class (should be only one active)
-    const kelas = tutor.homeroomClasses[0];
+    // Find the specific class based on academicYearId or active year
+    const whereCondition = {
+      homeroomTeacherId: tutor.id,
+    };
+
+    if (academicYearId) {
+      whereCondition.academicYearId = academicYearId;
+    }
+
+    const kelas = await prisma.class.findFirst({
+      where: whereCondition,
+      orderBy: [
+        { academicYear: { tahunMulai: "desc" } },
+        { academicYear: { semester: "desc" } },
+      ],
+      include: {
+        academicYear: true,
+        students: {
+          where: { status: "ACTIVE" },
+          select: { id: true, namaLengkap: true },
+        },
+        AttendanceSession: {
+          where: {
+            academicYearId: academicYearId,
+            tanggal: { gte: monthStart, lte: monthEnd },
+          },
+          select: { id: true },
+        },
+      },
+    });
+
     if (!kelas) {
       return new Response(
         JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
@@ -86,12 +96,12 @@ export async function POST(req) {
       );
     }
 
-    // Check if already generated
+    // Check if already generated for this specific academic year and month
     if (kelas.AttendanceSession.length > 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Presensi bulan ini sudah pernah digenerate.",
+          message: `Presensi bulan ${bulan}/${tahun} untuk T.A ${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} sudah pernah digenerate.`,
         }),
         { status: 400 }
       );

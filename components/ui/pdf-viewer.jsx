@@ -214,6 +214,7 @@ export function PDFViewerButton({
   variant = "outline",
   size = "sm",
   className = "",
+  buttonLabel = "Lihat Soal",
 }) {
   return (
     <PDFViewerDialog
@@ -223,7 +224,7 @@ export function PDFViewerButton({
     >
       <Button variant={variant} size={size} className={className}>
         <FileText className="w-4 h-4 mr-2" />
-        Lihat Soal
+        {buttonLabel}
       </Button>
     </PDFViewerDialog>
   );

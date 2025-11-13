@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/axios";
@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Save, ArrowLeft, FileText } from "lucide-react";
+import { Save, ArrowLeft, FileText, Upload, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PDFViewerButton } from "@/components/ui/pdf-viewer";
 
 export default function EditSubmissionPage() {
   const { id: assignmentId, studentId } = useParams();
   const router = useRouter();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [assignment, setAssignment] = useState(null);
@@ -25,6 +27,9 @@ export default function EditSubmissionPage() {
   const [answers, setAnswers] = useState({});
   const [nilai, setNilai] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [answerPdf, setAnswerPdf] = useState(null);
+  const [answerPdfName, setAnswerPdfName] = useState("");
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +70,55 @@ export default function EditSubmissionPage() {
     }));
   };
 
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Ukuran file terlalu besar. Maksimal 10MB.");
+      return;
+    }
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      toast.error("Hanya file PDF yang diperbolehkan.");
+      return;
+    }
+
+    setUploadingPdf(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Data = e.target?.result;
+        setAnswerPdf(base64Data);
+        setAnswerPdfName(file.name);
+        toast.success("File PDF berhasil dimuat");
+      };
+      reader.onerror = () => {
+        toast.error("Gagal membaca file PDF");
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading PDF:", error);
+      toast.error("Gagal mengunggah file PDF");
+    } finally {
+      setUploadingPdf(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setAnswerPdf(null);
+    setAnswerPdfName("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -80,6 +134,7 @@ export default function EditSubmissionPage() {
         answers: answersArray,
         nilai: nilai ? parseFloat(nilai) : null,
         feedback: feedback || null,
+        answerPdf: answerPdf || null,
       };
 
       await api.put(
@@ -369,6 +424,78 @@ export default function EditSubmissionPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* PDF Upload for Answers */}
+        <Card>
+          <CardHeader className="bg-muted/30">
+            <CardTitle className="text-lg">Jawaban dari PDF</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <p className="text-sm text-muted-foreground">
+              Anda dapat mengunggah file PDF yang berisi jawaban siswa. Ini memudahkan dokumentasi jawaban tertulis atau jawaban dari scan.
+            </p>
+
+            {answerPdf ? (
+              <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50 dark:bg-green-950/20">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <FileText className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-green-900 dark:text-green-100 break-words">
+                        {answerPdfName}
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                        File PDF berhasil dimuat
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemovePdf}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-4">
+                  <PDFViewerButton
+                    pdfData={answerPdf}
+                    title={`Jawaban - ${student?.namaLengkap || "Student"}`}
+                    downloadFileName={answerPdfName}
+                    buttonLabel="Pratinjau PDF"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePdfUpload}
+                  disabled={uploadingPdf}
+                  className="hidden"
+                  id="answerPdfInput"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPdf}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploadingPdf ? "Mengupload..." : "Pilih File PDF"}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Format: PDF | Ukuran maksimal: 10MB
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Penilaian */}
         <Card className="border-2">

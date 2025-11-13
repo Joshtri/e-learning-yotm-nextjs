@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -28,22 +28,20 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import axios from "axios";
 import { StudentDashboardSkeleton } from "@/components/ui/dashboard-skeleton";
+import { useStudentDashboard } from "@/hooks/useDashboardQueries";
 
 export default function StudentDashboardPage() {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: dashboardData, isLoading: loading, error } = useStudentDashboard();
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUserAndDashboard = async () => {
+    const verifyAuth = async () => {
       try {
         // Ambil data user dari /api/auth/me
         const userRes = await fetch("/api/auth/me", {
           cache: "no-store",
-          credentials: "include", // penting untuk pastikan cookie dikirim
+          credentials: "include",
         });
 
         if (!userRes.ok) throw new Error("Unauthorized");
@@ -69,29 +67,13 @@ export default function StudentDashboardPage() {
           router.replace("/onboarding/siswa");
           return;
         }
-
-        // Ambil data dashboard student
-        const dashboardRes = await fetch("/api/student/dashboard", {
-          cache: "no-store",
-          credentials: "include",
-        });
-
-        if (!dashboardRes.ok) {
-          const { message } = await dashboardRes.json();
-          throw new Error(message || "Gagal memuat dashboard");
-        }
-
-        const dashboard = await dashboardRes.json();
-        setDashboardData(dashboard);
       } catch (err) {
-        console.error("Student Dashboard Error:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error("Student Auth Verification Error:", err);
+        router.replace("/auth/login");
       }
     };
 
-    fetchUserAndDashboard();
+    verifyAuth();
   }, [router]);
 
   if (loading) {

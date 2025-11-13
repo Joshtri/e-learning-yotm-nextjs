@@ -59,7 +59,7 @@ export async function GET() {
       include: {
         class: { select: { id: true, namaKelas: true } },
         academicYear: { select: { tahunMulai: true, tahunSelesai: true } },
-        subject: { select: { id: true, namaMapel: true, kodeMapel: true } }, // ✅ Include mata pelajaran
+        // ✅ Removed subject - subjectId tidak ada di AttendanceSession anymore
         attendances: {
           include: {
             student: { select: { namaLengkap: true } },
@@ -102,15 +102,9 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { classId, academicYearId, subjectId, tanggal, keterangan } = body;
+    const { classId, academicYearId, tanggal, keterangan } = body;
 
-    // Validasi: subjectId harus ada untuk tutor attendance
-    if (!subjectId) {
-      return NextResponse.json(
-        { success: false, message: "Mata pelajaran wajib diisi" },
-        { status: 400 }
-      );
-    }
+    // ✅ Removed subjectId validation - AttendanceSession is now homeroom only
 
     // Konversi tanggal dengan memastikan waktu tetap di awal hari untuk menghindari perbedaan zona waktu
     let tanggalForDB = new Date(tanggal);
@@ -124,7 +118,7 @@ export async function POST(request) {
         tutorId: tutor.id, // ❗ Bukan user.id, tapi tutor.id
         classId,
         academicYearId,
-        subjectId, // ✅ Tambahan untuk track mata pelajaran
+        // ✅ Removed subjectId - AttendanceSession is now homeroom only (no subject)
         tanggal: tanggalForDB,
         keterangan,
       },

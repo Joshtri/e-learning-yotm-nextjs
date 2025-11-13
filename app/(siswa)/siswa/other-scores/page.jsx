@@ -11,15 +11,30 @@ import { toast } from "sonner";
 import api from "@/lib/axios";
 import { Skeleton } from "@/components/ui/skeleton";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function StudentOtherScoresPage() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
 
   const fetchOtherScores = async () => {
     try {
       const res = await api.get("/student/other-scores");
       setData(res.data.data || []);
+      if (res.data.filterOptions) {
+        setAcademicYears(res.data.filterOptions.academicYears || []);
+        setSubjects(res.data.filterOptions.subjects || []);
+      }
     } catch (error) {
       console.error("Gagal memuat other scores:", error);
       toast.error("Gagal memuat nilai tugas dan kuis");
@@ -32,15 +47,31 @@ export default function StudentOtherScoresPage() {
     fetchOtherScores();
   }, []);
 
-  const tugasData = useMemo(
-    () => data.filter((item) => item.tipe === "TUGAS"),
-    [data]
-  );
+  const tugasData = useMemo(() => {
+    let filtered = data.filter((item) => item.tipe === "TUGAS");
+    if (selectedAcademicYearId) {
+      filtered = filtered.filter(
+        (item) => item.academicYearId === selectedAcademicYearId
+      );
+    }
+    if (selectedSubjectId) {
+      filtered = filtered.filter((item) => item.mapelId === selectedSubjectId);
+    }
+    return filtered;
+  }, [data, selectedAcademicYearId, selectedSubjectId]);
 
-  const kuisData = useMemo(
-    () => data.filter((item) => item.tipe === "KUIS"),
-    [data]
-  );
+  const kuisData = useMemo(() => {
+    let filtered = data.filter((item) => item.tipe === "KUIS");
+    if (selectedAcademicYearId) {
+      filtered = filtered.filter(
+        (item) => item.academicYearId === selectedAcademicYearId
+      );
+    }
+    if (selectedSubjectId) {
+      filtered = filtered.filter((item) => item.mapelId === selectedSubjectId);
+    }
+    return filtered;
+  }, [data, selectedAcademicYearId, selectedSubjectId]);
 
   const columns = [
     {
@@ -107,6 +138,47 @@ export default function StudentOtherScoresPage() {
         ]}
         icon={<BookOpen className="h-6 w-6" />}
       />
+
+      {/* Filters */}
+      <div className="flex gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <label className="text-sm font-medium mb-2 block">
+            Filter Tahun Ajaran
+          </label>
+          <Select value={selectedAcademicYearId || "all"} onValueChange={(value) => setSelectedAcademicYearId(value === "all" ? "" : value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua Tahun Ajaran" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+              {academicYears.map((year) => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex-1 min-w-[200px]">
+          <label className="text-sm font-medium mb-2 block">
+            Filter Mata Pelajaran
+          </label>
+          <Select value={selectedSubjectId || "all"} onValueChange={(value) => setSelectedSubjectId(value === "all" ? "" : value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua Mata Pelajaran" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
+              {subjects.map((subject) => (
+                <SelectItem key={subject.id} value={subject.id}>
+                  {subject.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <Tabs defaultValue="tugas" className="space-y-6">
         <TabsList>

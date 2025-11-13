@@ -3,42 +3,32 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCard } from "@/components/ui/stats-card";
 import { CalendarCheck, Users, BarChart3, NotebookPen, ArrowRight, GraduationCap } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import api from "@/lib/axios";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useHomeroomDashboard } from "@/hooks/useDashboardQueries";
 
 export default function HomeroomDashboardPage() {
   const router = useRouter();
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    totalAttendances: 0,
-    totalAssignments: 0,
-    averageScore: 0,
-    totalFinalScores: 0,
-    classInfo: null,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    overview,
+    classes,
+    stats: dashboardStats,
+    students,
+    isLoading,
+    error,
+  } = useHomeroomDashboard();
 
-  const fetchHomeroomDashboard = async () => {
-    try {
-      setIsLoading(true);
-      const res = await api.get("/homeroom/dashboard");
-      setStats(res.data.data);
-    } catch (error) {
-      console.error("Gagal memuat dashboard wali kelas:", error);
-      toast.error("Gagal memuat data dashboard.");
-    } finally {
-      setIsLoading(false);
-    }
+  const stats = {
+    totalStudents: overview?.totalStudents || 0,
+    totalAttendances: overview?.totalAttendances || 0,
+    totalAssignments: overview?.totalAssignments || 0,
+    averageScore: overview?.averageScore || 0,
+    totalFinalScores: overview?.totalFinalScores || 0,
+    classInfo: overview?.classInfo || null,
   };
-
-  useEffect(() => {
-    fetchHomeroomDashboard();
-  }, []);
 
   // Skeleton cards to show while loading
   const renderSkeletonCard = () => (

@@ -12,7 +12,8 @@ export async function GET(_, { params }) {
       );
     }
 
-    const { classId } = params;
+    // ✅ Await params in Next.js 15
+    const { classId } = await params;
     if (!classId) {
       return NextResponse.json(
         { success: false, message: "classId diperlukan" },
@@ -31,7 +32,7 @@ export async function GET(_, { params }) {
       );
     }
 
-    // Ambil sesi presensi berdasarkan classId (tidak perlu dedup karena beda subject)
+    // Ambil sesi presensi berdasarkan classId
     const sessions = await prisma.attendanceSession.findMany({
       where: {
         classId,
@@ -43,13 +44,7 @@ export async function GET(_, { params }) {
             tahunSelesai: true,
           },
         },
-        subject: { // ✅ Include subject info
-          select: {
-            id: true,
-            namaMapel: true,
-            kodeMapel: true,
-          },
-        },
+        // ✅ Removed subject relation - subjectId tidak ada di AttendanceSession anymore
         tutor: { // ✅ Include tutor info untuk identifikasi siapa yang buat
           select: {
             user: {

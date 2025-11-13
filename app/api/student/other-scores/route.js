@@ -34,7 +34,12 @@ export async function GET(request) {
           assignmentId: { not: null },
           assignment: {
             jenis: {
-              notIn: ["MIDTERM", "FINAL_EXAM"], // ✅ Filter MIDTERM dan FINAL_EXAM
+              notIn: ["MIDTERM", "FINAL_EXAM", "DAILY_TEST", "START_SEMESTER_TEST"], // ✅ Filter exam types
+            },
+            NOT: {
+              judul: {
+                contains: "Ujian", // ✅ Exclude items with "Ujian" in title
+              },
             },
           },
           status: "GRADED", // ✅ Tugas tetap hanya GRADED
@@ -49,8 +54,13 @@ export async function GET(request) {
               judul: true,
               classSubjectTutor: {
                 select: {
-                  class: { select: { namaKelas: true } },
-                  subject: { select: { namaMapel: true } },
+                  class: {
+                    select: {
+                      namaKelas: true,
+                      academicYear: { select: { id: true, tahunMulai: true, tahunSelesai: true, semester: true } },
+                    },
+                  },
+                  subject: { select: { id: true, namaMapel: true } },
                 },
               },
             },
@@ -62,6 +72,13 @@ export async function GET(request) {
         where: {
           studentId: student.id,
           quizId: { not: null },
+          quiz: {
+            NOT: {
+              judul: {
+                contains: "Ujian", // ✅ Exclude items with "Ujian" in title
+              },
+            },
+          },
           status: {
             in: ["GRADED", "SUBMITTED"], // ✅ Kuis: GRADED atau SUBMITTED
           },
@@ -76,8 +93,13 @@ export async function GET(request) {
               judul: true,
               classSubjectTutor: {
                 select: {
-                  class: { select: { namaKelas: true } },
-                  subject: { select: { namaMapel: true } },
+                  class: {
+                    select: {
+                      namaKelas: true,
+                      academicYear: { select: { id: true, tahunMulai: true, tahunSelesai: true, semester: true } },
+                    },
+                  },
+                  subject: { select: { id: true, namaMapel: true } },
                 },
               },
             },
@@ -89,15 +111,21 @@ export async function GET(request) {
 
     const transformSubmission = (item, type) => {
       const source = type === "KUIS" ? item.quiz : item.assignment;
+      const academicYear = source?.classSubjectTutor?.class?.academicYear;
       return {
         id: item.id,
         tipe: type,
         judul: source?.judul || "-",
         kelas: source?.classSubjectTutor?.class?.namaKelas || "-",
         mapel: source?.classSubjectTutor?.subject?.namaMapel || "-",
+        mapelId: source?.classSubjectTutor?.subject?.id || "-",
         nilai: item.nilai ?? 0,
         status: item.status,
         waktuKumpul: item.waktuKumpul,
+        academicYearId: academicYear?.id || "-",
+        tahunAjaran: academicYear
+          ? `${academicYear.tahunMulai}/${academicYear.tahunSelesai} - ${academicYear.semester}`
+          : "-",
       };
     };
 
@@ -106,9 +134,28 @@ export async function GET(request) {
       ...quizSubmissions.map((item) => transformSubmission(item, "KUIS")),
     ];
 
+    // Extract unique academic years and subjects from the data
+    const academicYearsMap = new Map();
+    const subjectsSet = new Map();
+
+    otherScores.forEach((score) => {
+      if (score.academicYearId !== "-") {
+        academicYearsMap.set(score.academicYearId, score.tahunAjaran);
+      }
+      if (score.mapelId !== "-") {
+        subjectsSet.set(score.mapelId, score.mapel);
+      }
+    });
+
+    const filterOptions = {
+      academicYears: Array.from(academicYearsMap, ([id, label]) => ({ id, label })),
+      subjects: Array.from(subjectsSet, ([id, label]) => ({ id, label })),
+    };
+
     const response = NextResponse.json({
       success: true,
       data: otherScores,
+      filterOptions,
     });
 
     response.headers.set(

@@ -196,6 +196,7 @@ export default function ViewSubmissionPage() {
               pdfData={submission.answerPdf}
               title={`Jawaban - ${student?.namaLengkap}`}
               downloadFileName={`Jawaban_${student?.namaLengkap}.pdf`}
+              buttonLabel="Lihat Jawaban"
             />
           </CardContent>
         </Card>

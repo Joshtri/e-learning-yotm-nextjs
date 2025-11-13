@@ -69,12 +69,12 @@ export default function AttendanceClassListPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Presensi Kelas & Mata Pelajaran"
-        description="Kelola presensi siswa berdasarkan kelas dan mata pelajaran yang Anda ajar. Setiap kombinasi kelas dan mata pelajaran memiliki daftar presensi terpisah."
+        title="Presensi Kelas"
+        description="Kelola presensi siswa berdasarkan kelas yang Anda ajar."
         breadcrumbs={[
           { label: "Dashboard", href: "/tutor/dashboard" },
           { label: "Presensi", href: "/tutor/attendances" },
-          { label: "Per Kelas & Mapel" },
+          { label: "Per Kelas" },
         ]}
       />
 
@@ -82,16 +82,16 @@ export default function AttendanceClassListPage() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Presensi dikelola per <strong>kombinasi kelas dan mata pelajaran</strong>. Jika Anda mengajar beberapa mata pelajaran di kelas yang sama, masing-masing akan memiliki daftar presensi terpisah. Ini memastikan setiap siswa dapat memiliki catatan kehadiran berbeda untuk setiap mata pelajaran.
+          Presensi dikelola per <strong>kelas</strong>. Setiap kelas memiliki daftar presensi tersendiri untuk semua siswa di kelas tersebut.
         </AlertDescription>
       </Alert>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatsCard
-          title="Total Kelas & Mapel"
+          title="Total Kelas"
           value={classes.length}
-          description="Kombinasi kelas dan mata pelajaran"
+          description="Kelas yang Anda ajar"
           icon={<Users className="h-4 w-4" />}
         />
         <StatsCard
@@ -105,12 +105,6 @@ export default function AttendanceClassListPage() {
           }
           description="Periode tahun ajaran"
           icon={<Calendar className="h-4 w-4" />}
-        />
-        <StatsCard
-          title="Mata Pelajaran"
-          value={new Set(classes.map((c) => c.subject.namaMapel)).size}
-          description="Total mapel yang diampu"
-          icon={<BookOpen className="h-4 w-4" />}
         />
       </div>
 
@@ -147,10 +141,10 @@ export default function AttendanceClassListPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Daftar Kelas & Mata Pelajaran
+            Daftar Kelas
           </CardTitle>
           <CardDescription>
-            {classes.length} kombinasi kelas dan mata pelajaran tersedia. Setiap kartu di bawah mewakili presensi untuk satu mata pelajaran di satu kelas tertentu.
+            {classes.length} kelas tersedia. Kelola presensi siswa untuk setiap kelas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,29 +152,23 @@ export default function AttendanceClassListPage() {
             <SkeletonTable numRows={5} numCols={4} showHeader={true} />
           ) : classes.length === 0 ? (
             <EmptyState
-              title="Tidak ada kelas & mata pelajaran"
-              description="Belum ada kelas dan mata pelajaran yang Anda ampu untuk tahun ajaran ini."
+              title="Tidak ada kelas"
+              description="Belum ada kelas yang Anda ampu untuk tahun ajaran ini."
               icon={<Users className="h-6 w-6 text-muted-foreground" />}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {classes.map((item, index) => (
-                <Card key={item.id} className="hover:shadow-lg transition-shadow">
+              {classes.map((cls, index) => (
+                <Card key={cls.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2 w-full">
                         <Badge variant="outline" className="w-fit">
-                          Kelas & Mapel #{index + 1}
+                          Kelas #{index + 1}
                         </Badge>
                         <CardTitle className="text-lg">
-                          {item.class.namaKelas}
+                          {cls.namaKelas}
                         </CardTitle>
-                        <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">
-                            {item.subject.namaMapel}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -192,15 +180,15 @@ export default function AttendanceClassListPage() {
                           Tahun Ajaran
                         </span>
                         <span className="font-medium">
-                          {item.class.academicYear.tahunMulai}/
-                          {item.class.academicYear.tahunSelesai} - {item.class.academicYear.semester}
+                          {cls.academicYear.tahunMulai}/
+                          {cls.academicYear.tahunSelesai} - {cls.academicYear.semester}
                         </span>
                       </div>
                       <Button
                         className="w-full"
                         onClick={() =>
                           router.push(
-                            `/tutor/attendances/class/${item.class.id}`
+                            `/tutor/attendances/class/${cls.id}`
                           )
                         }
                       >

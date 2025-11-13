@@ -258,40 +258,10 @@ export async function DELETE(req) {
     const endDate = new Date(tahun, bulan, 0, 23, 59, 59, 999); // hari terakhir bulan + waktu
 
     console.log("DEBUG Delete - classId:", kelas.id);
+    console.log("DEBUG Delete - academicYearId:", kelas.academicYearId);
     console.log("DEBUG Delete - studentIds count:", studentIds.length);
     console.log("DEBUG Delete - startDate:", startDate);
     console.log("DEBUG Delete - endDate:", endDate);
-
-    // Langkah 1: Cek data attendance yang ada
-    const existingAttendances = await prisma.attendance.findMany({
-      where: {
-        studentId: { in: studentIds },
-        classId: kelas.id,
-        academicYearId: kelas.academicYearId, // ✅ Filter by academic year
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
-
-    console.log("DEBUG - Found attendances:", existingAttendances.length);
-
-    // Langkah 2: Cek session yang ada (optional, bisa di-skip jika tidak digunakan)
-    // Commented out karena subjectId tidak ada di schema
-    // const existingSessions = await prisma.attendanceSession.findMany({
-    //   where: {
-    //     classId: kelas.id,
-    //     academicYearId: kelas.academicYearId,
-    //     tanggal: {
-    //       gte: startDate,
-    //       lte: endDate,
-    //     },
-    //   },
-    // });
-
-    // console.log("DEBUG - Found sessions:", existingSessions.length);
-    // console.log("DEBUG - Sessions detail:", existingSessions);
 
     // Langkah 3: Hapus attendance terlebih dahulu (karena foreign key)
     const deletedAttendances = await prisma.attendance.deleteMany({
@@ -308,24 +278,23 @@ export async function DELETE(req) {
 
     console.log("DEBUG - Deleted attendances count:", deletedAttendances.count);
 
-    // Langkah 4: Hapus session presensi (optional, bisa di-skip jika tidak digunakan)
-    // Commented out karena subjectId tidak ada di schema
-    // const deletedSessions = await prisma.attendanceSession.deleteMany({
-    //   where: {
-    //     classId: kelas.id,
-    //     academicYearId: kelas.academicYearId,
-    //     tanggal: {
-    //       gte: startDate,
-    //       lte: endDate,
-    //     },
-    //   },
-    // });
+    // Langkah 4: Hapus session presensi SETELAH attendance (karena ada foreign key reference)
+    const deletedSessions = await prisma.attendanceSession.deleteMany({
+      where: {
+        classId: kelas.id,
+        academicYearId: kelas.academicYearId, // ✅ Filter by academic year
+        tanggal: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
 
-    // console.log("DEBUG - Deleted sessions count:", deletedSessions.count);
+    console.log("DEBUG - Deleted sessions count:", deletedSessions.count);
 
     return NextResponse.json({
       success: true,
-      message: `Berhasil menghapus ${deletedAttendances.count} presensi di bulan ${bulan}/${tahun}`,
+      message: `Berhasil menghapus ${deletedAttendances.count} data presensi dan ${deletedSessions.count} session di bulan ${bulan}/${tahun} untuk T.A ${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
     });
 
   } catch (error) {

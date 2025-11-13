@@ -12,7 +12,8 @@ export async function POST(request, { params }) {
       );
     }
 
-    const { id } = params; // id attendanceSession
+    // ✅ Await params in Next.js 15
+    const { id } = await params; // id attendanceSession
     const body = await request.json();
     const { attendances } = body;
 

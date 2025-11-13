@@ -1,4 +1,7 @@
+"use client";
+
 import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,32 +13,49 @@ import api from "@/lib/axios";
 import dayjs from "dayjs";
 import { Badge } from "./badge";
 
+// ✅ Cache configuration for notifications
+const NOTIFICATION_CACHE_CONFIG = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 30 * 60 * 1000, // 30 minutes garbage collection (formerly cacheTime)
+  refetchInterval: 30 * 1000, // Auto refetch every 30 seconds
+  refetchIntervalInBackground: true, // Keep refetching even in background
+};
+
 export function NotificationDropdown({ userId }) {
-  const [notifications, setNotifications] = useState([]);
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = async () => {
-    try {
+  // ✅ Fetch notifications with TanStack Query
+  const {
+    data: notifications = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["notifications", userId],
+    queryFn: async () => {
       const res = await api.get(`/notifications?userId=${userId}`);
-      setNotifications(res.data.data || []);
-    } catch (err) {
-      console.error("Gagal mengambil notifikasi:", err);
-    }
-  };
+      return res.data.data || [];
+    },
+    enabled: !!userId, // Only run query if userId exists
+    ...NOTIFICATION_CACHE_CONFIG,
+  });
 
-  const handleMarkAsRead = async (id) => {
-    try {
+  // ✅ Mutation to mark notification as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id) => {
       await api.patch(`/notifications?id=${id}`);
-      fetchNotifications();
-    } catch (err) {
+    },
+    onSuccess: () => {
+      // ✅ Invalidate and refetch notifications after marking as read
+      queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+    },
+    onError: (err) => {
       console.error("Gagal menandai sebagai dibaca:", err);
-    }
-  };
+    },
+  });
 
-  useEffect(() => {
-    if (userId) {
-      fetchNotifications();
-    }
-  }, [userId]);
+  const handleMarkAsRead = (id) => {
+    markAsReadMutation.mutate(id);
+  };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 

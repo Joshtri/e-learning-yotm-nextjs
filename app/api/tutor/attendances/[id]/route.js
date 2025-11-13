@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    // ✅ Await params in Next.js 15
+    const { id } = await params;
 
     const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -32,7 +33,7 @@ export async function GET(request, { params }) {
       where: { id },
       include: {
         tutor: { select: { user: { select: { nama: true } } } },
-        subject: { select: { id: true, namaMapel: true, kodeMapel: true } }, // ✅ Include mata pelajaran
+        // ✅ Removed subject - subjectId tidak ada di AttendanceSession anymore
         class: {
           select: {
             id: true,
@@ -104,7 +105,7 @@ export async function GET(request, { params }) {
         id: { not: id }, // Exclude current session
       },
       include: {
-        subject: { select: { namaMapel: true, kodeMapel: true } },
+        // ✅ Removed subject - subjectId tidak ada di AttendanceSession anymore
         tutor: { select: { user: { select: { nama: true } } } },
         attendances: {
           select: {
@@ -126,7 +127,8 @@ export async function GET(request, { params }) {
       const attendanceHistory = otherSessionsToday.map(session => {
         const studentAttendance = session.attendances.find(att => att.studentId === student.id);
         return {
-          subjectName: session.subject?.namaMapel || "Homeroom",
+          // ✅ All AttendanceSession records are homeroom attendance now (no subject)
+          subjectName: "Homeroom",
           tutorName: session.tutor.user.nama,
           status: studentAttendance?.status || null,
         };
@@ -154,11 +156,7 @@ export async function GET(request, { params }) {
         id: user.id,
         nama: attendanceSession.tutor.user.nama,
       },
-      subject: attendanceSession.subject ? { // ✅ Include mata pelajaran
-        id: attendanceSession.subject.id,
-        namaMapel: attendanceSession.subject.namaMapel,
-        kodeMapel: attendanceSession.subject.kodeMapel,
-      } : null,
+      // ✅ Removed subject - AttendanceSession is now homeroom only (no subject)
       kelas: {
         id: cleanClassData.id,
         namaKelas: cleanClassData.namaKelas,

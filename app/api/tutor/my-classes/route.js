@@ -48,7 +48,43 @@ export async function GET(request) {
       }
     }
 
-    const data = await prisma.classSubjectTutor.findMany({
+    // ✅ Get unique classes where tutor is homeroom teacher OR teaches any subject
+    // This gives us all classes a tutor manages/teaches
+    const classesAsHomeroom = await prisma.class.findMany({
+      where: {
+        academicYearId: academicYearId,
+        homeroomTeacherId: tutor.id,
+      },
+      select: {
+        id: true,
+        namaKelas: true,
+        academicYear: {
+          select: {
+            id: true,
+            tahunMulai: true,
+            tahunSelesai: true,
+            isActive: true,
+            semester: true,
+          },
+        },
+        program: {
+          select: {
+            id: true,
+            namaPaket: true,
+          },
+        },
+        homeroomTeacher: {
+          select: {
+            id: true,
+            namaLengkap: true,
+            userId: true,
+          },
+        },
+      },
+    });
+
+    // ✅ Get classes where tutor teaches subjects (deduplicated)
+    const classesAsTeacher = await prisma.classSubjectTutor.findMany({
       where: {
         tutorId: tutor.id,
         class: {
@@ -84,23 +120,40 @@ export async function GET(request) {
             },
           },
         },
-        subject: {
-          select: {
-            id: true,
-            namaMapel: true,
-          },
-        },
-        tutor: {
-          select: {
-            id: true,
-            namaLengkap: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
       },
     });
+
+    // ✅ Deduplicate and combine both lists
+    const classMap = new Map();
+
+    // Add homeroom classes
+    classesAsHomeroom.forEach(cls => {
+      classMap.set(cls.id, {
+        id: cls.id,
+        namaKelas: cls.namaKelas,
+        academicYear: cls.academicYear,
+        program: cls.program,
+        homeroomTeacher: cls.homeroomTeacher,
+      });
+    });
+
+    // Add teacher classes (if not already added as homeroom)
+    classesAsTeacher.forEach(item => {
+      if (!classMap.has(item.class.id)) {
+        classMap.set(item.class.id, {
+          id: item.class.id,
+          namaKelas: item.class.namaKelas,
+          academicYear: item.class.academicYear,
+          program: item.class.program,
+          homeroomTeacher: item.class.homeroomTeacher,
+        });
+      }
+    });
+
+    // ✅ Convert to array and sort by class name
+    const data = Array.from(classMap.values()).sort((a, b) =>
+      a.namaKelas.localeCompare(b.namaKelas)
+    );
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

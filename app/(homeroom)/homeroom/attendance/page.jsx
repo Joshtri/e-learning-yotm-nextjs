@@ -28,6 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
@@ -57,6 +65,12 @@ export default function HomeroomAttendancePage() {
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState("");
   const [isLoadingAcademicYears, setIsLoadingAcademicYears] = useState(true);
+
+  // ✅ New state for dynamic attendance editing
+  const [isEditMode, setIsEditMode] = useState(false); // Toggle edit mode on/off
+  const [editedAttendances, setEditedAttendances] = useState({}); // Track changes {studentId-date: newStatus}
+  const [hasChanges, setHasChanges] = useState(false); // Show save/cancel button
+  const [isSaving, setIsSaving] = useState(false);
 
   // Set locale Indonesia untuk dayjs
   dayjs.locale("id");
@@ -142,6 +156,7 @@ export default function HomeroomAttendancePage() {
       await api.post("/homeroom/attendance/generate", {
         bulan: currentMonth,
         tahun: currentYear,
+        academicYearId: selectedAcademicYearId,
       });
       toast.success("Presensi bulan ini berhasil digenerate");
       fetchAttendance();
@@ -174,6 +189,133 @@ export default function HomeroomAttendancePage() {
       toast.error("Gagal menghapus presensi");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // ✅ Handle attendance status change
+  const handleAttendanceChange = (studentId, date, newStatus) => {
+    const key = `${studentId}-${date}`;
+    const updatedEdits = { ...editedAttendances };
+
+    // Get original attendance to compare
+    const student = students.find((s) => s.id === studentId);
+    const originalAttendance = student?.Attendance.find(
+      (a) => dayjs(a.date).format("YYYY-MM-DD") === date
+    );
+
+    if (originalAttendance?.status === newStatus) {
+      // If changing back to original, remove from edits
+      delete updatedEdits[key];
+    } else {
+      // Track the change
+      updatedEdits[key] = {
+        attendanceId: originalAttendance?.id,
+        studentId,
+        date,
+        status: newStatus,
+      };
+    }
+
+    setEditedAttendances(updatedEdits);
+    setHasChanges(Object.keys(updatedEdits).length > 0);
+  };
+
+  // ✅ Save all changes to API
+  const handleSaveChanges = async () => {
+    try {
+      setIsSaving(true);
+      const changedAttendances = Object.values(editedAttendances);
+
+      if (changedAttendances.length === 0) {
+        toast.info("Tidak ada perubahan untuk disimpan");
+        return;
+      }
+
+      await api.patch("/homeroom/attendance/update-bulk", {
+        attendances: changedAttendances,
+        academicYearId: selectedAcademicYearId,
+      });
+
+      toast.success(`${changedAttendances.length} presensi berhasil diperbarui`);
+      setEditedAttendances({});
+      setHasChanges(false);
+      fetchAttendance(); // Refresh data
+    } catch (error) {
+      console.error(error);
+      const message =
+        error.response?.data?.message || "Gagal menyimpan perubahan presensi";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ✅ Cancel all changes
+  const handleCancelChanges = () => {
+    setEditedAttendances({});
+    setHasChanges(false);
+    setIsEditMode(false);
+    toast.info("Perubahan dibatalkan");
+  };
+
+  // ✅ Exit edit mode and reset changes
+  const handleExitEditMode = () => {
+    if (hasChanges) {
+      // If there are unsaved changes, show confirmation
+      const confirmed = window.confirm(
+        "Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar dari mode edit?"
+      );
+      if (!confirmed) return;
+    }
+    setIsEditMode(false);
+    setEditedAttendances({});
+    setHasChanges(false);
+  };
+
+  // ✅ Get current status (from edits or original data)
+  const getCurrentStatus = (studentId, date) => {
+    const key = `${studentId}-${date}`;
+    if (editedAttendances[key]) {
+      return editedAttendances[key].status;
+    }
+
+    const student = students.find((s) => s.id === studentId);
+    const attendance = student?.Attendance.find(
+      (a) => dayjs(a.date).format("YYYY-MM-DD") === date
+    );
+    return attendance?.status;
+  };
+
+  // ✅ Mark all students as present on a specific date
+  const handleMarkAllPresent = (date) => {
+    const updatedEdits = { ...editedAttendances };
+    let changesCount = 0;
+
+    students.forEach((student) => {
+      const key = `${student.id}-${date}`;
+      const studentAttendance = student.Attendance.find(
+        (a) => dayjs(a.date).format("YYYY-MM-DD") === date
+      );
+
+      // Only mark as present if not already present
+      if (studentAttendance?.status !== "PRESENT") {
+        updatedEdits[key] = {
+          attendanceId: studentAttendance?.id,
+          studentId: student.id,
+          date,
+          status: "PRESENT",
+        };
+        changesCount++;
+      }
+    });
+
+    setEditedAttendances(updatedEdits);
+    setHasChanges(Object.keys(updatedEdits).length > 0);
+
+    if (changesCount > 0) {
+      toast.success(`${changesCount} siswa ditandai hadir`);
+    } else {
+      toast.info("Semua siswa sudah ditandai hadir");
     }
   };
 
@@ -221,6 +363,54 @@ export default function HomeroomAttendancePage() {
     }
   };
 
+  // ✅ Dropdown status selector component using shadcn
+  const StatusDropdown = ({ studentId, date }) => {
+    const currentStatus = getCurrentStatus(studentId, date);
+    const statusOptions = [
+      { value: "PRESENT", label: "Hadir", icon: Check, color: "text-green-600" },
+      { value: "SICK", label: "Sakit", icon: Thermometer, color: "text-amber-600" },
+      { value: "EXCUSED", label: "Izin", icon: FileText, color: "text-blue-600" },
+      { value: "ABSENT", label: "Alpha", icon: X, color: "text-red-600" },
+    ];
+
+    const selectedOption = statusOptions.find((opt) => opt.value === currentStatus);
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-gray-100"
+          >
+            {selectedOption ? (
+              <selectedOption.icon className={`h-4 w-4 ${selectedOption.color}`} />
+            ) : (
+              <Minus className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-40">
+          <DropdownMenuLabel>Pilih Status</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {statusOptions.map((opt) => (
+            <DropdownMenuItem
+              key={opt.value}
+              onClick={() => handleAttendanceChange(studentId, date, opt.value)}
+              className="cursor-pointer"
+            >
+              <opt.icon className={`mr-2 h-4 w-4 ${opt.color}`} />
+              <span>{opt.label}</span>
+              {currentStatus === opt.value && (
+                <span className="ml-auto text-xs">✓</span>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   // Check if viewing active academic year
   const isViewingActiveYear = academicYears.find((y) => y.id === selectedAcademicYearId)?.isActive;
 
@@ -244,6 +434,36 @@ export default function HomeroomAttendancePage() {
           { label: "Presensi" },
         ]}
       />
+
+      {/* ✅ Show save/cancel banner when in edit mode and there are changes */}
+      {isEditMode && hasChanges && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 flex items-center justify-between">
+          <div>
+            <p className="font-medium text-blue-900">
+              Anda memiliki {Object.keys(editedAttendances).length} perubahan presensi yang belum disimpan
+            </p>
+            <p className="text-sm text-blue-700">
+              Klik "Simpan" untuk menyimpan perubahan atau "Batal" untuk membatalkan
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelChanges}
+              disabled={isSaving}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleSaveChanges}
+              disabled={isSaving}
+            >
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ✅ Show info banner when viewing archived data */}
       {!isViewingActiveYear && academicYearInfo && (
@@ -328,8 +548,30 @@ export default function HomeroomAttendancePage() {
         </div>
 
         <div className="flex gap-2">
-          {/* ✅ Only show generate/delete buttons for active academic year */}
-          {academicYears.find((y) => y.id === selectedAcademicYearId)?.isActive && (
+          {/* ✅ Edit Presensi button (available for active academic year) */}
+          {isViewingActiveYear && !isEditMode && students.length > 0 && (
+            <Button
+              onClick={() => setIsEditMode(true)}
+              variant="outline"
+              disabled={isGenerating || isDeleting}
+            >
+              Edit Presensi
+            </Button>
+          )}
+
+          {/* ✅ Exit Edit Mode button */}
+          {isEditMode && (
+            <Button
+              onClick={handleExitEditMode}
+              variant="outline"
+              disabled={isSaving}
+            >
+              Keluar Edit Mode
+            </Button>
+          )}
+
+          {/* ✅ Only show generate/delete buttons for active academic year (when not in edit mode) */}
+          {isViewingActiveYear && !isEditMode && (
             <>
               <Button
                 onClick={handleGenerate}
@@ -397,17 +639,31 @@ export default function HomeroomAttendancePage() {
                   );
                   const dayName = date.format("ddd"); // Nama hari singkat (Sen, Sel, Rab, etc.)
                   const isWeekend = date.day() === 0 || date.day() === 6; // Minggu atau Sabtu
+                  const tanggal = date.format("YYYY-MM-DD");
 
                   return (
                     <TableHead
                       key={day}
-                      className={`text-center min-w-[60px] ${
+                      className={`text-center min-w-[100px] ${
                         isWeekend ? "bg-red-50 text-red-700" : ""
                       }`}
                     >
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-medium">{dayName}</span>
-                        <span className="text-sm">{day}</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-medium">{dayName}</span>
+                          <span className="text-sm">{day}</span>
+                        </div>
+                        {/* ✅ Hadir Semua button only in edit mode */}
+                        {isEditMode && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="text-xs h-6 px-2"
+                            onClick={() => handleMarkAllPresent(tanggal)}
+                          >
+                            Hadir Semua
+                          </Button>
+                        )}
                       </div>
                     </TableHead>
                   );
@@ -433,14 +689,22 @@ export default function HomeroomAttendancePage() {
                     const attendance = student.Attendance.find(
                       (a) => dayjs(a.date).format("YYYY-MM-DD") === tanggal
                     );
+                    const isEdited = editedAttendances[`${student.id}-${tanggal}`];
+
                     return (
                       <TableCell
                         key={day}
-                        className={`text-center ${
+                        className={`text-center p-1 ${
                           isWeekend ? "bg-red-50" : ""
-                        }`}
+                        } ${isEdited ? "bg-yellow-50" : ""}`}
                       >
-                        <StatusIcon status={attendance?.status} />
+                        {isEditMode ? (
+                          <StatusDropdown studentId={student.id} date={tanggal} />
+                        ) : (
+                          <div className="flex justify-center">
+                            <StatusIcon status={attendance?.status} />
+                          </div>
+                        )}
                       </TableCell>
                     );
                   })}

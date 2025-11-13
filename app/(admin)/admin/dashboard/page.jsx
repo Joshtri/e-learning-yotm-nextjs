@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart3,
@@ -54,110 +54,19 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { AdminDashboardSkeleton } from "@/components/ui/dashboard-skeleton";
+import { useAdminDashboard } from "@/hooks/useDashboardQueries";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
-
-  // State for each data type
-  const [overview, setOverview] = useState(null);
-  const [submissionStats, setSubmissionStats] = useState(null);
-  const [recentUsers, setRecentUsers] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [programs, setPrograms] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [monthlyStats, setMonthlyStats] = useState([]);
-  const [todaysSchedule, setTodaysSchedule] = useState([]);
-  const [recentActivities, setRecentActivities] = useState([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch all data in parallel
-        const [
-          overviewRes,
-          submissionStatsRes,
-          recentUsersRes,
-          classesRes,
-          programsRes,
-          subjectsRes,
-          monthlyStatsRes,
-          todayScheduleRes,
-          recentActivitiesRes,
-        ] = await Promise.all([
-          fetch("/api/admin/dashboard/overview"),
-          fetch("/api/admin/dashboard/submission-stats"),
-          fetch("/api/admin/dashboard/recent-users"),
-          fetch("/api/admin/dashboard/classes"),
-          fetch("/api/admin/dashboard/programs"),
-          fetch("/api/admin/dashboard/subjects"),
-          fetch("/api/admin/dashboard/monthly-stats"),
-          fetch("/api/admin/dashboard/today-schedule"),
-          fetch("/api/admin/dashboard/recent-activities"),
-        ]);
-
-        // Check for errors
-        if (!overviewRes.ok) throw new Error("Failed to fetch overview");
-        if (!submissionStatsRes.ok)
-          throw new Error("Failed to fetch submission stats");
-        if (!recentUsersRes.ok) throw new Error("Failed to fetch recent users");
-        if (!classesRes.ok) throw new Error("Failed to fetch classes");
-        if (!programsRes.ok) throw new Error("Failed to fetch programs");
-        if (!subjectsRes.ok) throw new Error("Failed to fetch subjects");
-        if (!monthlyStatsRes.ok)
-          throw new Error("Failed to fetch monthly stats");
-        if (!todayScheduleRes.ok)
-          throw new Error("Failed to fetch today's schedule");
-        if (!recentActivitiesRes.ok)
-          throw new Error("Failed to fetch recent activities");
-
-        // Parse responses
-        const [
-          overviewData,
-          submissionStatsData,
-          recentUsersData,
-          classesData,
-          programsData,
-          subjectsData,
-          monthlyStatsData,
-          todayScheduleData,
-          recentActivitiesData,
-        ] = await Promise.all([
-          overviewRes.json(),
-          submissionStatsRes.json(),
-          recentUsersRes.json(),
-          classesRes.json(),
-          programsRes.json(),
-          subjectsRes.json(),
-          monthlyStatsRes.json(),
-          todayScheduleRes.json(),
-          recentActivitiesRes.json(),
-        ]);
-
-        // Set states
-        setOverview(overviewData);
-        setSubmissionStats(submissionStatsData);
-        setRecentUsers(recentUsersData);
-        setClasses(classesData);
-        setPrograms(programsData);
-        setSubjects(subjectsData);
-        setMonthlyStats(monthlyStatsData);
-        setTodaysSchedule(todayScheduleData);
-        setRecentActivities(recentActivitiesData);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [router]);
+  const {
+    overview,
+    classes,
+    programs,
+    stats,
+    isLoading: loading,
+    error,
+  } = useAdminDashboard();
 
   // Format date function with error handling
   const formatDate = (dateString) => {

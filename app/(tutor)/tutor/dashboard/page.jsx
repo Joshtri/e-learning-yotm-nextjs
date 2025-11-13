@@ -29,23 +29,24 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTutorDashboard } from "@/hooks/useDashboardQueries";
 
 export default function TutorDashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    profile,
+    classes,
+    recent: recentActivities,
+    submissions,
+    stats,
+    isLoading: loading,
+    error,
+  } = useTutorDashboard();
 
-  // Separate state for each data type
-  const [profile, setProfile] = useState(null);
-  const [classes, setClasses] = useState([]);
-  const [recentActivities, setRecentActivities] = useState({
-    recentAssignments: [],
-    recentQuizzes: [],
-    recentMaterials: [],
-  });
-  const [submissions, setSubmissions] = useState([]);
-  const [statistics, setStatistics] = useState({
+  // Map stats to statistics for backwards compatibility
+  // stats.data returns { statistics: {...} } from the API
+  const statistics = stats?.statistics || {
     totalStudents: 0,
     totalAssignments: 0,
     totalQuizzes: 0,
@@ -56,13 +57,22 @@ export default function TutorDashboardPage() {
       total: 0,
       averageScore: 0,
     },
-  });
+  };
+
+  // Provide defaults for other data
+  // Extract nested data from API responses
+  const safeProfile = profile?.tutor || { name: "Tutor", bio: "" };
+  const safeClasses = classes?.classes || [];
+  const safeRecentActivities = recentActivities || {
+    recentAssignments: [],
+    recentQuizzes: [],
+    recentMaterials: [],
+  };
+  const safeSubmissions = submissions?.submissions || [];
 
   useEffect(() => {
-    const fetchUserAndDashboard = async () => {
+    const verifyAuth = async () => {
       try {
-        setLoading(true);
-
         // 1. First check if user is authenticated
         const userRes = await fetch("/api/auth/me", {
           cache: "no-store",
@@ -100,81 +110,13 @@ export default function TutorDashboardPage() {
           router.replace("/onboarding/tutor");
           return;
         }
-
-        // 4. Fetch all dashboard data in parallel
-        const [
-          profileResponse,
-          classesResponse,
-          recentResponse,
-          submissionsResponse,
-          statsResponse,
-        ] = await Promise.all([
-          fetch("/api/tutor/dashboard/profile"),
-          fetch("/api/tutor/dashboard/classes"),
-          fetch("/api/tutor/dashboard/recent"),
-          fetch("/api/tutor/dashboard/submissions"),
-          fetch("/api/tutor/dashboard/stats"), // You might need to create this endpoint
-        ]);
-
-        if (!profileResponse.ok) throw new Error("Failed to fetch profile");
-        if (!classesResponse.ok) throw new Error("Failed to fetch classes");
-        if (!recentResponse.ok)
-          throw new Error("Failed to fetch recent activities");
-        if (!submissionsResponse.ok)
-          throw new Error("Failed to fetch submissions");
-        if (!statsResponse.ok) throw new Error("Failed to fetch statistics");
-
-        // In your fetchUserAndDashboard function, fix the Promise.all destructuring:
-        const [
-          profileDetails,
-          classesData,
-          recentData,
-          submissionsData,
-          statsData,
-        ] = await Promise.all([
-          profileResponse.json(),
-          classesResponse.json(),
-          recentResponse.json(),
-          submissionsResponse.json(),
-          statsResponse.json(),
-        ]);
-
-        // Then set all the states:
-        setProfile(profileDetails.tutor);
-        setClasses(classesData.classes);
-        setRecentActivities({
-          recentAssignments: recentData.recentAssignments || [],
-          recentQuizzes: recentData.recentQuizzes || [],
-          recentMaterials: recentData.recentMaterials || [],
-        });
-        setSubmissions(submissionsData.submissions || []);
-        setStatistics(
-          statsData.statistics || {
-            totalStudents: 0,
-            totalAssignments: 0,
-            totalQuizzes: 0,
-            submissions: {
-              submitted: 0,
-              graded: 0,
-              late: 0,
-              total: 0,
-              averageScore: 0,
-            },
-          }
-        );
       } catch (err) {
         console.error("Error:", err);
-        setError(err.message);
-
-        if (err.message.includes("tutor profile")) {
-          router.replace("/onboarding/tutor");
-        }
-      } finally {
-        setLoading(false);
+        router.replace("/");
       }
     };
 
-    fetchUserAndDashboard();
+    verifyAuth();
   }, [router]);
 
   if (loading) {
@@ -194,11 +136,6 @@ export default function TutorDashboardPage() {
     );
   }
 
-  if (!profile) {
-    return null;
-  }
-
-  // Format date function
   // Format date function with error handling
   const formatDate = (dateString) => {
     try {
@@ -234,9 +171,9 @@ export default function TutorDashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            Selamat Datang, {profile.name}
+            Selamat Datang, {safeProfile.name}
           </h1>
-          <p className="text-gray-600">{profile.bio || "Tutor"}</p>
+          <p className="text-gray-600">{safeProfile.bio || "Tutor"}</p>
         </div>
 
         {/* Stats Overview */}
@@ -348,7 +285,7 @@ export default function TutorDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {classes.map((cls, index) => (
+                  {safeClasses.map((cls, index) => (
                     <div
                       key={index}
                       className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -405,9 +342,9 @@ export default function TutorDashboardPage() {
                   </TabsList>
 
                   <TabsContent value="assignments">
-                    {recentActivities.recentAssignments.length > 0 ? (
+                    {safeRecentActivities.recentAssignments.length > 0 ? (
                       <div className="space-y-4">
-                        {recentActivities.recentAssignments.map(
+                        {safeRecentActivities.recentAssignments.map(
                           (assignment) => (
                             <div
                               key={assignment.id}
@@ -469,9 +406,9 @@ export default function TutorDashboardPage() {
                   </TabsContent>
 
                   <TabsContent value="quizzes">
-                    {recentActivities.recentQuizzes.length > 0 ? (
+                    {safeRecentActivities.recentQuizzes.length > 0 ? (
                       <div className="space-y-4">
-                        {recentActivities.recentQuizzes.map((quiz) => (
+                        {safeRecentActivities.recentQuizzes.map((quiz) => (
                           <div
                             key={quiz.id}
                             className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -520,9 +457,9 @@ export default function TutorDashboardPage() {
                   </TabsContent>
 
                   <TabsContent value="materials">
-                    {recentActivities.recentMaterials.length > 0 ? (
+                    {safeRecentActivities.recentMaterials.length > 0 ? (
                       <div className="space-y-4">
-                        {recentActivities.recentMaterials.map((material) => (
+                        {safeRecentActivities.recentMaterials.map((material) => (
                           <div
                             key={material.id}
                             className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -641,9 +578,9 @@ export default function TutorDashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {submissions.length > 0 ? (
+                {safeSubmissions.length > 0 ? (
                   <div className="space-y-4">
-                    {submissions.map((submission) => (
+                    {safeSubmissions.map((submission) => (
                       <div
                         key={submission.id}
                         className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
