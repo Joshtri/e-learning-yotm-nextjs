@@ -63,7 +63,12 @@ export default function AdminDashboard() {
     overview,
     classes,
     programs,
-    stats,
+    submissionStats,
+    monthlyStats,
+    recentUsers,
+    subjects,
+    recentActivities,
+    todaysSchedule,
     isLoading: loading,
     error,
   } = useAdminDashboard();
@@ -196,7 +201,15 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!overview || !submissionStats) {
+  if (
+    !overview ||
+    !submissionStats ||
+    !monthlyStats ||
+    !recentUsers ||
+    !subjects ||
+    !recentActivities ||
+    !todaysSchedule
+  ) {
     return null;
   }
 

@@ -156,7 +156,62 @@ export const useAdminDashboardStats = () => {
   return useQuery({
     queryKey: ["admin-dashboard-stats"],
     queryFn: async () => {
-      const res = await axios.get("/api/admin/dashboard/stats");
+      const res = await axios.get("/api/admin/dashboard/submission-stats");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
+export const useAdminDashboardMonthlyStats = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard-monthly-stats"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/dashboard/monthly-stats");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
+export const useAdminDashboardRecentUsers = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard-recent-users"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/dashboard/recent-users");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
+export const useAdminDashboardSubjects = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard-subjects"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/dashboard/subjects");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
+export const useAdminDashboardRecentActivities = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard-recent-activities"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/dashboard/recent-activities");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
+export const useAdminDashboardTodaysSchedule = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard-todays-schedule"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/dashboard/today-schedule");
       return res.data;
     },
     ...CACHE_CONFIG,
@@ -169,28 +224,56 @@ export const useAdminDashboard = () => {
   const classes = useAdminDashboardClasses();
   const programs = useAdminDashboardPrograms();
   const stats = useAdminDashboardStats();
+  const monthlyStats = useAdminDashboardMonthlyStats();
+  const recentUsers = useAdminDashboardRecentUsers();
+  const subjects = useAdminDashboardSubjects();
+  const recentActivities = useAdminDashboardRecentActivities();
+  const todaysSchedule = useAdminDashboardTodaysSchedule();
 
   const isLoading =
     overview.isLoading ||
     classes.isLoading ||
     programs.isLoading ||
-    stats.isLoading;
+    stats.isLoading ||
+    monthlyStats.isLoading ||
+    recentUsers.isLoading ||
+    subjects.isLoading ||
+    recentActivities.isLoading ||
+    todaysSchedule.isLoading;
 
   const error =
-    overview.error || classes.error || programs.error || stats.error;
+    overview.error ||
+    classes.error ||
+    programs.error ||
+    stats.error ||
+    monthlyStats.error ||
+    recentUsers.error ||
+    subjects.error ||
+    recentActivities.error ||
+    todaysSchedule.error;
 
   return {
     overview: overview.data,
     classes: classes.data,
     programs: programs.data,
-    stats: stats.data,
+    submissionStats: stats.data,
+    monthlyStats: monthlyStats.data,
+    recentUsers: recentUsers.data,
+    subjects: subjects.data,
+    recentActivities: recentActivities.data,
+    todaysSchedule: todaysSchedule.data,
     isLoading,
     error,
     isFetching:
       overview.isFetching ||
       classes.isFetching ||
       programs.isFetching ||
-      stats.isFetching,
+      stats.isFetching ||
+      monthlyStats.isFetching ||
+      recentUsers.isFetching ||
+      subjects.isFetching ||
+      recentActivities.isFetching ||
+      todaysSchedule.isFetching,
   };
 };
 
@@ -309,6 +392,21 @@ export const useInvalidateDashboardQueries = (queryClient) => {
       });
       queryClient.invalidateQueries({
         queryKey: ["admin-dashboard-stats"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dashboard-monthly-stats"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dashboard-recent-users"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dashboard-subjects"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dashboard-recent-activities"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-dashboard-todays-schedule"],
       });
     },
     invalidateHomeroomDashboard: () => {
