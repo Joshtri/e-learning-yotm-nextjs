@@ -87,7 +87,7 @@ export async function PATCH(req) {
 
         return { successCount, errors };
       },
-      { timeout: 30000 }
+      { timeout: 180000 }
     );
 
     return NextResponse.json({
