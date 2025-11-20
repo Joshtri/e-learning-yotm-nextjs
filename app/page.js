@@ -136,8 +136,8 @@ export default function LoginPage() {
               <Image
                 src="/android-chrome-192x192.png"
                 alt="Yayasan Obor Timor Logo"
-                width={80}
-                height={80}
+                width={120}
+                height={120}
                 quality={100}
                 priority
                 className="rounded-full"
