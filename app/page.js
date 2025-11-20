@@ -134,10 +134,12 @@ export default function LoginPage() {
           <CardHeader className="space-y-4 items-center text-center">
             <div className="flex justify-center items-center">
               <Image
-                src="/yotm_logo.png"
+                src="/android-chrome-192x192.png"
                 alt="Yayasan Obor Timor Logo"
                 width={80}
                 height={80}
+                quality={100}
+                priority
                 className="rounded-full"
               />
             </div>

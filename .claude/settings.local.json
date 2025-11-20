@@ -16,7 +16,8 @@
       "Bash(npm install:*)",
       "Bash(findstr:*)",
       "Bash(move \"app\\(tutor)\\tutor\\assignments\\[id]\\submissions\\[studentId]\\edit\\page.jsx\" \"app\\(tutor)\\tutor\\assignments\\[id]\\input-answer\\[studentId]\\page.jsx\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(powershell -Command \"Get-Item *.png | Select-Object Name, Length\")"
     ],
     "deny": [],
     "ask": []

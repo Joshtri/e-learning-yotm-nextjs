@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, LogOut, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -243,10 +244,16 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
     <div className="border-b border-blue-500/30 px-3 py-4 h-16 flex items-center justify-between mt-16">
       <ConditionalTooltip content="Obor Timor Ministry" showTooltip={!isOpen}>
         <Link href="#" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg">
-            <span className="text-sm font-bold text-white drop-shadow-sm">
-              YOT
-            </span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg overflow-hidden">
+            <Image
+              src="/android-chrome-192x192.png"
+              alt="Obor Timor Ministry Logo"
+              width={32}
+              height={32}
+              quality={100}
+              priority
+              className="h-full w-full"
+            />
           </div>
           <span
             className={cn(
