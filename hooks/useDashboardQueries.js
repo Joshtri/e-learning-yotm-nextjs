@@ -79,6 +79,17 @@ export const useTutorDashboardStats = () => {
   });
 };
 
+export const useTutorDashboardTodaySchedule = () => {
+  return useQuery({
+    queryKey: ["tutor-dashboard-today-schedule"],
+    queryFn: async () => {
+      const res = await axios.get("/api/tutor/dashboard/today-schedule");
+      return res.data;
+    },
+    ...CACHE_CONFIG,
+  });
+};
+
 // Combined hook for all tutor dashboard data
 export const useTutorDashboard = () => {
   const profile = useTutorDashboardProfile();
@@ -86,20 +97,23 @@ export const useTutorDashboard = () => {
   const recent = useTutorDashboardRecent();
   const submissions = useTutorDashboardSubmissions();
   const stats = useTutorDashboardStats();
+  const todaySchedule = useTutorDashboardTodaySchedule();
 
   const isLoading =
     profile.isLoading ||
     classes.isLoading ||
     recent.isLoading ||
     submissions.isLoading ||
-    stats.isLoading;
+    stats.isLoading ||
+    todaySchedule.isLoading;
 
   const error =
     profile.error ||
     classes.error ||
     recent.error ||
     submissions.error ||
-    stats.error;
+    stats.error ||
+    todaySchedule.error;
 
   return {
     profile: profile.data,
@@ -107,6 +121,7 @@ export const useTutorDashboard = () => {
     recent: recent.data,
     submissions: submissions.data,
     stats: stats.data,
+    todaySchedule: todaySchedule.data,
     isLoading,
     error,
     isFetching:
@@ -114,7 +129,8 @@ export const useTutorDashboard = () => {
       classes.isFetching ||
       recent.isFetching ||
       submissions.isFetching ||
-      stats.isFetching,
+      stats.isFetching ||
+      todaySchedule.isFetching,
   };
 };
 
