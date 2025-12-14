@@ -93,6 +93,11 @@ export const navByRole = {
           href: "/admin/class-subject-tutor",
           icon: <Users className="h-4 w-4" />,
         },
+        {
+          title: "Roster / Jadwal",
+          href: "/admin/roster",
+          icon: <CalendarCheck className="h-4 w-4" />,
+        },
 
         // {
         //   title: "Riwayat Akademik",
@@ -324,6 +329,11 @@ export const navByRole = {
           href: "/siswa/attendance",
           icon: <CalendarCheck className="h-4 w-4" />,
         },
+        {
+          title: "Jadwal Pelajaran",
+          href: "/siswa/roster",
+          icon: <Calendar className="h-4 w-4" />,
+        },
       ],
     },
     {
@@ -359,6 +369,11 @@ export const navByRole = {
           title: "Ujian Harian & Awal Semester",
           href: "/siswa/daily-exams",
           icon: <ClipboardList className="h-4 w-4" />,
+        },
+        {
+          title: "Sudut Baca",
+          href: "/siswa/reading-corner",
+          icon: <BookOpen className="h-4 w-4" />,
         },
       ],
     },
@@ -423,6 +438,12 @@ export const navByRole = {
           href: "/homeroom/my-students",
           icon: <Users className="h-4 w-4" />,
         },
+        {
+          title: "Roster Kelas",
+          href: "/homeroom/roster",
+          icon: <Calendar className="h-4 w-4" />,
+        },
+
       ],
     },
     {
