@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
+import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 
 export async function GET() {
   try {
@@ -83,12 +84,12 @@ export async function GET() {
     // Ambil FinalScore semester GANJIL dan GENAP
     const finalScoresGanjil = ganjilAcademicYear
       ? await prisma.finalScore.findMany({
-          where: {
-            tahunAjaranId: ganjilAcademicYear.id,
-            studentId: { in: students.map((s) => s.id) },
-          },
-          include: { subject: true },
-        })
+        where: {
+          tahunAjaranId: ganjilAcademicYear.id,
+          studentId: { in: students.map((s) => s.id) },
+        },
+        include: { subject: true },
+      })
       : [];
 
     const finalScoresGenap = await prisma.finalScore.findMany({
@@ -99,93 +100,100 @@ export async function GET() {
       include: { subject: true },
     });
 
-    // Ambil data kehadiran dari KEDUA semester (GANJIL + GENAP)
-    const academicYearIds = [kelas.academicYearId];
-    if (ganjilAcademicYear) {
-      academicYearIds.push(ganjilAcademicYear.id);
-    }
-
-    const attendances = await prisma.attendance.findMany({
-      where: {
-        academicYearId: { in: academicYearIds },
-        studentId: { in: students.map((s) => s.id) },
-      },
-    });
-
     // Gabungkan FinalScore + Attendance dengan compare semester GANJIL & GENAP
-    const result = students.map((student) => {
-      // Filter nilai per semester
-      const scoresGanjil = finalScoresGanjil.filter(
-        (fs) => fs.studentId === student.id
-      );
-      const scoresGenap = finalScoresGenap.filter(
-        (fs) => fs.studentId === student.id
-      );
+    const result = await Promise.all(
+      students.map(async (student) => {
+        // Filter nilai per semester
+        const scoresGanjil = finalScoresGanjil.filter(
+          (fs) => fs.studentId === student.id
+        );
+        const scoresGenap = finalScoresGenap.filter(
+          (fs) => fs.studentId === student.id
+        );
 
-      // Hitung rata-rata nilai per semester
-      const avgGanjil =
-        scoresGanjil.length > 0
-          ? scoresGanjil.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
+        // Hitung rata-rata nilai per semester
+        const avgGanjil =
+          scoresGanjil.length > 0
+            ? scoresGanjil.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
             scoresGanjil.length
-          : null;
+            : null;
 
-      const avgGenap =
-        scoresGenap.length > 0
-          ? scoresGenap.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
+        const avgGenap =
+          scoresGenap.length > 0
+            ? scoresGenap.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
             scoresGenap.length
-          : null;
+            : null;
 
-      // Hitung total nilai gabungan (GANJIL + GENAP)
-      const allScores = [...scoresGanjil, ...scoresGenap];
-      const avgTotal =
-        allScores.length > 0
-          ? allScores.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
+        // Hitung total nilai gabungan (GANJIL + GENAP)
+        const allScores = [...scoresGanjil, ...scoresGenap];
+        const avgTotal =
+          allScores.length > 0
+            ? allScores.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
             allScores.length
-          : null;
+            : null;
 
-      // Attendance gabungan dari kedua semester
-      const studentAttendance = attendances.filter(
-        (a) => a.studentId === student.id
-      );
+        // Attendance Summary dengan Logic Baru (Daily Aggregation)
+        let summaryGanjil = {
+          PRESENT: 0,
+          SICK: 0,
+          EXCUSED: 0,
+          ABSENT: 0,
+          TOTAL_DAYS: 0,
+        };
+        if (ganjilAcademicYear) {
+          summaryGanjil = await getStudentAttendanceSummary(
+            student.id,
+            ganjilAcademicYear.id,
+            kelas.id
+          );
+        }
 
-      const countByStatus = {
-        PRESENT: 0,
-        SICK: 0,
-        EXCUSED: 0,
-        ABSENT: 0,
-      };
+        const summaryGenap = await getStudentAttendanceSummary(
+          student.id,
+          kelas.academicYearId,
+          kelas.id
+        );
 
-      studentAttendance.forEach((a) => {
-        if (a.status in countByStatus) countByStatus[a.status]++;
-      });
+        const combinedSummary = {
+          PRESENT: summaryGanjil.PRESENT + summaryGenap.PRESENT,
+          SICK: summaryGanjil.SICK + summaryGenap.SICK,
+          EXCUSED: summaryGanjil.EXCUSED + summaryGenap.EXCUSED,
+          ABSENT: summaryGanjil.ABSENT + summaryGenap.ABSENT,
+          TOTAL_DAYS: summaryGanjil.TOTAL_DAYS + summaryGenap.TOTAL_DAYS,
+        };
 
-      const totalHadir = studentAttendance.length;
-      const persenKehadiran = totalHadir
-        ? ((countByStatus.PRESENT / totalHadir) * 100).toFixed(1)
-        : "0.0";
+        const percent =
+          combinedSummary.TOTAL_DAYS > 0
+            ? (combinedSummary.PRESENT / combinedSummary.TOTAL_DAYS) * 100
+            : 0;
 
-      return {
-        ...student,
-        nilaiSemesterGanjil: avgGanjil ? parseFloat(avgGanjil.toFixed(2)) : null,
-        nilaiSemesterGenap: avgGenap ? parseFloat(avgGenap.toFixed(2)) : null,
-        nilaiTotal: avgTotal ? parseFloat(avgTotal.toFixed(2)) : null,
-        detailNilaiGanjil: scoresGanjil.map((fs) => ({
-          subject: fs.subject.namaMapel,
-          nilai: fs.nilaiAkhir,
-        })),
-        detailNilaiGenap: scoresGenap.map((fs) => ({
-          subject: fs.subject.namaMapel,
-          nilai: fs.nilaiAkhir,
-        })),
-        attendanceSummary: {
-          hadir: countByStatus.PRESENT,
-          sakit: countByStatus.SICK,
-          izin: countByStatus.EXCUSED,
-          alpa: countByStatus.ABSENT,
-          persen: Number(persenKehadiran),
-        },
-      };
-    });
+        return {
+          ...student,
+          nilaiSemesterGanjil: avgGanjil
+            ? parseFloat(avgGanjil.toFixed(2))
+            : null,
+          nilaiSemesterGenap: avgGenap
+            ? parseFloat(avgGenap.toFixed(2))
+            : null,
+          nilaiTotal: avgTotal ? parseFloat(avgTotal.toFixed(2)) : null,
+          detailNilaiGanjil: scoresGanjil.map((fs) => ({
+            subject: fs.subject.namaMapel,
+            nilai: fs.nilaiAkhir,
+          })),
+          detailNilaiGenap: scoresGenap.map((fs) => ({
+            subject: fs.subject.namaMapel,
+            nilai: fs.nilaiAkhir,
+          })),
+          attendanceSummary: {
+            hadir: combinedSummary.PRESENT,
+            sakit: combinedSummary.SICK,
+            izin: combinedSummary.EXCUSED,
+            alpa: combinedSummary.ABSENT,
+            persen: parseFloat(percent.toFixed(1)),
+          },
+        };
+      })
+    );
 
     return new Response(
       JSON.stringify({
@@ -203,8 +211,6 @@ export async function GET() {
       }),
       { status: 200 }
     );
-    
-    
   } catch (error) {
     console.error("Error fetching homeroom students:", error);
     return new Response(
