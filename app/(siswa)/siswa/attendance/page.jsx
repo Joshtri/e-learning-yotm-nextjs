@@ -6,7 +6,6 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
-import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -16,13 +15,31 @@ import {
   FileText, // Izin
   X, // Alpha
   CalendarDays, // icon sekadar hiasan block libur
+  BookOpen,
+  User,
+  Clock,
 } from "lucide-react";
 import GreetingWidget from "@/components/GreetingWidget";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function StudentAttendancePage() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("table"); // table | calendar
+  const [viewMode, setViewMode] = useState("list"); // list (accordion) | calendar
   const [classInfo, setClassInfo] = useState(null);
   const [submittingSessionId, setSubmittingSessionId] = useState(null);
 
@@ -76,28 +93,14 @@ export default function StudentAttendancePage() {
           <X className={`${className} text-rose-500`} aria-label="Alpha" />
         );
       default:
-        return <span>-</span>;
+        return <span className="text-gray-400">-</span>;
     }
-  };
-
-  const isSameDay = (a, b) => {
-    const da = new Date(a);
-    const db = new Date(b);
-    // Bandingkan tanggal dalam format YYYY-MM-DD untuk menghindari perbedaan zona waktu
-    const dateA = da.toISOString().split('T')[0];
-    const dateB = db.toISOString().split('T')[0];
-    return dateA === dateB;
   };
 
   const fetchSessions = async () => {
     try {
       const res = await api.get("/student/attendance/sessions");
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const onlyToday = (res.data?.data || []).filter((s) =>
-        isSameDay(s.tanggal, today)
-      );
-      setSessions(onlyToday);
+      setSessions(res.data?.data || []);
     } catch (error) {
       console.error("Gagal memuat sesi presensi:", error);
       toast.error("Gagal memuat sesi presensi");
@@ -151,59 +154,6 @@ export default function StudentAttendancePage() {
     }
   };
 
-  const columns = [
-    {
-      header: "Tanggal",
-      accessorKey: "tanggal",
-      cell: (row) => new Date(row.tanggal).toLocaleDateString("id-ID"),
-    },
-    { header: "Keterangan", accessorKey: "keterangan" },
-    {
-      header: "Status Presensi",
-      cell: (row) =>
-        row.attendanceStatus ? (
-          <StatusIcon status={row.attendanceStatus} />
-        ) : (
-          "-"
-        ),
-    },
-    {
-      header: "Aksi",
-      cell: (row) => {
-        const alreadyFinal =
-          !!row.attendanceStatus && row.attendanceStatus !== "ABSENT";
-        const isSubmitting = submittingSessionId === row.id;
-        return (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              disabled={alreadyFinal || isSubmitting}
-              onClick={() => handleSubmitAttendance(row.id, "PRESENT")}
-            >
-              {isSubmitting ? "Memproses..." : "Hadir"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={alreadyFinal || isSubmitting}
-              onClick={() => handleSubmitAttendance(row.id, "SICK")}
-            >
-              {isSubmitting ? "Memproses..." : "Sakit"}
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={alreadyFinal || isSubmitting}
-              onClick={() => handleSubmitAttendance(row.id, "EXCUSED")}
-            >
-              {isSubmitting ? "Memproses..." : "Izin"}
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
-
   // --- penandaan kalender ---
   const markedStatusByDate = sessions.reduce((acc, s) => {
     acc[new Date(s.tanggal).toDateString()] = s.attendanceStatus;
@@ -241,6 +191,22 @@ export default function StudentAttendancePage() {
     );
   };
 
+  // Group Sessions by Subject
+  const groupedSessions = useMemo(() => {
+    return sessions.reduce((acc, session) => {
+      const name = session.subjectName || "Lainnya";
+      if (!acc[name]) {
+        acc[name] = {
+          subjectName: name,
+          tutorName: session.tutorName,
+          sessions: [],
+        };
+      }
+      acc[name].sessions.push(session);
+      return acc;
+    }, {});
+  }, [sessions]);
+
   // daftar libur bulan ini (digroup per tanggal)
   const holidayList = useMemo(() => {
     const map = new Map();
@@ -258,7 +224,7 @@ export default function StudentAttendancePage() {
     <div className="p-6 space-y-6">
       <PageHeader
         title="Presensi Siswa"
-        description="Lihat dan isi presensi sesi harian"
+        description="Lihat dan isi presensi per mata pelajaran"
         breadcrumbs={[
           { label: "Dashboard", href: "/siswa/dashboard" },
           { label: "Presensi" },
@@ -268,17 +234,16 @@ export default function StudentAttendancePage() {
       <GreetingWidget />
 
       {classInfo && (
-        <div className="rounded border p-4">
+        <div className="rounded border p-4 bg-white/50">
           <h3 className="font-medium mb-2">Informasi Kelas</h3>
           <p className="text-sm text-muted-foreground">
             Tahun Ajaran:{" "}
-            <span className="text-foreground">
-              {classInfo.academicYear?.tahunMulai}/{
-                classInfo.academicYear?.tahunSelesai
-              }
+            <span className="text-foreground font-semibold">
+              {classInfo.academicYear?.tahunMulai}/
+              {classInfo.academicYear?.tahunSelesai}
             </span>{" "}
             • Semester:{" "}
-            <span className="text-foreground">
+            <span className="text-foreground font-semibold">
               {classInfo.academicYear?.semester}
             </span>
           </p>
@@ -286,7 +251,7 @@ export default function StudentAttendancePage() {
       )}
 
       {/* Info libur bulan ini */}
-      <div className="rounded border p-4">
+      <div className="rounded border p-4 bg-white/50">
         <div className="flex items-center gap-2 mb-2">
           <CalendarDays className="h-5 w-5 text-rose-600" />
           <h3 className="font-medium">
@@ -308,7 +273,7 @@ export default function StudentAttendancePage() {
           <ul className="text-sm space-y-1">
             {holidayList.map((h) => (
               <li key={h.date} className="flex gap-2">
-                <span className="w-[110px] shrink-0">
+                <span className="w-[110px] shrink-0 font-medium">
                   {new Date(h.date).toLocaleDateString("id-ID", {
                     weekday: "short",
                     day: "2-digit",
@@ -324,29 +289,192 @@ export default function StudentAttendancePage() {
 
       <div className="flex justify-end">
         <Button
-          onClick={() =>
-            setViewMode(viewMode === "table" ? "calendar" : "table")
-          }
+          onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
+          variant="outline"
         >
-          {viewMode === "table" ? "Tampilan Kalender" : "Tampilan Tabel"}
+          {viewMode === "list" ? "Tampilan Kalender" : "Tampilan Daftar"}
         </Button>
       </div>
 
-      {viewMode === "table" ? (
-        <DataTable
-          data={sessions}
-          columns={columns}
-          isLoading={isLoading}
-          loadingMessage="Memuat sesi presensi..."
-          emptyMessage="Tidak ada sesi presensi hari ini."
-          keyExtractor={(item) => item.id}
-        />
+      {viewMode === "list" ? (
+        <div className="space-y-4">
+          <Accordion type="multiple" className="space-y-4">
+            {Object.values(groupedSessions).map((group) => (
+              <AccordionItem
+                key={group.subjectName}
+                value={group.subjectName}
+                className="border rounded-lg bg-white shadow-sm px-4"
+              >
+                <div className="flex items-center justify-between py-4">
+                  <AccordionTrigger className="hover:no-underline py-0 flex-1">
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-blue-600" />
+                          {group.subjectName}
+                        </h3>
+                        <p className="text-sm text-gray-500 font-normal flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          {group.tutorName}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="ml-2">
+                        {group.sessions.length} Sesi
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                </div>
+
+                <AccordionContent className="pt-2 pb-6 px-1">
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="w-[100px]">Pertemuan</TableHead>
+                          <TableHead>Tanggal & Waktu</TableHead>
+                          <TableHead>Keterangan</TableHead>
+                          <TableHead>Status Saya</TableHead>
+                          <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.sessions.map((session) => {
+                          const isFinal =
+                            !!session.attendanceStatus &&
+                            session.attendanceStatus !== "ABSENT";
+                          const isSubmitting =
+                            submittingSessionId === session.id;
+                          // Allow update if session is started (DIMULAI) OR users can fill regardless if policy allows.
+                          // Usually students can only fill if session is open.
+                          // Assuming backend validation handles "isOpen".
+                          // Frontend just checks if already marked.
+
+                          // Optional: Check session.status === 'DIMULAI' before allowing input?
+                          const canFill =
+                            session.status === "DIMULAI" && !isFinal;
+
+                          return (
+                            <TableRow key={session.id}>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  Ke-{session.meetingNumber}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {new Date(session.tanggal).toLocaleDateString(
+                                    "id-ID",
+                                    {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    }
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {session.startTime
+                                    ? new Date(
+                                        session.startTime
+                                      ).toLocaleTimeString("id-ID", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "-"}
+                                </div>
+                              </TableCell>
+                              <TableCell>{session.keterangan || "-"}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <StatusIcon
+                                    status={session.attendanceStatus}
+                                    className="h-5 w-5"
+                                  />
+                                  <span className="text-sm font-medium">
+                                    {session.attendanceStatus === "PRESENT"
+                                      ? "Hadir"
+                                      : session.attendanceStatus === "SICK"
+                                      ? "Sakit"
+                                      : session.attendanceStatus === "EXCUSED"
+                                      ? "Izin"
+                                      : session.attendanceStatus === "ABSENT"
+                                      ? "Alpha"
+                                      : "Belum Mengisi"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    disabled={!canFill || isSubmitting}
+                                    className={`${
+                                      canFill
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : ""
+                                    }`}
+                                    onClick={() =>
+                                      handleSubmitAttendance(
+                                        session.id,
+                                        "PRESENT"
+                                      )
+                                    }
+                                  >
+                                    Hadir
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={!canFill || isSubmitting}
+                                    onClick={() =>
+                                      handleSubmitAttendance(session.id, "SICK")
+                                    }
+                                  >
+                                    Sakit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={!canFill || isSubmitting}
+                                    onClick={() =>
+                                      handleSubmitAttendance(
+                                        session.id,
+                                        "EXCUSED"
+                                      )
+                                    }
+                                  >
+                                    Izin
+                                  </Button>
+                                </div>
+                                {!canFill &&
+                                  !isFinal &&
+                                  session.status !== "DIMULAI" && (
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                      Sesi belum dimulai / sudah selesai
+                                    </div>
+                                  )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+            {Object.keys(groupedSessions).length === 0 && !isLoading && (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg bg-slate-50">
+                Tidak ada sesi presensi ditemukan.
+              </div>
+            )}
+          </Accordion>
+        </div>
       ) : (
-        <div className="rounded border p-4">
+        <div className="rounded border p-4 bg-white/50">
           <Calendar
             value={activeMonthDate}
             onActiveStartDateChange={({ activeStartDate }) => {
-              // aktif kalau pengguna geser bulan di kalender
               if (activeStartDate)
                 setActiveMonthDate(new Date(activeStartDate));
             }}
@@ -354,24 +482,26 @@ export default function StudentAttendancePage() {
             locale="id-ID"
             tileContent={tileContent}
           />
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-4 text-sm text-muted-foreground bg-slate-50 p-3 rounded border">
             <strong>Keterangan:</strong>{" "}
-            <span className="inline-flex items-center gap-1 mr-3">
-              <Check className="h-4 w-4 text-green-600" /> Hadir
-            </span>
-            <span className="inline-flex items-center gap-1 mr-3">
-              <Thermometer className="h-4 w-4 text-yellow-600" /> Sakit
-            </span>
-            <span className="inline-flex items-center gap-1 mr-3">
-              <FileText className="h-4 w-4 text-blue-600" /> Izin
-            </span>
-            <span className="inline-flex items-center gap-1 mr-3">
-              <X className="h-4 w-4 text-rose-500" /> Alpha
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded-full bg-rose-600" />{" "}
-              Libur
-            </span>
+            <div className="flex flex-wrap gap-3 mt-2">
+              <span className="inline-flex items-center gap-1">
+                <Check className="h-4 w-4 text-green-600" /> Hadir
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Thermometer className="h-4 w-4 text-yellow-600" /> Sakit
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <FileText className="h-4 w-4 text-blue-600" /> Izin
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <X className="h-4 w-4 text-rose-500" /> Alpha
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block h-3 w-3 rounded-full bg-rose-600" />{" "}
+                Libur
+              </span>
+            </div>
           </div>
         </div>
       )}
