@@ -243,10 +243,11 @@ model Subject {
   classSubjectTutors ClassSubjectTutor[]
   ProgramSubject     ProgramSubject[]
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  SkillScore        SkillScore[]
-  FinalScore        FinalScore[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  SkillScore         SkillScore[]
+  FinalScore         FinalScore[]
+  attendanceSessions AttendanceSession[]
 
   // Index
   @@unique([namaMapel])
@@ -287,6 +288,7 @@ model ClassSubjectTutor {
   updatedAt      DateTime         @updatedAt
   DiscussionRoom DiscussionRoom[]
   ChatRoom       ChatRoom[]
+  schedules      Schedule[]
 
   @@unique([tutorId, classId, subjectId])
 }
@@ -348,6 +350,7 @@ model Question {
   assignmentId String?
   quizId       String?
   teks         String         @db.Text
+  image        String?        @db.Text // Base64 image
   jenis        QuestionType
   poin         Int            @default(1)
   options      AnswerOption[]
@@ -366,6 +369,7 @@ model AnswerOption {
   kode       String? // ✅ Tambahan field kode
 
   adalahBenar Boolean @default(false)
+  image       String? @db.Text // Optional image for option
 
   question Question @relation(fields: [questionId], references: [id])
 }
@@ -396,6 +400,7 @@ model Answer {
   submissionId String
   questionId   String
   jawaban      String   @db.Text // Could be JSON for complex answers
+  image        String?  @db.Text // Base64 image for connection with question
   adalahBenar  Boolean?
   feedback     String?  @db.VarChar(500)
   nilai        Float?
@@ -435,41 +440,81 @@ model DiscussionMessage {
   @@index([senderId])
 }
 
-model Attendance {
-  id             String           @id @default(dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
-  studentId      String
-  classId        String
-  academicYearId String
-  date           DateTime
-  status         AttendanceStatus
-  createdAt      DateTime         @default(now())
+// ========== ATTENDANCE & SCHEDULE ==========
+model Schedule {
+  id                  String   @id @default(dbgenerated("concat('sch_', gen_random_uuid())")) @db.VarChar(40)
+  classSubjectTutorId String
+  dayOfWeek           Int // 1=Monday, 7=Sunday
+  startTime           DateTime @db.Time
+  endTime             DateTime @db.Time
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  student             Student            @relation(fields: [studentId], references: [id])
-  class               Class              @relation(fields: [classId], references: [id])
-  academicYear        AcademicYear       @relation(fields: [academicYearId], references: [id])
-  AttendanceSession   AttendanceSession? @relation(fields: [attendanceSessionId], references: [id])
-  attendanceSessionId String?            @db.VarChar(40)
+  classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id], onDelete: Cascade)
 
-  @@index([studentId])
-  @@index([classId])
+  @@index([classSubjectTutorId])
+}
+
+enum AttendanceSessionStatus {
+  TERJADWALKAN
+  DIMULAI
+  SELESAI
 }
 
 model AttendanceSession {
-  id             String   @id @default(dbgenerated("concat('ats_', gen_random_uuid())")) @db.VarChar(40)
-  tutorId        String
+  id String @id @default(dbgenerated("concat('ats_', gen_random_uuid())")) @db.VarChar(40)
+
   classId        String
-  academicYearId String // ❗ Terkait Tahun Ajaran
-  tanggal        DateTime
-  keterangan     String?  @db.VarChar(255)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  academicYearId String
+
+  subjectId String
+  tutorId   String // guru pengajar untuk mapel tsb
+
+  meetingNumber Int // 1..16
+  tanggal       DateTime // tanggal pertemuan (date + time)
+
+  startTime DateTime?
+  endTime   DateTime?
+
+  status     AttendanceSessionStatus @default(TERJADWALKAN)
+  keterangan String?                 @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tutor        Tutor        @relation(fields: [tutorId], references: [id])
   class        Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
-  attendances  Attendance[]
+  subject      Subject      @relation(fields: [subjectId], references: [id])
 
+  attendances Attendance[]
+
+  @@unique([classId, subjectId, academicYearId, meetingNumber])
   @@index([academicYearId])
+  @@index([classId, subjectId])
+}
+
+model Attendance {
+  id                  String @id @default(dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
+  studentId           String
+  attendanceSessionId String @db.VarChar(40)
+
+  status AttendanceStatus
+  note   String?          @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student           Student           @relation(fields: [studentId], references: [id])
+  attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  academicYear      AcademicYear?     @relation(fields: [academicYearId], references: [id])
+  academicYearId    String?           @db.VarChar(40)
+  class             Class?            @relation(fields: [classId], references: [id])
+  classId           String?           @db.VarChar(40)
+
+  @@unique([studentId, attendanceSessionId])
+  @@index([studentId])
+  @@index([attendanceSessionId])
 }
 
 model SkillScore {
