@@ -28,8 +28,8 @@ export async function GET(req) {
           class: academicYearId
             ? { academicYearId }
             : {
-                isActive: true, // fallback jika tidak dikirim (opsional)
-              },
+              isActive: true, // fallback jika tidak dikirim (opsional)
+            },
         },
       },
       include: {
@@ -78,7 +78,7 @@ export async function POST(req) {
       tanggalMulai,
       tanggalSelesai,
       durasiMenit,
-      nilaiMaksimal,
+      questions = [],
     } = body;
 
     if (
@@ -168,9 +168,8 @@ export async function POST(req) {
       if (existingExam) {
         return NextResponse.json(
           {
-            message: `Ujian ${
-              jenis === "MIDTERM" ? "UTS" : "UAS"
-            } sudah dibuat tahun ini.`,
+            message: `Ujian ${jenis === "MIDTERM" ? "UTS" : "UAS"
+              } sudah dibuat tahun ini.`,
           },
           { status: 400 }
         );
@@ -190,6 +189,39 @@ export async function POST(req) {
         nilaiMaksimal: Number(nilaiMaksimal),
       },
     });
+
+    // ✅ Simpan Soal (Questions)
+    const totalPoin = Number(nilaiMaksimal);
+    const poinPerQuestion =
+      questions.length > 0 ? Math.floor(totalPoin / questions.length) : 1;
+
+    for (const q of questions) {
+      const createdQuestion = await prisma.question.create({
+        data: {
+          assignmentId: newExam.id, // Link ke assignment
+          teks: q.teks,
+          image: q.image, // ✅ Simpan gambar soal
+          jenis: q.jenis,
+          poin: Number(q.poin || poinPerQuestion),
+          jawabanBenar: q.jawabanBenar || null,
+          pembahasan: q.pembahasan || null,
+        },
+      });
+
+      if (
+        ["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis) &&
+        q.options?.length
+      ) {
+        await prisma.answerOption.createMany({
+          data: q.options.map((opt, i) => ({
+            questionId: createdQuestion.id,
+            teks: opt.teks,
+            kode: `OPSI_${i}`,
+            adalahBenar: String(i) === q.jawabanBenar,
+          })),
+        });
+      }
+    }
 
     // 🔔 Kirim notifikasi ke semua siswa di kelas
     const students = classSubjectTutor.class.students;
