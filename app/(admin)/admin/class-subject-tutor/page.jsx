@@ -24,7 +24,7 @@ export default function ClassSubjectTutorPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editData, setEditData] = useState(null);
+  // const [editData, setEditData] = useState(null);
   const router = useRouter();
   const [deletingId, setDeletingId] = useState(null);
 
@@ -163,8 +163,8 @@ export default function ClassSubjectTutorPage() {
       <div className="flex-1">
         <main className="p-6">
           <PageHeader
-            title="Pembagian Jadwal Belajar"
-            description="Manajemen kelas, mata pelajaran, dan tutor."
+            title="Penugasan Tutor"
+            description="Manajemen penugasan tutor."
             actions={
               <>
                 <DataExport
@@ -174,7 +174,7 @@ export default function ClassSubjectTutorPage() {
                 />
                 <Button className="ml-2" onClick={() => setIsModalOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Tambah Jadwal
+                  Tambah Penugasan Tutor
                 </Button>
               </>
             }
