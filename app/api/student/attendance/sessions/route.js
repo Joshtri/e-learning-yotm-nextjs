@@ -36,18 +36,26 @@ export async function GET() {
       );
     }
 
-    // Ambil semua sesi bulan ini
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
+    // Ambil semua sesi untuk tahun ajaran aktif (bukan hanya bulan ini)
     const sessions = await prisma.attendanceSession.findMany({
       where: {
         classId: student.classId,
         academicYearId: activeYear.id,
-        tanggal: { gte: start, lte: end },
       },
-      orderBy: { tanggal: "asc" },
+      include: {
+        subject: {
+          select: { namaMapel: true },
+        },
+        tutor: {
+          select: {
+            user: { select: { nama: true } },
+          },
+        },
+      },
+      orderBy: [
+        { subjectId: "asc" }, // Group by subject implicitly
+        { meetingNumber: "asc" }, // Order by meeting number 1..16
+      ],
     });
 
     const data = await Promise.all(
@@ -61,8 +69,14 @@ export async function GET() {
 
         return {
           id: session.id,
+          meetingNumber: session.meetingNumber,
           tanggal: session.tanggal,
+          startTime: session.startTime,
+          endTime: session.endTime,
           keterangan: session.keterangan,
+          status: session.status, // e.g. DIMULAI, SELESAI
+          subjectName: session.subject?.namaMapel || "Wali Kelas",
+          tutorName: session.tutor?.user?.nama || "-",
           attendanceStatus: attendance?.status || null,
         };
       })
