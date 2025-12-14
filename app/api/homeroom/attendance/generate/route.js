@@ -2,15 +2,6 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import Holidays from "date-holidays";
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function isoFromYMD(y, mIdx, d) {
-  // mIdx: 0..11
-  return `${y}-${pad2(mIdx + 1)}-${pad2(d)}`;
-}
-
 export async function POST(req) {
   try {
     const user = await getUserFromCookie();
@@ -21,32 +12,29 @@ export async function POST(req) {
       );
     }
 
-    const { bulan, tahun, academicYearId } = await req.json(); // bulan 1..12
-    if (!bulan || !tahun) {
+    const { academicYearId, startDate, classSubjectTutorId } = await req.json();
+
+    if (!academicYearId || !startDate) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Bulan dan Tahun wajib diisi",
-        }),
-        { status: 400 }
-      );
-    }
-    if (bulan < 1 || bulan > 12) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Parameter bulan tidak valid (1-12)",
+          message: "Tahun Ajaran dan Tanggal Mulai wajib diisi",
         }),
         { status: 400 }
       );
     }
 
-    const monthIdx = bulan - 1; // 0..11
-    const daysInMonth = new Date(tahun, bulan, 0).getDate();
-    const monthStart = new Date(tahun, monthIdx, 1);
-    const monthEnd = new Date(tahun, monthIdx, daysInMonth);
+    if (!classSubjectTutorId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Mata Pelajaran wajib dipilih",
+        }),
+        { status: 400 }
+      );
+    }
 
-    // Get tutor first
+    // Get tutor
     const tutor = await prisma.tutor.findUnique({
       where: { userId: user.id },
     });
@@ -58,273 +46,246 @@ export async function POST(req) {
       );
     }
 
-    // Find the specific class based on academicYearId or active year
-    const whereCondition = {
-      homeroomTeacherId: tutor.id,
-    };
-
-    if (academicYearId) {
-      whereCondition.academicYearId = academicYearId;
-    }
-
+    // Find the class where this tutor is homeroom teacher
     const kelas = await prisma.class.findFirst({
-      where: whereCondition,
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "desc" } },
-      ],
+      where: {
+        homeroomTeacherId: tutor.id,
+        academicYearId: academicYearId,
+      },
       include: {
         academicYear: true,
-        students: {
-          where: { status: "ACTIVE" },
-          select: { id: true, namaLengkap: true },
-        },
-        AttendanceSession: {
-          where: {
-            academicYearId: academicYearId,
-            tanggal: { gte: monthStart, lte: monthEnd },
-          },
-          select: { id: true },
-        },
       },
     });
 
     if (!kelas) {
       return new Response(
-        JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
+        JSON.stringify({
+          success: false,
+          message: "Kelas perwalian tidak ditemukan untuk Tahun Ajaran ini"
+        }),
         { status: 404 }
       );
     }
 
-    // Check if already generated for this specific academic year and month
-    if (kelas.AttendanceSession.length > 0) {
+    // Fetch specific Subject & Schedule for this class
+    const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+      where: {
+        id: classSubjectTutorId,
+        classId: kelas.id
+      },
+      include: {
+        subject: true,
+        tutor: true,
+        schedules: true, // Our new model
+      },
+    });
+
+    if (classSubjectTutors.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: `Presensi bulan ${bulan}/${tahun} untuk T.A ${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} sudah pernah digenerate.`,
+          message: "Mata Pelajaran tidak ditemukan atau bukan milik kelas ini.",
         }),
-        { status: 400 }
+        { status: 404 }
       );
     }
 
-    // === OPTIMIZED: Get all holidays in single queries ===
-    const liburISO = new Set();
-
-    // 1) National holidays (cached in memory - no DB query)
-    const hd = new Holidays("ID");
-    const dh = hd.getHolidays(tahun).filter((h) => !h.substitute);
-    const targetMonthPrefix = `${tahun}-${pad2(bulan)}`;
-
-    // Hardcoded fixes for specific holidays that have timezone issues
-    const holidayFixes = {
-      "2025-09-04": "2025-09-05", // Maulid Nabi Muhammad should be Sept 5, not Sept 4
-      "2025-01-27": "2025-01-27", // Keep as is
-      "2025-03-30": "2025-03-30", // Idul Fitri day 1
-      "2025-03-31": "2025-03-31", // Idul Fitri day 2
-      "2025-06-06": "2025-06-06", // Idul Adha
-      "2025-06-26": "2025-06-26", // Tahun Baru Islam
-    };
-
-    for (const h of dh) {
-      // Fix timezone: Convert to Indonesian time (UTC+7)
-      const holidayDate = new Date(h.date);
-      const indonesianDate = new Date(
-        holidayDate.getTime() + 7 * 60 * 60 * 1000
-      ); // Add 7 hours for WIB
-      let iso = isoFromYMD(
-        indonesianDate.getUTCFullYear(),
-        indonesianDate.getUTCMonth(),
-        indonesianDate.getUTCDate()
-      );
-
-      // Apply hardcoded fixes if needed
-      if (holidayFixes[iso]) {
-        iso = holidayFixes[iso];
-      }
-
-      if (iso.startsWith(targetMonthPrefix)) liburISO.add(iso);
-    }
-
-    // 2 & 3) Get both holiday ranges and single holidays in parallel
-    const [holidayRanges, holidays] = await Promise.all([
-      prisma.holidayRange.findMany({
-        where: {
-          startDate: { lte: monthEnd },
-          endDate: { gte: monthStart },
-        },
-        select: { startDate: true, endDate: true },
-      }),
-      prisma.holiday.findMany({
-        where: { tanggal: { gte: monthStart, lte: monthEnd } },
-        select: { tanggal: true },
-      }),
-    ]);
-
-    // Process holiday ranges - Fixed timezone handling
-    for (const r of holidayRanges) {
-      // Ensure we're working with Date objects at start of day in local timezone
-      const startDate = new Date(
-        r.startDate.getFullYear(),
-        r.startDate.getMonth(),
-        r.startDate.getDate()
-      );
-      const endDate = new Date(
-        r.endDate.getFullYear(),
-        r.endDate.getMonth(),
-        r.endDate.getDate()
-      );
-
-      const start = new Date(
-        Math.max(startDate.getTime(), monthStart.getTime())
-      );
-      const end = new Date(Math.min(endDate.getTime(), monthEnd.getTime()));
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const iso = isoFromYMD(d.getFullYear(), d.getMonth(), d.getDate());
-        liburISO.add(iso);
-      }
-    }
-
-    // Process single holidays - Fixed timezone handling
-    for (const h of holidays) {
-      // Ensure consistent date handling
-      const holidayDate = new Date(
-        h.tanggal.getFullYear(),
-        h.tanggal.getMonth(),
-        h.tanggal.getDate()
-      );
-      const iso = isoFromYMD(
-        holidayDate.getFullYear(),
-        holidayDate.getMonth(),
-        holidayDate.getDate()
-      );
-      liburISO.add(iso);
-    }
-
-    // === OPTIMIZED: Batch prepare all data first ===
     const sessionsToCreate = [];
-    const workingDays = [];
-    let skippedHolidays = 0;
-    let skippedSundays = 0;
+    const startObj = new Date(startDate);
+    const hd = new Holidays("ID"); // Optional: Check holidays/Sundays if needed, but per requirement we generate 1-16 "default".
+    // Requirement says: "tanggal_pertemuan_n = tanggal_mulai + (n-1) * 7 hari (+ offset day of week)"
+    // Actually: "mengikuti day-of-week jadwal"
 
-    // Collect all working days first
-    for (let day = 1; day <= daysInMonth; day++) {
-      const tanggal = new Date(tahun, monthIdx, day);
-      const isSunday = tanggal.getDay() === 0;
-      const iso = isoFromYMD(
-        tanggal.getFullYear(),
-        tanggal.getMonth(),
-        tanggal.getDate()
-      );
-      const isHoliday = liburISO.has(iso);
+    let totalCreated = 0;
+    let subjectsProcessed = 0;
 
-      if (isSunday) {
-        skippedSundays++;
-        continue;
+    for (const cst of classSubjectTutors) {
+      // If no schedule, we can't generate
+      if (!cst.schedules || cst.schedules.length === 0) continue;
+
+      subjectsProcessed++;
+
+      // Sort schedules by dayOfWeek to have deterministic order if multiple
+      const schedules = cst.schedules.sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+
+      // Validate startDate matches one of the schedule days
+      // startDate is YYYY-MM-DD string or Date object.
+      // Make sure to parse it safely in consistent timezone context if possible, 
+      // but usually new Date(startDate) works if ISO string.
+      const startObjDate = new Date(startDate);
+      const startDayJs = startObjDate.getDay();
+      const startDayPrisma = startDayJs === 0 ? 7 : startDayJs; // 1=Mon...7=Sun
+
+      const validDays = schedules.map(s => s.dayOfWeek);
+      if (!validDays.includes(startDayPrisma)) {
+        const dayNames = ["", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+        const validDayNames = validDays.map(d => dayNames[d]).join(", ");
+        const currentDayName = dayNames[startDayPrisma];
+
+        return new Response(JSON.stringify({
+          success: false,
+          message: `Tanggal mulai (${currentDayName}) tidak sesuai dengan jadwal roster (${validDayNames}).`
+        }), { status: 400 });
       }
-      if (isHoliday) {
-        skippedHolidays++;
-        continue;
-      }
 
-      workingDays.push(tanggal);
-      sessionsToCreate.push({
-        tutorId: tutor.id,
-        classId: kelas.id,
-        academicYearId: kelas.academicYearId,
-        tanggal,
-        keterangan: "Presensi otomatis",
-      });
-    }
 
-    if (sessionsToCreate.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Tidak ada hari kerja dalam bulan ini.",
-          summary: {
-            month: `${tahun}-${pad2(bulan)}`,
-            sessionsCreated: 0,
-            attendancesCreated: 0,
-            skipped: { holidays: skippedHolidays, sundays: skippedSundays },
-          },
-        }),
-        { status: 200 }
-      );
-    }
+      // Current logic: For each schedule slot, generate 16 meetings?
+      // Or 16 meetings TOTAL for the subject?
+      // User Prompt: "Untuk setiap jadwal mapel: Buat sesi presensi Pertemuan 1 sampai 16"
+      // This implies each slot gets a series.
+      // E.g. Math Mon -> 16 sessions. Math Thu -> 16 sessions.
+      // Unique constraint: [classId, subjectId, academicYearId, meetingNumber]
+      // This constraint PREVENTS 2 sets of 1..16.
+      // So we must INTERLEAVE them or assume only 1 schedule.
+      // If multiple schedules exist, we will Generate 1..16 distributed across them.
+      // E.g. Schedule 1 (Mon), Schedule 2 (Thu).
+      // Meeting 1: Mon Week 1. Meeting 2: Thu Week 1. Meeting 3: Mon Week 2...
 
-    // === OPTIMIZED: Use transaction with batch operations ===
-    const result = await prisma.$transaction(
-      async (tx) => {
-        // Create all sessions in one batch
-        await tx.attendanceSession.createMany({
-          data: sessionsToCreate,
-          skipDuplicates: true,
-        });
+      // Let's implement the INTERLEAVED approach as it's the only one fitting the Unique Constraint.
 
-        // Get the created session IDs (need to query back since createMany doesn't return IDs)
-        const createdSessions = await tx.attendanceSession.findMany({
-          where: {
+      let meetingCount = 0;
+      let currentWeek = 0;
+
+      // We generate up to 16 meetings total for the subject
+      const MAX_MEETINGS = 16;
+
+      while (meetingCount < MAX_MEETINGS) {
+        for (const sch of schedules) {
+          if (meetingCount >= MAX_MEETINGS) break;
+
+          // Calculate date for this schedule in currentWeek
+          // Find the date of 'sch.dayOfWeek' in the week starting 'startObj + currentWeek*7'
+          // Wait, we need to align 'startObj' to the first week.
+          // Let's say startObj is the "Start Date of Semester".
+          // We need to find the specific date corresponding to sch.dayOfWeek.
+
+          // Logic:
+          // 1. Get day index of startObj (0=Sun, 1=Mon...).
+          // 2. Schedule dayOfWeek (1=Mon..7=Sun). Note: JS getDay is 0-6.
+          //    We need to match the user Input dayOfWeek convention.
+          //    I defined Schedule.dayOfWeek as 1=Monday, 7=Sunday? 
+          //    Let's check prisma model comment: "1=Monday, 7=Sunday".
+          //    JS getDay: 0=Sunday, 1=Monday... 
+          //    So JS = (Prisma % 7).
+
+          const targetDayJs = sch.dayOfWeek % 7;
+
+          // Date of this meeting in Week 0 offset
+          const meetingDate = new Date(startObj);
+          meetingDate.setDate(meetingDate.getDate() + (currentWeek * 7));
+
+          // Adjust day
+          const currentDayJs = meetingDate.getDay();
+          const diff = targetDayJs - currentDayJs; // e.g. Target Mon(1) - Current Sun(0) = 1. Add 1 day.
+          // If diff < 0 (e.g. Target Mon(1) - Current Tue(2) = -1), it means the day has passed in this week?
+          // "Tanggal Mulai Pertemuan 1" usually implies the start of the academic calendar.
+          // If startDate is Monday, and schedule is Tuesday, it's next day.
+          // If startDate is Wednesday, and schedule is Monday:
+          // Should it be NEXT Monday (Week 2 relative to start date)? Or PREVIOUS Monday (Week 1)?
+          // Usually we look FORWARD.
+          // If target day < start day, add 7 days?
+          // But we are iterating 'currentWeek'.
+
+          // Better approach:
+          // Find the FIRST occurance of DayOfWeek >= startObj.
+          // that is baseDate.
+          // Then add (currentWeek * 7).
+
+          // Actually, if we have multiple schedules, we want them in order.
+          // So we should collect all First Occurrences, then iterate.
+
+          // Simplified Implementation for "Generate 1-16":
+          // We will just calculate the date simply:
+          // meetingDate = startObj + (sch.dayOfWeek - startDayOfWeek + (if < 0 ? 7 : 0)) + week*7
+
+          // But wait, if I have Mon and Thu.
+          // Week 0: Mon, Thu.
+          // Week 1: Mon, Thu.
+          // ...
+
+          // Let's calculate the specific date for this week iteration
+          const baseDate = new Date(startObj);
+          baseDate.setDate(baseDate.getDate() + (currentWeek * 7));
+
+          const baseDayJs = baseDate.getDay();
+          let daysToAdd = targetDayJs - baseDayJs;
+          if (daysToAdd < 0) {
+            // If the target day is earlier in the week than the start date, 
+            // we assume "Week 1" starts FROM startDate.
+            // So we move to next week?
+            // E.g. Start Wed. Schedule Mon.
+            // The "Mon of Week 1" is technically passed? Or is "Mon of NEXT week"?
+            // Usually Start Date is Monday. 
+            // Let's assume we add 7 days if it's passed, TO KEEP IT IN THE FUTURE.
+            daysToAdd += 7;
+          }
+
+          // BUT, if we have multiple schedules (Mon, Wed) and startDate is Tue.
+          // Wed is +1. Mon is +6.
+          // Order: Wed (Meeting 1), Mon (Meeting 2).
+          // This seems correct.
+
+          const finalDate = new Date(baseDate);
+          finalDate.setDate(finalDate.getDate() + daysToAdd);
+
+          // Time
+          const startT = new Date(sch.startTime); // It's a DateTime object in Prisma
+          const endT = new Date(sch.endTime);
+
+          // Set time on finalDate
+          // Note: sch.startTime has some dummy date component. We only need Time.
+          const sTime = new Date(finalDate);
+          sTime.setHours(startT.getUTCHours(), startT.getUTCMinutes(), 0, 0);
+
+          const eTime = new Date(finalDate);
+          eTime.setHours(endT.getUTCHours(), endT.getUTCMinutes(), 0, 0);
+
+          sessionsToCreate.push({
             classId: kelas.id,
             academicYearId: kelas.academicYearId,
-            tanggal: { in: workingDays },
-          },
-          select: { id: true, tanggal: true },
-          orderBy: { tanggal: "asc" },
-        });
-
-        // Prepare all attendance records in batches
-        const batchSize = 1000; // Adjust based on your DB limits
-        const allAttendances = [];
-
-        for (const session of createdSessions) {
-          for (const student of kelas.students) {
-            allAttendances.push({
-              studentId: student.id,
-              classId: kelas.id,
-              academicYearId: kelas.academicYearId,
-              date: session.tanggal,
-              attendanceSessionId: session.id,
-              status: "ABSENT",
-            });
-          }
-        }
-
-        // Create attendance records in batches
-        for (let i = 0; i < allAttendances.length; i += batchSize) {
-          const batch = allAttendances.slice(i, i + batchSize);
-          await tx.attendance.createMany({
-            data: batch,
-            skipDuplicates: true,
+            subjectId: cst.subjectId,
+            tutorId: cst.tutorId, // Guru pengajar
+            meetingNumber: meetingCount + 1,
+            tanggal: sTime, // DateTime
+            startTime: sTime,
+            endTime: eTime,
+            status: 'TERJADWALKAN',
+            keterangan: 'Auto Generated',
           });
-        }
 
-        return {
-          sessionsCreated: createdSessions.length,
-          attendancesCreated: allAttendances.length,
-        };
-      },
-      {
-        timeout: 30000, // 30 second timeout for transaction
+          meetingCount++;
+        }
+        currentWeek++;
       }
-    );
+    }
+
+    // Batch create
+    // Use createMany? 
+    // AtttendanceSession has Unique constraint on meetingNumber.
+    // If we re-generate, we should skipDuplicates or upsert?
+    // "skipDuplicates: true" ignores conflicts.
+    // Requirement: "Wajib mencegah duplikasi"
+
+    if (sessionsToCreate.length > 0) {
+      await prisma.attendanceSession.createMany({
+        data: sessionsToCreate,
+        skipDuplicates: true,
+      });
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message:
-          "Sesi presensi berhasil dibuat dengan memperhitungkan hari libur.",
-        summary: {
-          month: `${tahun}-${pad2(bulan)}`,
-          sessionsCreated: result.sessionsCreated,
-          attendancesCreated: result.attendancesCreated,
-          skipped: { holidays: skippedHolidays, sundays: skippedSundays },
-        },
+        message: `Berhasil generate presensi untuk ${subjectsProcessed} mata pelajaran.`,
+        data: {
+          totalSessions: sessionsToCreate.length
+        }
       }),
       { status: 201 }
     );
+
   } catch (error) {
-    // Remove console.error for production
+    console.error("Generate error:", error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -335,3 +296,4 @@ export async function POST(req) {
     );
   }
 }
+
