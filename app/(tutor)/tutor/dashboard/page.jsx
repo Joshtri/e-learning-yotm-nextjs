@@ -40,6 +40,7 @@ export default function TutorDashboardPage() {
     recent: recentActivities,
     submissions,
     stats,
+    todaySchedule, // Added
     isLoading: loading,
     error,
   } = useTutorDashboard();
@@ -69,6 +70,7 @@ export default function TutorDashboardPage() {
     recentMaterials: [],
   };
   const safeSubmissions = submissions?.submissions || [];
+  const safeTodaySchedule = todaySchedule?.data || [];
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -267,6 +269,70 @@ export default function TutorDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Today's Schedule */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Jadwal Hari Ini</CardTitle>
+                  <CardDescription>
+                    Pelajaran yang harus diajar hari ini
+                  </CardDescription>
+                </div>
+                <div className="p-2 bg-blue-50 rounded-full">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {safeTodaySchedule.length > 0 ? (
+                  <div className="space-y-4">
+                    {safeTodaySchedule.map((sch) => (
+                      <div
+                        key={sch.id}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm hover:border-blue-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-center justify-center min-w-[70px] p-2 bg-blue-50 text-blue-700 rounded border border-blue-100">
+                            <span className="text-sm font-bold">
+                              {format(new Date(sch.startTime), "HH:mm")}
+                            </span>
+                            <span className="text-[10px] text-blue-400">
+                              s/d
+                            </span>
+                            <span className="text-sm font-bold">
+                              {format(new Date(sch.endTime), "HH:mm")}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-800">
+                              {sch.subjectName}
+                            </h4>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Users className="h-3 w-3" />
+                              <span>{sch.className}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Action Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => router.push(`/homeroom/attendance`)}
+                        >
+                          Absensi
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <CheckCircle className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                    <p>Tidak ada jadwal untuk hari ini.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Classes Overview */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -291,7 +357,9 @@ export default function TutorDashboardPage() {
                       className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                       onClick={() =>
                         router.push(
-                          `/tutor/classes/${cls.classId}/subjects/${encodeURIComponent(cls.subject)}`
+                          `/tutor/classes/${
+                            cls.classId
+                          }/subjects/${encodeURIComponent(cls.subject)}`
                         )
                       }
                     >
@@ -459,36 +527,44 @@ export default function TutorDashboardPage() {
                   <TabsContent value="materials">
                     {safeRecentActivities.recentMaterials.length > 0 ? (
                       <div className="space-y-4">
-                        {safeRecentActivities.recentMaterials.map((material) => (
-                          <div
-                            key={material.id}
-                            className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                            onClick={() =>
-                              router.push(`/tutor/materials/${material.id}`)
-                            }
-                          >
-                            <div className="p-2 bg-green-100 rounded-full mr-3">
-                              <BookOpen className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">{material.title}</h4>
-                              <p className="text-sm text-gray-600">
-                                {material.classSubjectTutor?.subject?.namaMapel}{" "}
-                                • {material.classSubjectTutor?.class?.namaKelas}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Wali Kelas:{" "}
-                                {material.classSubjectTutor?.class
-                                  ?.homeroomTeacher?.namaLengkap ||
-                                  "Belum ditentukan"}
-                              </p>
-                              <div className="flex items-center mt-1 text-xs text-gray-500">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                <span>{formatDate(material.createdAt)}</span>
+                        {safeRecentActivities.recentMaterials.map(
+                          (material) => (
+                            <div
+                              key={material.id}
+                              className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/tutor/materials/${material.id}`)
+                              }
+                            >
+                              <div className="p-2 bg-green-100 rounded-full mr-3">
+                                <BookOpen className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium">
+                                  {material.title}
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                  {
+                                    material.classSubjectTutor?.subject
+                                      ?.namaMapel
+                                  }{" "}
+                                  •{" "}
+                                  {material.classSubjectTutor?.class?.namaKelas}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Wali Kelas:{" "}
+                                  {material.classSubjectTutor?.class
+                                    ?.homeroomTeacher?.namaLengkap ||
+                                    "Belum ditentukan"}
+                                </p>
+                                <div className="flex items-center mt-1 text-xs text-gray-500">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  <span>{formatDate(material.createdAt)}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-6">
