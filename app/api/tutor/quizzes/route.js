@@ -211,6 +211,7 @@ export async function POST(req) {
         data: {
           quizId: quiz.id,
           teks: q.teks,
+          image: q.image,
           jenis: q.jenis,
           poin: Number(q.poin || poinPerQuestion),
           jawabanBenar: q.jawabanBenar || null,
