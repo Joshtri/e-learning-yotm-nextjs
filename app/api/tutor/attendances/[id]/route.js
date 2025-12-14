@@ -33,7 +33,12 @@ export async function GET(request, { params }) {
       where: { id },
       include: {
         tutor: { select: { user: { select: { nama: true } } } },
-        // ✅ Removed subject - subjectId tidak ada di AttendanceSession anymore
+        subject: {
+          select: {
+            id: true,
+            namaMapel: true,
+          },
+        },
         class: {
           select: {
             id: true,
@@ -64,7 +69,6 @@ export async function GET(request, { params }) {
             id: true,
             studentId: true,
             status: true,
-            date: true,
           },
         },
       },
@@ -105,7 +109,7 @@ export async function GET(request, { params }) {
         id: { not: id }, // Exclude current session
       },
       include: {
-        // ✅ Removed subject - subjectId tidak ada di AttendanceSession anymore
+        subject: { select: { namaMapel: true } },
         tutor: { select: { user: { select: { nama: true } } } },
         attendances: {
           select: {
@@ -127,8 +131,7 @@ export async function GET(request, { params }) {
       const attendanceHistory = otherSessionsToday.map(session => {
         const studentAttendance = session.attendances.find(att => att.studentId === student.id);
         return {
-          // ✅ All AttendanceSession records are homeroom attendance now (no subject)
-          subjectName: "Homeroom",
+          subjectName: session.subject?.namaMapel || "Homeroom",
           tutorName: session.tutor.user.nama,
           status: studentAttendance?.status || null,
         };
@@ -140,13 +143,10 @@ export async function GET(request, { params }) {
         namaLengkap: student.namaLengkap,
         email: student.user.email,
         status: existingAttendance?.status ?? null,
-        tanggal: existingAttendance?.date ?? null,
+
         attendanceHistory, // ✅ History attendance di hari yang sama
       };
     });
-
-    // Clean up the class data before sending response
-    const { classSubjectTutors, homeroomTeacher, ...cleanClassData } = attendanceSession.class;
 
     const responseData = {
       id: attendanceSession.id,
@@ -156,11 +156,11 @@ export async function GET(request, { params }) {
         id: user.id,
         nama: attendanceSession.tutor.user.nama,
       },
-      // ✅ Removed subject - AttendanceSession is now homeroom only (no subject)
+      subject: attendanceSession.subject, // ✅ Restored Subject
       kelas: {
-        id: cleanClassData.id,
-        namaKelas: cleanClassData.namaKelas,
-        program: cleanClassData.program.namaPaket,
+        id: attendanceSession.class.id,
+        namaKelas: attendanceSession.class.namaKelas,
+        program: attendanceSession.class.program.namaPaket,
       },
       tahunAjaran: `${attendanceSession.academicYear.tahunMulai}/${attendanceSession.academicYear.tahunSelesai}`,
       daftarHadir,
@@ -177,43 +177,76 @@ export async function GET(request, { params }) {
 }
 
 // Tambahan PATCH untuk Update Attendance Session
-// export async function PATCH(request, { params }) {
-//   try {
-//     const user = await getUserFromCookie();
-//     if (!user || user.role !== "TUTOR") {
-//       return NextResponse.json(
-//         { success: false, message: "Unauthorized" },
-//         { status: 401 }
-//       );
-//     }
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = await params;
+    const user = await getUserFromCookie();
 
-//     const body = await request.json();
+    if (!user || user.role !== "TUTOR") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-//     const session = await prisma.attendanceSession.findUnique({
-//       where: { id: params.id },
-//     });
+    const tutor = await prisma.tutor.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
 
-//     if (!session || session.tutorId !== user.id) {
-//       return NextResponse.json(
-//         { success: false, message: "Not found" },
-//         { status: 404 }
-//       );
-//     }
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Tutor tidak ditemukan" },
+        { status: 404 }
+      );
+    }
 
-//     const updated = await prisma.attendanceSession.update({
-//       where: { id: params.id },
-//       data: {
-//         tanggal: body.tanggal ? new Date(body.tanggal) : undefined,
-//         keterangan: body.keterangan,
-//       },
-//     });
+    const session = await prisma.attendanceSession.findUnique({
+      where: { id },
+    });
 
-//     return NextResponse.json({ success: true, data: updated });
-//   } catch (error) {
-//     console.error(error);
-//     return NextResponse.json(
-//       { success: false, message: "Gagal update presensi" },
-//       { status: 500 }
-//     );
-//   }
-// }
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Sesi tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    if (session.tutorId !== tutor.id) {
+      return NextResponse.json(
+        { success: false, message: "Anda tidak berhak mengubah sesi ini" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const updateData = {};
+
+    if (body.status) {
+      updateData.status = body.status;
+      if (body.status === "DIMULAI" && !session.startTime) {
+        updateData.startTime = new Date();
+      }
+      if (body.status === "SELESAI" && !session.endTime) {
+        updateData.endTime = new Date();
+      }
+    }
+
+    if (body.keterangan !== undefined) {
+      updateData.keterangan = body.keterangan;
+    }
+
+    const updated = await prisma.attendanceSession.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error("Gagal update presensi:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal update presensi" },
+      { status: 500 }
+    );
+  }
+}
