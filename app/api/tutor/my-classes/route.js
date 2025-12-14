@@ -25,8 +25,7 @@ export async function GET(request) {
       );
     }
 
-    console.log("User ID:", user.id);
-    console.log("Tutor ID:", tutor.id);
+
 
     const { searchParams } = new URL(request.url);
     let academicYearId = searchParams.get("academicYearId");
@@ -92,6 +91,7 @@ export async function GET(request) {
         },
       },
       include: {
+        subject: { select: { id: true, namaMapel: true } }, // 🔥 Include ID & Name
         class: {
           select: {
             id: true,
@@ -134,6 +134,8 @@ export async function GET(request) {
         academicYear: cls.academicYear,
         program: cls.program,
         homeroomTeacher: cls.homeroomTeacher,
+        taughtSubjects: [], // Init array
+        isHomeroom: true, // Flag for UI
       });
     });
 
@@ -146,6 +148,17 @@ export async function GET(request) {
           academicYear: item.class.academicYear,
           program: item.class.program,
           homeroomTeacher: item.class.homeroomTeacher,
+          taughtSubjects: [],
+          isHomeroom: false,
+        });
+      }
+
+      // Add subject to the list
+      const existing = classMap.get(item.class.id);
+      if (item.subject) {
+        existing.taughtSubjects.push({
+          id: item.subject.id,
+          name: item.subject.namaMapel,
         });
       }
     });
