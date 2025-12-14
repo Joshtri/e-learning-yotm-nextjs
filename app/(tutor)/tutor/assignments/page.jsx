@@ -185,15 +185,15 @@ export default function TutorAssignmentPage() {
         </div>
       ),
     },
-    {
-      header: "Jumlah Soal",
-      cell: (row) => (
-        <span className="text-sm font-medium">
-          {row._count?.questions ?? 0} soal
-        </span>
-      ),
-      className: "",
-    },
+    // {
+    //   header: "Jumlah Soal",
+    //   cell: (row) => (
+    //     <span className="text-sm font-medium">
+    //       {row._count?.questions ?? 0} soal
+    //     </span>
+    //   ),
+    //   className: "",
+    // },
 
     {
       header: "Tanggal Mulai",
