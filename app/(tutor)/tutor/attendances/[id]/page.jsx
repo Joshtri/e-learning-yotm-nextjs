@@ -97,7 +97,12 @@ export default function AttendanceDetailPage() {
       });
 
       toast.success("Presensi berhasil disimpan!");
-      router.push("/tutor/attendances");
+
+      if (sessionInfo?.kelas?.id) {
+        router.push(`/tutor/attendances/class/${sessionInfo.kelas.id}`);
+      } else {
+        router.push("/tutor/attendances");
+      }
     } catch (err) {
       console.error("Gagal menyimpan presensi:", err);
       toast.error("Gagal menyimpan presensi");
@@ -128,17 +133,29 @@ export default function AttendanceDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Input Kehadiran${sessionInfo?.subject ? ` - ${sessionInfo.subject.namaMapel}` : ""}`}
+        title={`Input Kehadiran${
+          sessionInfo?.subject ? ` - ${sessionInfo.subject.namaMapel}` : ""
+        }`}
         description={
           sessionInfo
-            ? `${sessionInfo.kelas.namaKelas} - ${sessionInfo.kelas.program}${sessionInfo.subject ? ` | Mata Pelajaran: ${sessionInfo.subject.namaMapel}` : ""}`
+            ? `${sessionInfo.kelas.namaKelas} - ${sessionInfo.kelas.program}${
+                sessionInfo.subject
+                  ? ` | Mata Pelajaran: ${sessionInfo.subject.namaMapel}`
+                  : ""
+              }`
             : "Tentukan status kehadiran siswa pada sesi ini."
         }
         breadcrumbs={[
           { label: "Dashboard", href: "/tutor/dashboard" },
           { label: "Presensi", href: "/tutor/attendances" },
-          { label: "Input Kehadiran" },
-        ]}
+          sessionInfo?.kelas
+            ? {
+                label: sessionInfo.kelas.namaKelas,
+                href: `/tutor/attendances/class/${sessionInfo.kelas.id}`,
+              }
+            : null,
+          { label: "Input Kehadiran", active: true },
+        ].filter(Boolean)}
       />
 
       <div className="flex justify-end">
@@ -162,21 +179,26 @@ export default function AttendanceDetailPage() {
               <p className="text-sm text-muted-foreground">{student.email}</p>
 
               {/* Attendance History */}
-              {student.attendanceHistory && student.attendanceHistory.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground">Hari ini:</span>
-                  {student.attendanceHistory.map((history, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="outline"
-                      className={`text-xs ${STATUS_BADGE_STYLES[history.status]}`}
-                      title={`${history.subjectName} - ${history.tutorName}`}
-                    >
-                      {history.subjectName}: {STATUS_LABELS[history.status]}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {student.attendanceHistory &&
+                student.attendanceHistory.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      Hari ini:
+                    </span>
+                    {student.attendanceHistory.map((history, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="outline"
+                        className={`text-xs ${
+                          STATUS_BADGE_STYLES[history.status]
+                        }`}
+                        title={`${history.subjectName} - ${history.tutorName}`}
+                      >
+                        {history.subjectName}: {STATUS_LABELS[history.status]}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
             </div>
 
             <Select
