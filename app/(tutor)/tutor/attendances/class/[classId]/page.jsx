@@ -269,7 +269,11 @@ export default function AttendancePerClassPage() {
           "NAMA SISWA",
           ...sessions.map((s) => {
             const d = new Date(s.date);
-            return `${d.getDate()}/${d.getMonth() + 1}`;
+            return d.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            });
           }),
         ];
 

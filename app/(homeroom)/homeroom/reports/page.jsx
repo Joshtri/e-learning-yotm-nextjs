@@ -2,9 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import api from "@/lib/axios";
@@ -16,7 +28,7 @@ import {
   User,
   ClipboardCheck,
   GraduationCap,
-  Loader2
+  Loader2,
 } from "lucide-react";
 
 export default function HomeroomReportsPage() {
@@ -35,7 +47,7 @@ export default function HomeroomReportsPage() {
         setAcademicYears(res.data.data.academicYears || []);
 
         // Set default to active year
-        const activeYear = res.data.data.academicYears.find(y => y.isActive);
+        const activeYear = res.data.data.academicYears.find((y) => y.isActive);
         if (activeYear) {
           setSelectedAcademicYear(activeYear.id);
         }
@@ -73,7 +85,7 @@ export default function HomeroomReportsPage() {
   const fetchStudents = async () => {
     try {
       const res = await api.get("/homeroom/my-students", {
-        params: { academicYearId: selectedAcademicYear }
+        params: { academicYearId: selectedAcademicYear },
       });
       setStudents(res.data.data || []);
     } catch (err) {
@@ -93,23 +105,27 @@ export default function HomeroomReportsPage() {
       const res = await api.get("/homeroom/reports/attendance", {
         params: {
           academicYearId: selectedAcademicYear,
-          format
+          format,
         },
-        responseType: 'blob'
+        responseType: "blob",
       });
 
-      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
       const filename = `laporan-presensi-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
 
-      toast.success(`Laporan presensi berhasil diunduh (${format.toUpperCase()})`);
+      toast.success(
+        `Laporan presensi berhasil diunduh (${format.toUpperCase()})`
+      );
     } catch (err) {
       toast.error("Gagal mengunduh laporan presensi");
       console.error(err);
@@ -129,23 +145,27 @@ export default function HomeroomReportsPage() {
       const res = await api.get("/homeroom/reports/class-scores", {
         params: {
           academicYearId: selectedAcademicYear,
-          format
+          format,
         },
-        responseType: 'blob'
+        responseType: "blob",
       });
 
-      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
       const filename = `laporan-nilai-kelas-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
 
-      toast.success(`Laporan nilai kelas berhasil diunduh (${format.toUpperCase()})`);
+      toast.success(
+        `Laporan nilai kelas berhasil diunduh (${format.toUpperCase()})`
+      );
     } catch (err) {
       toast.error("Gagal mengunduh laporan nilai kelas");
     } finally {
@@ -170,19 +190,23 @@ export default function HomeroomReportsPage() {
         params: {
           studentId: selectedStudent,
           academicYearId: selectedAcademicYear,
-          format
+          format,
         },
-        responseType: 'blob'
+        responseType: "blob",
       });
 
-      const student = students.find(s => s.id === selectedStudent);
-      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
-      const filename = `rapor-${student?.namaLengkap?.replace(/\s+/g, '-')}-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
+      const student = students.find((s) => s.id === selectedStudent);
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
+      const filename = `rapor-${student?.namaLengkap?.replace(/\s+/g, "-")}-${
+        selectedYear?.tahunMulai
+      }-${selectedYear?.semester}.${format}`;
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -195,7 +219,6 @@ export default function HomeroomReportsPage() {
     }
   };
 
-
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -203,7 +226,7 @@ export default function HomeroomReportsPage() {
         description="Cetak laporan presensi dan nilai siswa dalam format PDF atau Excel"
         breadcrumbs={[
           { label: "Dashboard", href: "/homeroom/dashboard" },
-          { label: "Laporan" }
+          { label: "Laporan" },
         ]}
       />
 
@@ -215,16 +238,21 @@ export default function HomeroomReportsPage() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Nama Kelas:</span> {myClass.namaKelas}
+                <span className="font-medium">Nama Kelas:</span>{" "}
+                {myClass.namaKelas}
               </div>
               <div>
-                <span className="font-medium">Program:</span> {myClass.program?.namaPaket}
+                <span className="font-medium">Program:</span>{" "}
+                {myClass.program?.namaPaket}
               </div>
               <div>
-                <span className="font-medium">Tahun Ajaran:</span> {myClass.academicYear?.tahunMulai}/{myClass.academicYear?.tahunSelesai}
+                <span className="font-medium">Tahun Ajaran:</span>{" "}
+                {myClass.academicYear?.tahunMulai}/
+                {myClass.academicYear?.tahunSelesai}
               </div>
               <div>
-                <span className="font-medium">Semester:</span> {myClass.academicYear?.semester}
+                <span className="font-medium">Semester:</span>{" "}
+                {myClass.academicYear?.semester}
               </div>
             </div>
           </CardContent>
@@ -253,18 +281,24 @@ export default function HomeroomReportsPage() {
             <CardHeader>
               <CardTitle>Laporan Presensi Kelas</CardTitle>
               <CardDescription>
-                Unduh rekap presensi seluruh siswa per semester/tahun ajaran
+                Unduh rekap presensi siswa yang dipisahkan per Mata Pelajaran
+                dalam satu file.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Tahun Ajaran</label>
-                <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+                <label className="text-sm font-medium mb-2 block">
+                  Tahun Ajaran
+                </label>
+                <Select
+                  value={selectedAcademicYear}
+                  onValueChange={setSelectedAcademicYear}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih tahun ajaran" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicYears.map(y => (
+                    {academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
                         {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
                       </SelectItem>
@@ -275,7 +309,7 @@ export default function HomeroomReportsPage() {
 
               <div className="flex gap-4 pt-4">
                 <Button
-                  onClick={() => downloadAttendanceReport('pdf')}
+                  onClick={() => downloadAttendanceReport("pdf")}
                   disabled={loading || !selectedAcademicYear}
                   className="flex-1"
                 >
@@ -287,7 +321,7 @@ export default function HomeroomReportsPage() {
                   Download PDF
                 </Button>
                 <Button
-                  onClick={() => downloadAttendanceReport('xlsx')}
+                  onClick={() => downloadAttendanceReport("xlsx")}
                   disabled={loading || !selectedAcademicYear}
                   variant="outline"
                   className="flex-1"
@@ -315,13 +349,18 @@ export default function HomeroomReportsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Tahun Ajaran</label>
-                <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+                <label className="text-sm font-medium mb-2 block">
+                  Tahun Ajaran
+                </label>
+                <Select
+                  value={selectedAcademicYear}
+                  onValueChange={setSelectedAcademicYear}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih tahun ajaran" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicYears.map(y => (
+                    {academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
                         {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
                       </SelectItem>
@@ -332,7 +371,7 @@ export default function HomeroomReportsPage() {
 
               <div className="flex gap-4 pt-4">
                 <Button
-                  onClick={() => downloadClassScoresReport('pdf')}
+                  onClick={() => downloadClassScoresReport("pdf")}
                   disabled={loading || !selectedAcademicYear}
                   className="flex-1"
                 >
@@ -344,7 +383,7 @@ export default function HomeroomReportsPage() {
                   Download PDF
                 </Button>
                 <Button
-                  onClick={() => downloadClassScoresReport('xlsx')}
+                  onClick={() => downloadClassScoresReport("xlsx")}
                   disabled={loading || !selectedAcademicYear}
                   variant="outline"
                   className="flex-1"
@@ -373,13 +412,18 @@ export default function HomeroomReportsPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Tahun Ajaran</label>
-                  <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+                  <label className="text-sm font-medium mb-2 block">
+                    Tahun Ajaran
+                  </label>
+                  <Select
+                    value={selectedAcademicYear}
+                    onValueChange={setSelectedAcademicYear}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih tahun ajaran" />
                     </SelectTrigger>
                     <SelectContent>
-                      {academicYears.map(y => (
+                      {academicYears.map((y) => (
                         <SelectItem key={y.id} value={y.id}>
                           {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
                         </SelectItem>
@@ -389,13 +433,18 @@ export default function HomeroomReportsPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Pilih Siswa</label>
-                  <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                  <label className="text-sm font-medium mb-2 block">
+                    Pilih Siswa
+                  </label>
+                  <Select
+                    value={selectedStudent}
+                    onValueChange={setSelectedStudent}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih siswa" />
                     </SelectTrigger>
                     <SelectContent>
-                      {students.map(s => (
+                      {students.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.namaLengkap} - {s.nisn}
                         </SelectItem>
@@ -407,8 +456,10 @@ export default function HomeroomReportsPage() {
 
               <div className="flex gap-4 pt-4">
                 <Button
-                  onClick={() => downloadStudentScoreReport('pdf')}
-                  disabled={loading || !selectedStudent || !selectedAcademicYear}
+                  onClick={() => downloadStudentScoreReport("pdf")}
+                  disabled={
+                    loading || !selectedStudent || !selectedAcademicYear
+                  }
                   className="flex-1"
                 >
                   {loading ? (
@@ -419,8 +470,10 @@ export default function HomeroomReportsPage() {
                   Download Rapor PDF
                 </Button>
                 <Button
-                  onClick={() => downloadStudentScoreReport('xlsx')}
-                  disabled={loading || !selectedStudent || !selectedAcademicYear}
+                  onClick={() => downloadStudentScoreReport("xlsx")}
+                  disabled={
+                    loading || !selectedStudent || !selectedAcademicYear
+                  }
                   variant="outline"
                   className="flex-1"
                 >
