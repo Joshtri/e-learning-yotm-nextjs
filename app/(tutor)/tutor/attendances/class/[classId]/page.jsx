@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,30 +17,50 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
-  Eye,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   CalendarCheck,
   CalendarClock,
   CalendarDays,
   History,
-  Info,
+  BookOpen,
+  MoreHorizontal,
+  Printer,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+const STATUS_COLORS = {
+  TERJADWALKAN: "bg-blue-100 text-blue-700",
+  DIMULAI: "bg-green-100 text-green-700",
+  SELESAI: "bg-gray-100 text-gray-700",
+};
+
+const STATUS_LABELS = {
+  TERJADWALKAN: "Terjadwal",
+  DIMULAI: "Berlangsung",
+  SELESAI: "Selesai",
+};
+import { EmptyState } from "@/components/ui/empty-state";
 
 // helpers
-const pad2 = (n) => String(n).padStart(2, "0");
 const startOfDay = (d) => {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;
 };
 const isSameDay = (a, b) => {
-  const dateA = new Date(a).toISOString().split('T')[0];
-  const dateB = new Date(b).toISOString().split('T')[0];
+  const dateA = new Date(a).toISOString().split("T")[0];
+  const dateB = new Date(b).toISOString().split("T")[0];
   return dateA === dateB;
 };
-const toLocalISO = (d) => {
-  const x = new Date(d);
-  return `${x.getFullYear()}-${pad2(x.getMonth() + 1)}-${pad2(x.getDate())}`;
-};
+
 const formatID = (iso) => {
   const d = new Date(`${iso}T00:00:00`);
   const date = d.toLocaleDateString("id-ID", {
@@ -55,8 +76,39 @@ export default function AttendancePerClassPage() {
   const { classId } = useParams();
   const router = useRouter();
 
-  const [sessions, setSessions] = useState([]);
+  const searchParams = useSearchParams();
+  const subjectId = searchParams.get("subjectId");
+  const isHomeroom = searchParams.get("homeroom") === "true";
+
+  const [allSessions, setAllSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const sessions = useMemo(() => {
+    let data = allSessions;
+    if (subjectId) {
+      data = data.filter((s) => s.subject?.id === subjectId);
+    } else if (isHomeroom) {
+      data = data.filter((s) => !s.subject);
+    }
+    // Sort ascending
+    return data.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+  }, [allSessions, subjectId, isHomeroom]);
+
+  const handleUpdateStatus = async (sessionId, newStatus) => {
+    try {
+      const res = await api.patch(`/tutor/attendances/${sessionId}`, {
+        status: newStatus,
+      });
+      if (res.data.success) {
+        toast.success("Status berhasil diperbarui");
+        setAllSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? { ...s, ...res.data.data } : s))
+        );
+      }
+    } catch {
+      toast.error("Gagal mengubah status");
+    }
+  };
 
   // holidays (sekilas list bulan ini)
   const now = useMemo(() => new Date(), []);
@@ -69,9 +121,9 @@ export default function AttendancePerClassPage() {
     const fetchSessions = async () => {
       try {
         const res = await api.get(`/tutor/attendances/class/${classId}`);
-        setSessions(res.data.data || []);
-      } catch (error) {
-        console.error("Gagal memuat presensi kelas:", error);
+        setAllSessions(res.data.data || []);
+      } catch {
+        toast.error("Gagal memuat presensi kelas");
       } finally {
         setLoading(false);
       }
@@ -100,7 +152,7 @@ export default function AttendancePerClassPage() {
         } else {
           setHolidayList([]);
         }
-      } catch (e) {
+      } catch {
         setHolidayList([]);
       } finally {
         setLoadingHolidays(false);
@@ -143,17 +195,206 @@ export default function AttendancePerClassPage() {
     return sorted[0];
   }, [sessions]);
 
+  const handlePrintRecap = async () => {
+    try {
+      if (!subjectId) {
+        toast.error(
+          "Fitur ini hanya tersedia untuk tampilan per mata pelajaran."
+        );
+        return;
+      }
+
+      const toastId = toast.loading("Menyiapkan laporan...", {
+        duration: Infinity,
+      });
+
+      try {
+        const res = await api.get(`/tutor/report/recap`, {
+          params: { classId: classId, subjectId },
+        });
+
+        if (!res.data.success) throw new Error(res.data.message);
+
+        const {
+          className,
+          subjectName,
+          academicYear,
+          semester,
+          sessions,
+          students,
+          tutorName,
+          programName,
+        } = res.data.data;
+
+        // Init PDF
+        const doc = new jsPDF("landscape");
+
+        // Load Logo
+        try {
+          const imgProps = await new Promise((resolve) => {
+            const img = new Image();
+            img.src = "/yotm_logo.png";
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+          });
+
+          if (imgProps) {
+            // Add Logo (x: 14, y: 10, w: 20, h: 20)
+            doc.addImage(imgProps, "PNG", 14, 10, 20, 20);
+          }
+        } catch (e) {
+          console.warn("Logo load failed", e);
+        }
+
+        // Header
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("LAPORAN PRESENSI KELAS", 148, 15, { align: "center" });
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${programName} - ${academicYear} (${semester})`, 148, 22, {
+          align: "center",
+        });
+
+        // Meta Info
+        doc.setFontSize(10);
+        doc.text(`Mata Pelajaran : ${subjectName}`, 14, 35);
+        doc.text(`Kelas          : ${className}`, 14, 40);
+        doc.text(`Guru Pengajar  : ${tutorName}`, 14, 45);
+
+        // Table Data
+        const headRow = [
+          "No",
+          "NISN",
+          "NAMA SISWA",
+          ...sessions.map((s) => {
+            const d = new Date(s.date);
+            return `${d.getDate()}/${d.getMonth() + 1}`;
+          }),
+        ];
+
+        const bodyRows = students.map((s, i) => [
+          i + 1,
+          s.nisn || "-",
+          s.name,
+          ...s.statuses.map((st) => {
+            // Map Status Enum (English) to Single Letter Code (Indonesian)
+            const statusMap = {
+              PRESENT: "H",
+              SICK: "S",
+              EXCUSED: "I",
+              ABSENT: "A",
+            };
+            return statusMap[st] || st || "-";
+          }),
+        ]);
+
+        // AutoTable
+        autoTable(doc, {
+          startY: 50,
+          head: [headRow],
+          body: bodyRows,
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 1,
+            halign: "center",
+            valign: "middle",
+            textColor: [0, 0, 0], // Default black
+            lineWidth: 0.1,
+            lineColor: [200, 200, 200],
+          },
+          headStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            fontStyle: "bold",
+            lineWidth: 0.1,
+            lineColor: [0, 0, 0], // Black borders for header
+          },
+          columnStyles: {
+            2: { halign: "left" }, // Nama Siswa Left Align
+          },
+          didParseCell: function (data) {
+            // Check if we are in the body and not the first 3 columns (No, NISN, Name)
+            if (data.section === "body" && data.column.index > 2) {
+              const text = data.cell.text[0];
+              data.cell.styles.fontStyle = "bold"; // Make status bold
+
+              if (text === "H") {
+                data.cell.styles.fillColor = [46, 204, 113]; // Green
+                data.cell.styles.textColor = [255, 255, 255]; // White
+              } else if (text === "S") {
+                data.cell.styles.fillColor = [231, 76, 60]; // Red
+                data.cell.styles.textColor = [255, 255, 255]; // White
+              } else if (text === "A") {
+                data.cell.styles.fillColor = [231, 76, 60]; // Red
+                data.cell.styles.textColor = [255, 255, 255]; // White
+              } else if (text === "I") {
+                data.cell.styles.fillColor = [149, 165, 166]; // Gray
+                data.cell.styles.textColor = [255, 255, 255]; // White
+              }
+            }
+          },
+        });
+
+        // Footer
+        const finalY = doc.lastAutoTable.finalY + 15;
+
+        // Check page break
+        if (finalY > 180) {
+          doc.addPage();
+          // Reset Y ? No, precise positioning.
+        }
+
+        const dateStr = new Date().toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        doc.setFontSize(10);
+
+        // Two columns signature
+        // Left: Ketua Kelas (Placeholder?)
+        // Right: Guru/Tutor
+
+        doc.text("Mengetahui,", 220, finalY, { align: "center" });
+        doc.text(`Kupang, ${dateStr}`, 220, finalY + 5, { align: "center" });
+        doc.text("Guru Pengajar,", 220, finalY + 10, { align: "center" });
+
+        doc.text(tutorName, 220, finalY + 35, { align: "center" });
+        doc.line(200, finalY + 36, 240, finalY + 36); // Underline
+
+        // Save
+        doc.save(`Presensi_${className}_${subjectName}.pdf`);
+        toast.dismiss(toastId);
+        toast.success("Laporan berhasil diunduh");
+      } catch (err) {
+        toast.dismiss(toastId);
+        toast.error("Gagal membuat laporan: " + err.message);
+      }
+    } catch {
+      toast.error("Terjadi kesalahan");
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <PageHeader
-        title="Riwayat Presensi Kelas"
-        description="Daftar sesi presensi untuk kelas ini."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/tutor/dashboard" },
-          { label: "Presensi", href: "/tutor/attendances" },
-          { label: "Presensi Kelas" },
-        ]}
-      />
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <PageHeader
+          title="Riwayat Presensi Kelas"
+          description="Daftar sesi presensi untuk kelas ini."
+          breadcrumbs={[
+            { label: "Dashboard", href: "/tutor/dashboard" },
+            { label: "Presensi", href: "/tutor/attendances" },
+            { label: "Detail Kelas", active: true },
+          ]}
+        />
+        <Button onClick={handlePrintRecap} variant="default">
+          <Printer className="mr-2 h-4 w-4" />
+          Cetak Laporan
+        </Button>
+      </div>
 
       {/* ====== SEKILAS LIBUR BULAN INI ====== */}
       <Card>
@@ -299,149 +540,247 @@ export default function AttendancePerClassPage() {
         </Card>
       </div>
 
-      {/* ====== TABEL SESI ====== */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Daftar Sesi Presensi</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[120px]">Tanggal</TableHead>
-                  <TableHead className="min-w-[180px]">Mata Pelajaran</TableHead>
-                  <TableHead className="min-w-[140px]">Tahun Ajaran</TableHead>
-                  <TableHead className="min-w-[220px]">Keterangan</TableHead>
-                  <TableHead className="w-[160px]">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5}>
-                      <Skeleton className="h-8 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ) : sessions.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground"
-                    >
-                      Tidak ada sesi presensi
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sessions.map((session) => {
-                    const isTodayRow = isSameDay(session.tanggal, today);
+      {/* ====== TABEL SESI PER MAPEL ====== */}
+      {loading ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Memuat Data Presensi...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
+      ) : sessions.length === 0 ? (
+        <EmptyState
+          title="Tidak ada sesi presensi"
+          description="Belum ada sesi presensi yang dibuat untuk kelas ini."
+          icon={<CalendarCheck className="h-10 w-10 text-muted-foreground" />}
+        />
+      ) : (
+        (() => {
+          // Grouping Logic Inline
+          const groups = {};
+          sessions.forEach((s) => {
+            const name = s.subject?.namaMapel || "Wali Kelas";
+            if (!groups[name]) groups[name] = [];
+            groups[name].push(s);
+          });
+          const subjectKeys = Object.keys(groups).sort();
 
-                    return (
-                      <TableRow
-                        key={session.id}
-                        className={
-                          isTodayRow
-                            ? "bg-blue-50/60 hover:bg-blue-50/80 border-l-4 border-l-blue-500"
-                            : ""
-                        }
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col">
-                              <span>
-                                {new Date(session.tanggal).toLocaleDateString(
-                                  "id-ID",
-                                  {
-                                    day: "2-digit",
-                                    month: "short",
-                                    year: "numeric",
-                                  }
-                                )}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(session.tanggal).toLocaleDateString(
-                                  "id-ID",
-                                  { weekday: "long" }
-                                )}
-                              </span>
-                            </div>
-                            {isTodayRow && (
-                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                                Hari ini
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {session.subject?.namaMapel || "Homeroom"}
-                            </span>
-                            {session.tutor && (
-                              <span className="text-xs text-muted-foreground">
-                                oleh {session.tutor.user.nama}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          {session.academicYear
-                            ? `${session.academicYear.tahunMulai}/${session.academicYear.tahunSelesai}`
-                            : "-"}
-                        </TableCell>
-
-                        <TableCell className="text-muted-foreground">
-                          {session.keterangan || "-"}
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                router.push(`/tutor/attendances/${session.id}`)
-                              }
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Lihat
-                            </Button>
-
-                            {isTodayRow && (
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  router.push(
-                                    `/tutor/attendances/${session.id}`
-                                  )
-                                }
-                                className="bg-blue-600 text-white hover:bg-blue-600/90"
-                                title="Mulai/lanjutkan presensi hari ini"
+          return (
+            <div className="space-y-8">
+              {subjectKeys.map((subjectName) => (
+                <Card
+                  key={subjectName}
+                  className="border-l-4 border-l-blue-500 shadow-sm"
+                >
+                  <CardHeader className="pb-2 bg-slate-50/50">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                      <CardTitle className="text-xl font-bold text-slate-800">
+                        {subjectName}
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent bg-slate-50/50 border-b-slate-200">
+                            <TableHead className="min-w-[150px] pl-6">
+                              Tanggal
+                            </TableHead>
+                            <TableHead className="min-w-[150px]">
+                              Status
+                            </TableHead>
+                            <TableHead className="min-w-[100px]">
+                              Kehadiran
+                            </TableHead>
+                            <TableHead className="min-w-[150px]">
+                              Keterangan
+                            </TableHead>
+                            <TableHead className="min-w-[100px]">
+                              Semester
+                            </TableHead>
+                            <TableHead className="min-w-[100px]">
+                              Pertemuan
+                            </TableHead>
+                            <TableHead className="w-[120px] text-right pr-6">
+                              Aksi
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {groups[subjectName].map((session) => {
+                            const isTodayRow = isSameDay(
+                              session.tanggal,
+                              today
+                            );
+                            return (
+                              <TableRow
+                                key={session.id}
+                                className={`
+                                  hover:bg-blue-50/30 transition-colors
+                                  ${isTodayRow ? "bg-blue-50/50" : ""}
+                                `}
                               >
-                                Mulai Presensi
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                                <TableCell className="pl-6 py-3">
+                                  <div className="flex flex-col">
+                                    <span
+                                      className={`font-medium ${
+                                        isTodayRow
+                                          ? "text-blue-700"
+                                          : "text-slate-700"
+                                      }`}
+                                    >
+                                      {new Date(
+                                        session.tanggal
+                                      ).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(
+                                        session.tanggal
+                                      ).toLocaleDateString("id-ID", {
+                                        weekday: "long",
+                                      })}
+                                      {session.startTime &&
+                                        ` • ${new Date(
+                                          session.startTime
+                                        ).toLocaleTimeString("id-ID", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}`}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div
+                                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block ${
+                                      STATUS_COLORS[session.status] ||
+                                      "bg-gray-100 text-gray-700"
+                                    }`}
+                                  >
+                                    {STATUS_LABELS[session.status] ||
+                                      session.status}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {session.status === "SELESAI" ? (
+                                    <span className="font-mono text-sm font-medium">
+                                      {session.attendanceSummary || "-"}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {session.keterangan || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-600">
+                                    {session.academicYear?.semester || "-"}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-xs font-bold text-slate-700 border">
+                                    {session.meetingNumber || "#"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right pr-6">
+                                  <div className="flex justify-end gap-2 items-center">
+                                    {isTodayRow && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          router.push(
+                                            `/tutor/attendances/${session.id}`
+                                          )
+                                        }
+                                        className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                      >
+                                        Presensi
+                                      </Button>
+                                    )}
 
-          {/* Hint kecil */}
-          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4" />
-            <span>
-              Daftar libur di atas hanya menampilkan libur bulan berjalan.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          className="h-8 w-8 p-0"
+                                        >
+                                          <span className="sr-only">
+                                            Open menu
+                                          </span>
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>
+                                          Ubah Status
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleUpdateStatus(
+                                              session.id,
+                                              "TERJADWALKAN"
+                                            )
+                                          }
+                                        >
+                                          Reset ke Terjadwal
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleUpdateStatus(
+                                              session.id,
+                                              "DIMULAI"
+                                            )
+                                          }
+                                        >
+                                          Mulai Sesi
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleUpdateStatus(
+                                              session.id,
+                                              "SELESAI"
+                                            )
+                                          }
+                                        >
+                                          Selesai
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            router.push(
+                                              `/tutor/attendances/${session.id}`
+                                            )
+                                          }
+                                        >
+                                          Detail & Presensi
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          );
+        })()
+      )}
     </div>
   );
 }
