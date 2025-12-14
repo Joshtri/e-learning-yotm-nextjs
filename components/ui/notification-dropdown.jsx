@@ -17,8 +17,8 @@ import { Badge } from "./badge";
 const NOTIFICATION_CACHE_CONFIG = {
   staleTime: 5 * 60 * 1000, // 5 minutes
   gcTime: 30 * 60 * 1000, // 30 minutes garbage collection (formerly cacheTime)
-  refetchInterval: 30 * 1000, // Auto refetch every 30 seconds
-  refetchIntervalInBackground: true, // Keep refetching even in background
+  refetchInterval: 60 * 60 * 1000, // Auto refetch every 1 hour (as requested)
+  refetchIntervalInBackground: false, // Disable background refetch to save resources
 };
 
 export function NotificationDropdown({ userId }) {
