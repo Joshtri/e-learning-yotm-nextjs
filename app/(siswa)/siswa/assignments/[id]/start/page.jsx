@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountdownTimer } from "@/components/ui/countdown-timer";
 import { LoadingOverlay } from "@/components/ui/loading";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
-import { FileText, Upload, Loader2, Eye } from "lucide-react";
+import { FileText, Upload, Eye } from "lucide-react";
 
 export default function AssignmentStartPage() {
   const { id } = useParams();
@@ -21,6 +21,7 @@ export default function AssignmentStartPage() {
   const [assignment, setAssignment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [answerImages, setAnswerImages] = useState({}); // ✅ New state for images
   const [answerFile, setAnswerFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +31,7 @@ export default function AssignmentStartPage() {
     const fetchAssignment = async () => {
       try {
         const res = await api.get(`/student/assignments/${id}/start`);
-        const { assignment, questions, previousAnswers, submission } =
-          res.data.data;
+        const { assignment, questions, previousAnswers } = res.data.data;
         setAssignment(assignment);
         setQuestions(questions);
         setAnswers(previousAnswers || {});
@@ -53,6 +53,29 @@ export default function AssignmentStartPage() {
 
   const handleChange = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleImageUpload = (questionId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAnswerImages((prev) => ({ ...prev, [questionId]: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (questionId) => {
+    setAnswerImages((prev) => {
+      const newImages = { ...prev };
+      delete newImages[questionId];
+      return newImages;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -97,6 +120,7 @@ export default function AssignmentStartPage() {
           answers: questions.map((q) => ({
             questionId: q.id,
             jawaban: answers[q.id] || "",
+            image: answerImages[q.id] || null, // ✅ Send image if exists
           })),
         };
       }
@@ -267,33 +291,48 @@ export default function AssignmentStartPage() {
                 <CardTitle>Soal {i + 1}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-muted-foreground whitespace-pre-wrap">{q.teks}</p>
-
-                {/* Multiple Choice */}
-                {q.jenis === "MULTIPLE_CHOICE" && q.options && q.options.length > 0 && (
-                  <div className="space-y-2">
-                    {q.options.map((option, optIndex) => (
-                      <div key={option.id} className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id={`${q.id}-${option.id}`}
-                          name={q.id}
-                          value={option.id}
-                          checked={answers[q.id] === option.id}
-                          onChange={(e) => handleChange(q.id, e.target.value)}
-                          className="w-4 h-4 text-blue-600"
-                        />
-                        <label
-                          htmlFor={`${q.id}-${option.id}`}
-                          className="flex-1 cursor-pointer p-2 rounded hover:bg-gray-50"
-                        >
-                          {String.fromCharCode(65 + optIndex)}. {option.teks}
-                        </label>
-                      </div>
-                    ))}
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {q.teks}
+                </p>
+                {/* 🖼️ Display Question Image */}
+                {q.image && (
+                  <div className="mb-4 mt-2">
+                    <img
+                      src={q.image}
+                      alt="Gambar Soal"
+                      className="max-w-full h-auto rounded-lg border max-h-96 object-contain"
+                    />
                   </div>
                 )}
-
+                {/* Multiple Choice */}
+                {q.jenis === "MULTIPLE_CHOICE" &&
+                  q.options &&
+                  q.options.length > 0 && (
+                    <div className="space-y-2">
+                      {q.options.map((option, optIndex) => (
+                        <div
+                          key={option.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <input
+                            type="radio"
+                            id={`${q.id}-${option.id}`}
+                            name={q.id}
+                            value={option.id}
+                            checked={answers[q.id] === option.id}
+                            onChange={(e) => handleChange(q.id, e.target.value)}
+                            className="w-4 h-4 text-blue-600"
+                          />
+                          <label
+                            htmlFor={`${q.id}-${option.id}`}
+                            className="flex-1 cursor-pointer p-2 rounded hover:bg-gray-50"
+                          >
+                            {String.fromCharCode(65 + optIndex)}. {option.teks}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 {/* True/False */}
                 {q.jenis === "TRUE_FALSE" && (
                   <div className="space-y-2">
@@ -333,7 +372,6 @@ export default function AssignmentStartPage() {
                     </div>
                   </div>
                 )}
-
                 {/* Short Answer */}
                 {q.jenis === "SHORT_ANSWER" && (
                   <Input
@@ -342,7 +380,6 @@ export default function AssignmentStartPage() {
                     onChange={(e) => handleChange(q.id, e.target.value)}
                   />
                 )}
-
                 {/* Essay */}
                 {q.jenis === "ESSAY" && (
                   <Textarea
@@ -352,6 +389,39 @@ export default function AssignmentStartPage() {
                     rows={6}
                   />
                 )}
+
+                {/* 📷 Student Answer Image Upload */}
+                <div className="mt-4 border-t pt-4">
+                  <Label className="text-sm font-medium mb-2 block">
+                    Lampirkan Gambar (Opsional)
+                  </Label>
+                  {answerImages[q.id] ? (
+                    <div className="relative w-full max-w-sm rounded-md border p-2">
+                      <img
+                        src={answerImages[q.id]}
+                        alt="Jawaban Siswa"
+                        className="w-full h-auto rounded-md"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => handleRemoveImage(q.id)}
+                      >
+                        <div className="h-3 w-3 flex items-center justify-center pt-1">
+                          x
+                        </div>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(q.id, e)}
+                    />
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
