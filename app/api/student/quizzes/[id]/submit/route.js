@@ -77,7 +77,7 @@ export async function POST(req, { params }) {
   const { id: quizId } = params;
 
   try {
-    const user =  await getUserFromCookie();
+    const user = await getUserFromCookie();
     if (!user || user.role !== "STUDENT") {
       return new Response(JSON.stringify({ message: "Unauthorized" }), {
         status: 401,
@@ -95,7 +95,7 @@ export async function POST(req, { params }) {
     }
 
     const body = await req.json();
-    const { answers } = body;
+    const { answers, answerImages = {} } = body;
 
     if (!answers || typeof answers !== "object") {
       return new Response(JSON.stringify({ message: "Jawaban tidak valid" }), {
@@ -140,6 +140,7 @@ export async function POST(req, { params }) {
 
     for (const q of questions) {
       const jawabanSiswa = answers[q.id];
+      const imageSiswa = answerImages[q.id];
 
       const opsiBenar = q.options.find(
         (opt, i) => String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
@@ -159,6 +160,7 @@ export async function POST(req, { params }) {
           submissionId: submission.id,
           questionId: q.id,
           jawaban: jawabanSiswa,
+          image: imageSiswa || null, // ✅ Simpan gambar jawaban
           adalahBenar: benar,
           nilai,
         },
