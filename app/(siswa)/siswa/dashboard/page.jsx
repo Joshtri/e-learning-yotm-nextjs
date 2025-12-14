@@ -32,7 +32,11 @@ import { StudentDashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { useStudentDashboard } from "@/hooks/useDashboardQueries";
 
 export default function StudentDashboardPage() {
-  const { data: dashboardData, isLoading: loading, error } = useStudentDashboard();
+  const {
+    data: dashboardData,
+    isLoading: loading,
+    error,
+  } = useStudentDashboard();
   const router = useRouter();
 
   useEffect(() => {
@@ -281,6 +285,48 @@ export default function StudentDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Today's Schedule Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Jadwal Hari Ini</CardTitle>
+              <CardDescription>
+                Mata pelajaran yang harus diikuti hari ini
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {dashboardData.todaySchedule &&
+              dashboardData.todaySchedule.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardData.todaySchedule.map((schedule) => (
+                    <div
+                      key={schedule.id}
+                      className="flex items-start p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="p-2 bg-blue-100 rounded-full mr-3 text-blue-600">
+                        <Calendar className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium">{schedule.subject}</h4>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            {format(new Date(schedule.startTime), "HH:mm")} -{" "}
+                            {format(new Date(schedule.endTime), "HH:mm")}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Tutor: {schedule.tutor}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500">Tidak ada jadwal hari ini.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {/* Upcoming Tasks */}
           <Card>
             <CardHeader>
@@ -314,7 +360,9 @@ export default function StudentDashboardPage() {
                             }`}
                             onClick={() => {
                               if (isAvailable) {
-                                router.push(`/siswa/assignments/${assignment.id}`);
+                                router.push(
+                                  `/siswa/assignments/${assignment.id}`
+                                );
                               }
                             }}
                           >
@@ -333,12 +381,16 @@ export default function StudentDashboardPage() {
                             >
                               <FileText
                                 className={`h-5 w-5 ${
-                                  isAvailable ? "text-blue-600" : "text-gray-400"
+                                  isAvailable
+                                    ? "text-blue-600"
+                                    : "text-gray-400"
                                 }`}
                               />
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-medium">{assignment.title}</h4>
+                              <h4 className="font-medium">
+                                {assignment.title}
+                              </h4>
                               <p className="text-sm text-gray-600">
                                 {assignment.subject}
                               </p>
@@ -416,7 +468,9 @@ export default function StudentDashboardPage() {
                             >
                               <FileText
                                 className={`h-5 w-5 ${
-                                  isAvailable ? "text-purple-600" : "text-gray-400"
+                                  isAvailable
+                                    ? "text-purple-600"
+                                    : "text-gray-400"
                                 }`}
                               />
                             </div>
@@ -435,7 +489,8 @@ export default function StudentDashboardPage() {
                                 <div className="flex items-center text-xs text-gray-500">
                                   <Clock className="h-3 w-3 mr-1" />
                                   <span>
-                                    Deadline: {formatDate(quiz.dueDate)} • {quiz.duration} menit
+                                    Deadline: {formatDate(quiz.dueDate)} •{" "}
+                                    {quiz.duration} menit
                                   </span>
                                 </div>
                               </div>
@@ -468,7 +523,8 @@ export default function StudentDashboardPage() {
             <CardHeader>
               <CardTitle>Pengumpulan Terbaru</CardTitle>
               <CardDescription>
-                Tugas dan kuis yang telah dikumpulkan pada tahun ajaran {student.academicYear}
+                Tugas dan kuis yang telah dikumpulkan pada tahun ajaran{" "}
+                {student.academicYear}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -574,9 +630,7 @@ export default function StudentDashboardPage() {
                       >
                         <div
                           className={`p-2 rounded-full mr-3 ${
-                            isYouTube
-                              ? "bg-red-100"
-                              : "bg-green-100"
+                            isYouTube ? "bg-red-100" : "bg-green-100"
                           }`}
                         >
                           {isYouTube ? (
