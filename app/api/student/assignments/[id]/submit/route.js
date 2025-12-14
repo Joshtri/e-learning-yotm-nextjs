@@ -108,6 +108,7 @@ export async function POST(req, { params }) {
               submissionId: submission.id,
               questionId: ans.questionId,
               jawaban: ans.jawaban,
+              image: ans.image || null, // ✅ Simpan gambar jawaban
             },
           })
         )
