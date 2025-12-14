@@ -71,15 +71,20 @@ export default function ClassDetailPage() {
 
   return (
     <main className="p-6 space-y-6">
-      <PageHeader
-        title={classData?.namaKelas || "Detail Kelas"}
-        description="Informasi lengkap mengenai kelas dan daftar siswa"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/admin/dashboard" },
-          { label: "Kelas", href: "/admin/classes" },
-          { label: classData?.namaKelas || "..." },
-        ]}
-      />
+      <div className="flex justify-between items-start">
+        <PageHeader
+          title={classData?.namaKelas || "Detail Kelas"}
+          description="Informasi lengkap mengenai kelas dan daftar siswa"
+          breadcrumbs={[
+            { label: "Dashboard", href: "/admin/dashboard" },
+            { label: "Kelas", href: "/admin/classes" },
+            { label: classData?.namaKelas || "..." },
+          ]}
+        />
+        <Button onClick={() => router.push(`/admin/classes/${id}/schedule`)}>
+          Atur Jadwal / Roster
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>
