@@ -24,6 +24,7 @@ export default function QuizStartPage() {
 
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [answerImages, setAnswerImages] = useState({}); // ✅ New state for images
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
@@ -82,6 +83,29 @@ export default function QuizStartPage() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  const handleImageUpload = (questionId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAnswerImages((prev) => ({ ...prev, [questionId]: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (questionId) => {
+    setAnswerImages((prev) => {
+      const newImages = { ...prev };
+      delete newImages[questionId];
+      return newImages;
+    });
+  };
+
   const handleTimeUp = () => {
     setTimeUp(true);
     toast.warning("Waktu habis! Jawaban akan dikumpulkan otomatis");
@@ -93,7 +117,10 @@ export default function QuizStartPage() {
 
     try {
       setIsSubmitting(true);
-      await api.post(`/student/quizzes/${id}/submit`, { answers });
+      await api.post(`/student/quizzes/${id}/submit`, {
+        answers,
+        answerImages,
+      });
       toast.success("Jawaban berhasil dikirim");
       router.push("/siswa/quizzes");
     } catch {
@@ -116,7 +143,10 @@ export default function QuizStartPage() {
   };
 
   const isQuestionAnswered = (questionId) => {
-    return answers[questionId] !== undefined && answers[questionId] !== "";
+    const hasText =
+      answers[questionId] !== undefined && answers[questionId] !== "";
+    const hasImage = answerImages[questionId] !== undefined;
+    return hasText || hasImage;
   };
 
   const calculateProgress = () => {
@@ -259,7 +289,18 @@ export default function QuizStartPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="text-lg font-medium">
+                {/* 🖼️ Display Question Image */}
+                {currentQuestion.image && (
+                  <div className="mb-4">
+                    <img
+                      src={currentQuestion.image}
+                      alt="Gambar Soal"
+                      className="max-w-full h-auto rounded-lg border max-h-96 object-contain"
+                    />
+                  </div>
+                )}
+
+                <div className="text-lg font-medium whitespace-pre-wrap">
                   {currentQuestion.teks}
                 </div>
 
@@ -309,6 +350,39 @@ export default function QuizStartPage() {
                     value={answers[currentQuestion.id] || ""}
                   />
                 )}
+                {/* 📷 Student Answer Image Upload */}
+                <div className="mt-4 border-t pt-4">
+                  <label className="text-sm font-medium mb-2 block">
+                    Lampirkan Gambar (Opsional)
+                  </label>
+                  {answerImages[currentQuestion.id] ? (
+                    <div className="relative w-full max-w-sm rounded-md border p-2">
+                      <img
+                        src={answerImages[currentQuestion.id]}
+                        alt="Jawaban Siswa"
+                        className="w-full h-auto rounded-md"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => handleRemoveImage(currentQuestion.id)}
+                      >
+                        <div className="h-3 w-3 flex items-center justify-center pt-1">
+                          x
+                        </div>
+                      </Button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(currentQuestion.id, e)}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                  )}
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
