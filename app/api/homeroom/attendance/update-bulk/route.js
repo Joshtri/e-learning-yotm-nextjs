@@ -21,7 +21,7 @@ export async function PATCH(req) {
       );
     }
 
-    // Verify tutor has access to this class
+    // Verify tutor
     const tutor = await prisma.tutor.findUnique({
       where: { userId: user.id },
     });
@@ -33,71 +33,136 @@ export async function PATCH(req) {
       );
     }
 
-    // Verify that the tutor has a class for this academic year
+    // Verify Class
+    const whereCondition = {
+      homeroomTeacherId: tutor.id // Only Homeroom teacher can update?
+      // User Says: "Guru/Wali Kelas". But homeroom/attendance implies Homeroom view.
+      // For now stick to Homeroom validation.
+    };
+    if (academicYearId) whereCondition.academicYearId = academicYearId;
+
     const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYearId: academicYearId,
-      },
+      where: whereCondition,
     });
 
     if (!kelas) {
       return NextResponse.json(
-        { success: false, message: "Kelas tidak ditemukan untuk tahun ajaran ini" },
+        { success: false, message: "Kelas tidak ditemukan" },
         { status: 404 }
       );
     }
 
-    // Update all attendances in transaction
+    // Update Transaction
     const result = await prisma.$transaction(
       async (tx) => {
         let successCount = 0;
         const errors = [];
 
-        for (const attendance of attendances) {
+        for (const updateData of attendances) {
           try {
-            // Verify attendance belongs to this class
-            const existingAttendance = await tx.attendance.findUnique({
-              where: { id: attendance.attendanceId },
-            });
+            // Check if this is a new record (temp ID or missing ID)
+            const isNew =
+              !updateData.attendanceId ||
+              String(updateData.attendanceId).startsWith("temp-");
 
-            if (!existingAttendance) {
-              errors.push(`Presensi ${attendance.attendanceId} tidak ditemukan`);
-              continue;
+            if (isNew) {
+              // Creation / Upsert Logic
+              if (!updateData.sessionId || !updateData.studentId) {
+                errors.push(
+                  `Gagal: Session ID dan Student ID diperlukan untuk data baru`
+                );
+                continue;
+              }
+
+              // Validate Session Ownership
+              const sessionCheck = await tx.attendanceSession.findUnique({
+                where: { id: updateData.sessionId },
+                select: { classId: true },
+              });
+
+              if (!sessionCheck || sessionCheck.classId !== kelas.id) {
+                errors.push(
+                  `Session ${updateData.sessionId} tidak valid untuk kelas ini`
+                );
+                continue;
+              }
+
+              // Manual Upsert to prevent duplicates
+              const existing = await tx.attendance.findFirst({
+                where: {
+                  attendanceSessionId: updateData.sessionId, // Correct field name
+                  studentId: updateData.studentId,
+                },
+              });
+
+              if (existing) {
+                await tx.attendance.update({
+                  where: { id: existing.id },
+                  data: {
+                    status: updateData.status,
+                    note: updateData.note,
+                  },
+                });
+              } else {
+                await tx.attendance.create({
+                  data: {
+                    attendanceSessionId: updateData.sessionId, // Correct field name
+                    studentId: updateData.studentId,
+                    status: updateData.status,
+                    note: updateData.note,
+                    classId: kelas.id,
+                    academicYearId: kelas.academicYearId,
+                  },
+                });
+              }
+            } else {
+              // Standard Update Logic for existing IDs
+              const existing = await tx.attendance.findUnique({
+                where: { id: updateData.attendanceId },
+                include: { attendanceSession: true },
+              });
+
+              if (!existing) {
+                errors.push(
+                  `Presensi ${updateData.attendanceId} tidak ditemukan`
+                );
+                continue;
+              }
+
+              if (existing.attendanceSession.classId !== kelas.id) {
+                errors.push(
+                  `Presensi ${updateData.attendanceId} bukan milik kelas ini`
+                );
+                continue;
+              }
+
+              await tx.attendance.update({
+                where: { id: updateData.attendanceId },
+                data: {
+                  status: updateData.status,
+                  note: updateData.note,
+                },
+              });
             }
-
-            if (existingAttendance.classId !== kelas.id) {
-              errors.push(`Presensi ${attendance.attendanceId} tidak termasuk dalam kelas ini`);
-              continue;
-            }
-
-            // Update the attendance
-            await tx.attendance.update({
-              where: { id: attendance.attendanceId },
-              data: {
-                status: attendance.status,
-              },
-            });
-
             successCount++;
-          } catch (error) {
-            errors.push(`Error updating ${attendance.attendanceId}: ${error.message}`);
+          } catch (err) {
+            errors.push(
+              `Gagal proses ${updateData.studentId || updateData.attendanceId
+              }: ${err.message}`
+            );
           }
         }
-
         return { successCount, errors };
       },
-      { timeout: 180000 }
+      { timeout: 30000 }
     );
 
     return NextResponse.json({
       success: true,
-      message: `${result.successCount} presensi berhasil diperbarui`,
-      data: {
-        updatedCount: result.successCount,
-        errors: result.errors,
-      },
+      message: `${result.successCount} presensi berhasil disimpan`,
+      data: result
     });
+
   } catch (error) {
     console.error("PATCH /homeroom/attendance/update-bulk error:", error);
     return NextResponse.json(
