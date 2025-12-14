@@ -1,61 +1,67 @@
-"use client"
+"use client";
 
-import { useForm, useFieldArray, Controller } from "react-hook-form"
-import { useRouter } from "next/navigation"
-import { useState, useEffect, useCallback } from "react"
-import { toast } from "sonner"
-import api from "@/lib/axios"
-import { Button } from "@/components/ui/button"
-import FormField from "@/components/ui/form-field"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, ArrowLeft, ArrowRight, Save, X } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import api from "@/lib/axios";
+import { Button } from "@/components/ui/button";
+import FormField from "@/components/ui/form-field";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Save, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const QUESTION_TYPES = [
   { label: "Pilihan Ganda", value: "MULTIPLE_CHOICE" },
   { label: "Benar / Salah", value: "TRUE_FALSE" },
-]
+];
 
 export default function QuizQuestionsPage() {
-  const router = useRouter()
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const [quizInfo, setQuizInfo] = useState({})
+  const router = useRouter();
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [quizInfo, setQuizInfo] = useState({});
 
   useEffect(() => {
-    setIsClient(true)
+    setIsClient(true);
 
     // Load quiz info from sessionStorage
-    const storedData = sessionStorage.getItem("quizInfo")
+    const storedData = sessionStorage.getItem("quizInfo");
     if (storedData) {
       try {
-        const parsedData = JSON.parse(storedData)
-        console.log("Quiz Info loaded from sessionStorage:", parsedData)
-        setQuizInfo(parsedData)
+        const parsedData = JSON.parse(storedData);
+        console.log("Quiz Info loaded from sessionStorage:", parsedData);
+        setQuizInfo(parsedData);
 
         if (!parsedData.judul) {
-          console.warn("No quiz title found")
+          console.warn("No quiz title found");
           setTimeout(() => {
-            toast.error("Data kuis tidak lengkap, silakan mulai dari awal")
-            router.push("/tutor/quizzes/create")
-          }, 100)
+            toast.error("Data kuis tidak lengkap, silakan mulai dari awal");
+            router.push("/tutor/quizzes/create");
+          }, 100);
         }
       } catch (error) {
-        console.error("Error parsing quiz info:", error)
+        console.error("Error parsing quiz info:", error);
         setTimeout(() => {
-          toast.error("Data kuis tidak valid, silakan mulai dari awal")
-          router.push("/tutor/quizzes/create")
-        }, 100)
+          toast.error("Data kuis tidak valid, silakan mulai dari awal");
+          router.push("/tutor/quizzes/create");
+        }, 100);
       }
     } else {
-      console.warn("No quiz info found in sessionStorage")
+      console.warn("No quiz info found in sessionStorage");
       setTimeout(() => {
-        toast.error("Data kuis tidak ditemukan, silakan mulai dari awal")
-        router.push("/tutor/quizzes/create")
-      }, 100)
+        toast.error("Data kuis tidak ditemukan, silakan mulai dari awal");
+        router.push("/tutor/quizzes/create");
+      }, 100);
     }
-  }, [router])
+  }, [router]);
 
   const {
     control,
@@ -70,33 +76,34 @@ export default function QuizQuestionsPage() {
       questions: [
         {
           teks: "",
+          image: "", // ✅ Add default image field
           jenis: "MULTIPLE_CHOICE",
           jawabanBenar: "",
           options: [{ teks: "" }, { teks: "" }],
         },
       ],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "questions",
-  })
+  });
 
-  const watchedQuestions = watch("questions")
+  const watchedQuestions = watch("questions");
 
   // This effect ensures the form is reset with the current data when switching questions
   useEffect(() => {
     if (isClient && watchedQuestions && watchedQuestions.length > 0) {
       // Create a fresh copy of the form data to reset with
-      const formData = { questions: [...watchedQuestions] }
-      reset(formData)
+      const formData = { questions: [...watchedQuestions] };
+      reset(formData);
     }
-  }, [isClient, reset])
+  }, [isClient, reset]);
 
   const onSubmit = async (formData) => {
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       const payload = {
         ...quizInfo,
@@ -105,112 +112,121 @@ export default function QuizQuestionsPage() {
             return {
               ...question,
               options: [{ teks: "Benar" }, { teks: "Salah" }],
-            }
+            };
           }
 
-          if (question.jenis === "MULTIPLE_CHOICE" && (!question.jawabanBenar || question.jawabanBenar === "")) {
+          if (
+            question.jenis === "MULTIPLE_CHOICE" &&
+            (!question.jawabanBenar || question.jawabanBenar === "")
+          ) {
             return {
               ...question,
               jawabanBenar: "0",
-            }
+            };
           }
 
-          return question
+          return question;
         }),
-      }
+      };
 
-      const response = await api.post("/tutor/quizzes", payload)
+      const response = await api.post("/tutor/quizzes", payload);
 
-      toast.success("Kuis berhasil dibuat!")
-      sessionStorage.removeItem("quizInfo")
+      toast.success("Kuis berhasil dibuat!");
+      sessionStorage.removeItem("quizInfo");
 
       // Redirect ke halaman quiz list
       setTimeout(() => {
-        router.push("/tutor/quizzes")
-      }, 500)
+        router.push("/tutor/quizzes");
+      }, 500);
     } catch (err) {
-      console.error(err)
-      toast.error("Gagal menyimpan kuis")
+      console.error(err);
+      toast.error("Gagal menyimpan kuis");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const goToNextQuestion = () => {
     if (currentQuestionIndex < fields.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
-  }
+  };
 
   const goToPreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
-  }
+  };
 
   const addNewQuestion = () => {
     append({
       teks: "",
+      image: "", // ✅ Add default image field
       jenis: "MULTIPLE_CHOICE",
       jawabanBenar: "",
       options: [{ teks: "" }, { teks: "" }],
-    })
+    });
 
     setTimeout(() => {
-      setCurrentQuestionIndex(fields.length)
-    }, 50)
-  }
+      setCurrentQuestionIndex(fields.length);
+    }, 50);
+  };
 
   const removeQuestion = (index) => {
     if (fields.length > 1) {
-      remove(index)
+      remove(index);
       if (index <= currentQuestionIndex && currentQuestionIndex > 0) {
-        setCurrentQuestionIndex(currentQuestionIndex - 1)
+        setCurrentQuestionIndex(currentQuestionIndex - 1);
       }
     } else {
-      toast.error("Kuis harus memiliki minimal 1 soal")
+      toast.error("Kuis harus memiliki minimal 1 soal");
     }
-  }
+  };
 
   const isQuestionComplete = useCallback(
     (index) => {
-      const question = watchedQuestions[index]
-      if (!question?.teks) return false
+      const question = watchedQuestions[index];
+      if (!question?.teks) return false;
 
       if (question.jenis === "MULTIPLE_CHOICE") {
         return (
           question.options?.length >= 2 &&
           question.options.every((opt) => opt.teks?.trim()) &&
           question.jawabanBenar !== ""
-        )
+        );
       }
 
       if (question.jenis === "TRUE_FALSE") {
-        return question.jawabanBenar !== ""
+        return question.jawabanBenar !== "";
       }
 
-      return false
+      return false;
     },
-    [watchedQuestions],
-  )
+    [watchedQuestions]
+  );
 
   const calculateProgress = useCallback(() => {
-    if (!watchedQuestions || watchedQuestions.length === 0) return 0
-    const completedCount = watchedQuestions.filter((_, i) => isQuestionComplete(i)).length
-    return (completedCount / watchedQuestions.length) * 100
-  }, [watchedQuestions, isQuestionComplete])
+    if (!watchedQuestions || watchedQuestions.length === 0) return 0;
+    const completedCount = watchedQuestions.filter((_, i) =>
+      isQuestionComplete(i)
+    ).length;
+    return (completedCount / watchedQuestions.length) * 100;
+  }, [watchedQuestions, isQuestionComplete]);
 
   useEffect(() => {
-    if (currentQuestionIndex >= watchedQuestions.length) return
+    if (currentQuestionIndex >= watchedQuestions.length) return;
 
-    const currentType = watchedQuestions[currentQuestionIndex]?.jenis
+    const currentType = watchedQuestions[currentQuestionIndex]?.jenis;
     if (currentType === "TRUE_FALSE") {
-      setValue(`questions.${currentQuestionIndex}.options`, [{ teks: "Benar" }, { teks: "Salah" }])
+      setValue(`questions.${currentQuestionIndex}.options`, [
+        { teks: "Benar" },
+        { teks: "Salah" },
+      ]);
     }
-  }, [watchedQuestions, currentQuestionIndex, setValue])
+  }, [watchedQuestions, currentQuestionIndex, setValue]);
 
   if (!isClient) {
-    return null // atau tampilkan loading skeleton
+    return null; // atau tampilkan loading skeleton
   }
 
   return (
@@ -218,7 +234,9 @@ export default function QuizQuestionsPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Buat Soal Kuis: {quizInfo.judul || "Kuis Baru"}</CardTitle>
-          <div className="text-sm text-muted-foreground">{quizInfo.classSubjectTutor?.subject?.nama || ""}</div>
+          <div className="text-sm text-muted-foreground">
+            {quizInfo.classSubjectTutor?.subject?.nama || ""}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -250,8 +268,8 @@ export default function QuizQuestionsPage() {
                         currentQuestionIndex === index
                           ? "border-primary bg-primary text-primary-foreground"
                           : isQuestionComplete(index)
-                            ? "border-green-500 bg-green-100 text-green-700"
-                            : "border-gray-300 bg-background"
+                          ? "border-green-500 bg-green-100 text-green-700"
+                          : "border-gray-300 bg-background"
                       }`}
                       aria-label={`Soal ${index + 1}`}
                     >
@@ -279,7 +297,11 @@ export default function QuizQuestionsPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={isSubmitting}
+                >
                   <Save className="h-4 w-4 mr-2" />
                   {isSubmitting ? "Menyimpan..." : "Simpan Kuis"}
                 </Button>
@@ -308,7 +330,7 @@ export default function QuizQuestionsPage() {
         </div>
       </form>
     </div>
-  )
+  );
 }
 
 function QuestionEditor({
@@ -331,7 +353,32 @@ function QuestionEditor({
   } = useFieldArray({
     control,
     name: `questions.${currentQuestionIndex}.options`,
-  })
+  });
+
+  // ✅ Function to handle image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        // Limit 2MB
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setValue(`questions.${currentQuestionIndex}.image`, reader.result, {
+          shouldDirty: true,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setValue(`questions.${currentQuestionIndex}.image`, "", {
+      shouldDirty: true,
+    });
+  };
 
   return (
     <Card>
@@ -366,6 +413,40 @@ function QuestionEditor({
             error={errors?.questions?.[currentQuestionIndex]?.teks?.message}
           />
 
+          {/* 🖼️ Image Upload Section */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Gambar Soal (Opsional)
+            </label>
+            <div className="flex flex-col gap-2">
+              {watchedQuestions[currentQuestionIndex]?.image ? (
+                <div className="relative w-full max-w-sm rounded-md border p-2">
+                  <img
+                    src={watchedQuestions[currentQuestionIndex].image}
+                    alt="Preview Soal"
+                    className="w-full h-auto rounded-md"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                    onClick={removeImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               label="Jenis Soal"
@@ -386,7 +467,8 @@ function QuestionEditor({
           </div>
 
           {/* Options Section */}
-          {watchedQuestions[currentQuestionIndex]?.jenis === "MULTIPLE_CHOICE" && (
+          {watchedQuestions[currentQuestionIndex]?.jenis ===
+            "MULTIPLE_CHOICE" && (
             <div className="border rounded-md p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium">Opsi Jawaban</h3>
@@ -404,7 +486,9 @@ function QuestionEditor({
                           id={`option-${currentQuestionIndex}-${optIndex}`}
                           value={optIndex.toString()}
                           checked={radioField.value === optIndex.toString()}
-                          onChange={() => radioField.onChange(optIndex.toString())}
+                          onChange={() =>
+                            radioField.onChange(optIndex.toString())
+                          }
                           className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
                         />
                       </div>
@@ -431,7 +515,13 @@ function QuestionEditor({
                 </div>
               ))}
 
-              <Button type="button" variant="outline" size="sm" onClick={() => append({ teks: "" })} className="mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ teks: "" })}
+                className="mt-2"
+              >
                 <Plus className="h-4 w-4 mr-1" /> Tambah Opsi
               </Button>
             </div>
@@ -476,7 +566,12 @@ function QuestionEditor({
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button type="button" variant="outline" onClick={goToPreviousQuestion} disabled={currentQuestionIndex === 0}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={goToPreviousQuestion}
+          disabled={currentQuestionIndex === 0}
+        >
           <ArrowLeft className="h-4 w-4 mr-2" /> Sebelumnya
         </Button>
 
@@ -484,11 +579,14 @@ function QuestionEditor({
           <Plus className="h-4 w-4 mr-1" /> Tambah Soal
         </Button>
 
-        <Button type="button" onClick={goToNextQuestion} disabled={currentQuestionIndex === fields.length - 1}>
+        <Button
+          type="button"
+          onClick={goToNextQuestion}
+          disabled={currentQuestionIndex === fields.length - 1}
+        >
           Selanjutnya <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
-
