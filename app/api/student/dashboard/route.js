@@ -56,6 +56,7 @@ export async function GET() {
       allSubmissions,
       recentMaterials,
       classSubjectTutors,
+      todaySchedule,
     ] = await Promise.all([
       prisma.assignment.findMany({
         where: {
@@ -190,6 +191,21 @@ export async function GET() {
           tutor: { include: { user: { select: { nama: true } } } },
         },
       }),
+      prisma.schedule.findMany({
+        where: {
+          classSubjectTutorId: { in: cstIds },
+          dayOfWeek: now.getDay() || 7, // 1 (Mon) - 7 (Sun)
+        },
+        include: {
+          classSubjectTutor: {
+            include: {
+              subject: true,
+              tutor: { include: { user: true } },
+            },
+          },
+        },
+        orderBy: { startTime: "asc" },
+      }),
     ]);
 
     const scoresBySubject = {};
@@ -302,6 +318,13 @@ export async function GET() {
         submissions: submissionStats,
         subjects,
       },
+      todaySchedule: todaySchedule.map((s) => ({
+        id: s.id,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        subject: s.classSubjectTutor.subject.namaMapel,
+        tutor: s.classSubjectTutor.tutor.user.nama,
+      })),
     });
   } catch (error) {
     console.error("Error fetching student dashboard data:", error);
