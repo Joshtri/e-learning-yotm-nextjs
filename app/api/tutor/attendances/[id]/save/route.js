@@ -74,38 +74,26 @@ export async function POST(request, { params }) {
       );
     }
 
-    // 🔥 Untuk setiap student, cek apakah attendancenya sudah ada
-    const updateOrCreatePromises = attendances.map(async (item) => {
-      const existing = await prisma.attendance.findFirst({
+    // 🔥 Gunakan upsert untuk atomic create/update based on unique constraint
+    const updateOrCreatePromises = attendances.map((item) => {
+      return prisma.attendance.upsert({
         where: {
-          attendanceSessionId: id,
+          studentId_attendanceSessionId: {
+            studentId: item.studentId,
+            attendanceSessionId: id,
+          },
+        },
+        update: {
+          status: item.status,
+        },
+        create: {
           studentId: item.studentId,
+          attendanceSessionId: session.id,
+          classId: session.classId,
+          academicYearId: session.academicYearId,
+          status: item.status,
         },
       });
-
-      if (existing) {
-        // Kalau sudah ada, update
-        return prisma.attendance.update({
-          where: {
-            id: existing.id,
-          },
-          data: {
-            status: item.status,
-          },
-        });
-      } else {
-        // Kalau belum ada, create baru
-        return prisma.attendance.create({
-          data: {
-            studentId: item.studentId,
-            classId: session.classId,
-            academicYearId: session.academicYearId,
-            date: session.tanggal,
-            status: item.status,
-            attendanceSessionId: session.id,
-          },
-        });
-      }
     });
 
     await Promise.all(updateOrCreatePromises);
@@ -114,8 +102,7 @@ export async function POST(request, { params }) {
       success: true,
       message: "Presensi berhasil disimpan",
     });
-  } catch (error) {
-    console.error("Gagal menyimpan presensi:", error);
+  } catch {
     return NextResponse.json(
       { success: false, message: "Gagal menyimpan presensi" },
       { status: 500 }
