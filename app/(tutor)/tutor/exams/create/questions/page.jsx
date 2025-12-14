@@ -57,6 +57,7 @@ export default function AddQuestionsPage() {
       questions: [
         {
           teks: "",
+          image: "", // ✅ Add default image field
           jenis: "MULTIPLE_CHOICE",
           jawabanBenar: "",
           options: [{ teks: "" }, { teks: "" }],
@@ -122,6 +123,7 @@ export default function AddQuestionsPage() {
   const addNewQuestion = () => {
     append({
       teks: "",
+      image: "", // ✅ Add default image field
       jenis: "MULTIPLE_CHOICE",
       jawabanBenar: "",
       options: [{ teks: "" }, { teks: "" }],
@@ -201,7 +203,7 @@ export default function AddQuestionsPage() {
           </div>
         </CardContent>
       </Card>
-      <form id="exam-form"  onSubmit={handleSubmit(onSubmit)}>
+      <form id="exam-form" onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Question Navigation Sidebar */}
           <div className="md:col-span-1">
@@ -250,7 +252,7 @@ export default function AddQuestionsPage() {
               </CardContent>
               <CardFooter>
                 <Button
-                   type="submit"
+                  type="submit"
                   className="w-full bg-green-600 hover:bg-green-700"
                   disabled={isSubmitting}
                 >
@@ -306,6 +308,31 @@ function QuestionEditor({
     name: `questions.${currentQuestionIndex}.options`,
   });
 
+  // ✅ Function to handle image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        // Limit 2MB
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setValue(`questions.${currentQuestionIndex}.image`, reader.result, {
+          shouldDirty: true,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setValue(`questions.${currentQuestionIndex}.image`, "", {
+      shouldDirty: true,
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -338,6 +365,40 @@ function QuestionEditor({
             rules={{ required: "Teks soal wajib diisi" }}
             error={errors?.questions?.[currentQuestionIndex]?.teks?.message}
           />
+
+          {/* 🖼️ Image Upload Section */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Gambar Soal (Opsional)
+            </label>
+            <div className="flex flex-col gap-2">
+              {watchedQuestions[currentQuestionIndex]?.image ? (
+                <div className="relative w-full max-w-sm rounded-md border p-2">
+                  <img
+                    src={watchedQuestions[currentQuestionIndex].image}
+                    alt="Preview Soal"
+                    className="w-full h-auto rounded-md"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                    onClick={removeImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              )}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
