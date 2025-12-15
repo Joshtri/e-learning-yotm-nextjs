@@ -37,6 +37,14 @@ import { id } from "date-fns/locale";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   BookOpen,
   Calendar as CalendarIcon,
   Clock,
@@ -45,6 +53,9 @@ import {
   User,
   Printer,
   Edit,
+  MoreHorizontal,
+  Pencil,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -214,6 +225,66 @@ export default function HomeroomAttendancePage() {
     setSelectedSessionForStatus(session);
     setNewStatus(session.status);
     setStatusDialogOpen(true);
+  };
+
+  // Edit Session Logic (Date/Time)
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    id: null,
+    tanggal: "",
+    startTime: "",
+    endTime: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const openEditDialog = (s) => {
+    if (!s.tanggal) return;
+    setEditDialog({
+      open: true,
+      id: s.id,
+      tanggal: dayjs(s.tanggal).format("YYYY-MM-DD"),
+      startTime: s.startTime ? dayjs(s.startTime).format("HH:mm") : "",
+      endTime: s.endTime ? dayjs(s.endTime).format("HH:mm") : "",
+    });
+  };
+
+  const handleSaveSession = async () => {
+    try {
+      setIsSaving(true);
+      const baseDate = editDialog.tanggal;
+      if (!baseDate) {
+        toast.error("Tanggal wajib diisi");
+        setIsSaving(false);
+        return;
+      }
+
+      const toIso = (timeStr) => {
+        if (!timeStr) return undefined;
+        return dayjs(`${baseDate} ${timeStr}`).toISOString();
+      };
+
+      const payload = {
+        tanggal: dayjs(baseDate).toISOString(),
+        startTime: toIso(editDialog.startTime),
+        endTime: toIso(editDialog.endTime),
+      };
+
+      const res = await api.patch(
+        `/homeroom/attendance/${editDialog.id}`,
+        payload
+      );
+
+      if (res.data.success) {
+        toast.success("Sesi berhasil diperbarui");
+        setEditDialog((prev) => ({ ...prev, open: false }));
+        fetchSessions();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan perubahan");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleUpdateStatus = async () => {
@@ -710,18 +781,38 @@ export default function HomeroomAttendancePage() {
                               >
                                 {STATUS_LABELS[session.status]}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 text-gray-400 hover:text-blue-600"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  openStatusDialog(session);
-                                }}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(session)}
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />{" "}
+                                    Ubah Status
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      setTimeout(
+                                        () => openEditDialog(session),
+                                        100
+                                      );
+                                    }}
+                                  >
+                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    Sesi
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
 
@@ -815,6 +906,81 @@ export default function HomeroomAttendancePage() {
                   {updatingSessionId ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   ) : null}
+                  Simpan
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={editDialog.open}
+            onOpenChange={(v) =>
+              setEditDialog((prev) => ({ ...prev, open: v }))
+            }
+            modal={true}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Sesi Presensi</DialogTitle>
+                <DialogDescription>
+                  Ubah tanggal dan jam sesi ini.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Tanggal</Label>
+                  <input
+                    type="date"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={editDialog.tanggal}
+                    onChange={(e) =>
+                      setEditDialog({ ...editDialog, tanggal: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Jam Mulai</Label>
+                    <input
+                      type="time"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={editDialog.startTime}
+                      onChange={(e) =>
+                        setEditDialog({
+                          ...editDialog,
+                          startTime: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jam Selesai</Label>
+                    <input
+                      type="time"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={editDialog.endTime}
+                      onChange={(e) =>
+                        setEditDialog({
+                          ...editDialog,
+                          endTime: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setEditDialog((prev) => ({ ...prev, open: false }))
+                  }
+                >
+                  Batal
+                </Button>
+                <Button onClick={handleSaveSession} disabled={isSaving}>
+                  {isSaving && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Simpan
                 </Button>
               </DialogFooter>

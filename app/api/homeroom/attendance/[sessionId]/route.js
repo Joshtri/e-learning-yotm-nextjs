@@ -77,16 +77,28 @@ export async function PATCH(req, { params }) {
         if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
         const { sessionId } = params;
-        const { status } = await req.json();
+        const body = await req.json();
+        const { status, tanggal, startTime, endTime, keterangan } = body;
 
-        // Validate Status Enum
-        if (!['TERJADWALKAN', 'DIMULAI', 'SELESAI'].includes(status)) {
-            return NextResponse.json({ message: "Status tidak valid" }, { status: 400 });
+        const updateData = {};
+
+        // Status Update
+        if (status) {
+            if (!['TERJADWALKAN', 'DIMULAI', 'SELESAI'].includes(status)) {
+                return NextResponse.json({ message: "Status tidak valid" }, { status: 400 });
+            }
+            updateData.status = status;
         }
+
+        // Date/Time Updates
+        if (tanggal) updateData.tanggal = new Date(tanggal);
+        if (startTime) updateData.startTime = new Date(startTime);
+        if (endTime) updateData.endTime = new Date(endTime);
+        if (keterangan !== undefined) updateData.keterangan = keterangan;
 
         const session = await prisma.attendanceSession.update({
             where: { id: sessionId },
-            data: { status },
+            data: updateData,
         });
 
         return NextResponse.json({ success: true, data: session });
