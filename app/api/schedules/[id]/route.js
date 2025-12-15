@@ -121,35 +121,7 @@ export async function PATCH(req, { params }) {
             }, { status: 400 });
         }
 
-        // 4. Check for CLASS Overlap (Two subjects in same class at same time)
-        const classConflict = await prisma.schedule.findFirst({
-            where: {
-                dayOfWeek: parseInt(dayOfWeek),
-                classSubjectTutor: {
-                    classId: cst.classId // Same Class
-                },
-                id: { not: id }, // Exclude current
-                startTime: { lt: endDt },
-                endTime: { gt: startDt }
-            },
-            include: {
-                classSubjectTutor: {
-                    include: { subject: true, tutor: true }
-                }
-            }
-        });
 
-        if (classConflict) {
-            const conflictSubject = classConflict.classSubjectTutor.subject.namaMapel;
-            const conflictTutor = classConflict.classSubjectTutor.tutor.namaLengkap;
-            const conflictStart = classConflict.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const conflictEnd = classConflict.endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-            return NextResponse.json({
-                success: false,
-                message: `Jadwal bentrok dengan mata pelajaran lain di kelas ini: ${conflictSubject} (${conflictTutor}) pada pukul ${conflictStart} - ${conflictEnd}`
-            }, { status: 400 });
-        }
 
         // 4. Update
         const updated = await prisma.schedule.update({

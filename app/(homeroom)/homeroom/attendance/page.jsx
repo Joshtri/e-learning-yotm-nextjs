@@ -99,6 +99,13 @@ export default function HomeroomAttendancePage() {
     useState(null);
   const [newStatus, setNewStatus] = useState("");
 
+  // New State for Session Count
+  const [sessionCount, setSessionCount] = useState(16);
+
+  // Single Delete State
+  const [deleteSessionId, setDeleteSessionId] = useState(null);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
+
   useEffect(() => {
     fetchAcademicYears();
   }, []);
@@ -190,6 +197,7 @@ export default function HomeroomAttendancePage() {
           ? dayjs(generateStartDate).format("YYYY-MM-DD")
           : "",
         classSubjectTutorId: selectedSubjectId,
+        sessionCount: sessionCount, // Send session count
       });
 
       if (res.data.success) {
@@ -325,6 +333,22 @@ export default function HomeroomAttendancePage() {
     } finally {
       setIsDeleting(false);
       setDeleteSubjectId(null);
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!deleteSessionId) return;
+    try {
+      setIsDeletingSession(true);
+      await api.delete(`/homeroom/attendance/${deleteSessionId}`);
+      toast.success("Sesi berhasil dihapus");
+      fetchSessions();
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menghapus sesi");
+    } finally {
+      setIsDeletingSession(false);
+      setDeleteSessionId(null);
     }
   };
 
@@ -546,8 +570,8 @@ export default function HomeroomAttendancePage() {
             <DialogHeader>
               <DialogTitle>Generate Presensi Semester</DialogTitle>
               <DialogDescription>
-                Pilih Mata Pelajaran dan Tanggal Mulai untuk membuat 16 sesi
-                presensi.
+                Pilih Mata Pelajaran, Tanggal Mulai dan Jumlah Pertemuan untuk
+                membuat sesi presensi.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -654,6 +678,25 @@ export default function HomeroomAttendancePage() {
                 <p className="text-xs text-muted-foreground">
                   Pilih tanggal dimulainya minggu pertama. Hanya tanggal sesuai
                   jadwal yang aktif.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Jumlah Pertemuan (Default 16)</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={sessionCount}
+                    onChange={(e) =>
+                      setSessionCount(parseInt(e.target.value) || 16)
+                    }
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tentukan berapa banyak sesi yang ingin dibuat.
                 </p>
               </div>
             </div>
@@ -799,6 +842,15 @@ export default function HomeroomAttendancePage() {
                                     <CheckCircle className="mr-2 h-4 w-4" />{" "}
                                     Ubah Status
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    onClick={() =>
+                                      setDeleteSessionId(session.id)
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                    Sesi
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={(e) => {
@@ -867,6 +919,16 @@ export default function HomeroomAttendancePage() {
             description="Apakah Anda yakin ingin menghapus SEMUA sesi presensi semester ini untuk mata pelajaran tersebut? Tindakan ini tidak dapat dibatalkan."
             onConfirm={handleDeleteSubjectSessions}
             isLoading={isDeleting}
+          />
+
+          <ConfirmationDialog
+            open={!!deleteSessionId}
+            onOpenChange={(open) => !open && setDeleteSessionId(null)}
+            title="Hapus Sesi Ini?"
+            description="Apakah Anda yakin ingin menghapus sesi presensi ini? Data kehadiran yang sudah diinput akan hilang."
+            onConfirm={handleDeleteSession}
+            isLoading={isDeletingSession}
+            variant="destructive"
           />
 
           <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>

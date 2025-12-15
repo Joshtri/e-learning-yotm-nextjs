@@ -12,7 +12,7 @@ export async function POST(req) {
       );
     }
 
-    const { academicYearId, startDate, classSubjectTutorId } = await req.json();
+    const { academicYearId, startDate, classSubjectTutorId, sessionCount } = await req.json();
 
     if (!academicYearId || !startDate) {
       return new Response(
@@ -20,6 +20,15 @@ export async function POST(req) {
           success: false,
           message: "Tahun Ajaran dan Tanggal Mulai wajib diisi",
         }),
+        { status: 400 }
+      );
+    }
+
+    // Default to 16 if not provided or invalid
+    const MAX_MEETINGS = sessionCount ? parseInt(sessionCount) : 16;
+    if (isNaN(MAX_MEETINGS) || MAX_MEETINGS < 1) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Jumlah sesi tidak valid" }),
         { status: 400 }
       );
     }
@@ -147,7 +156,7 @@ export async function POST(req) {
       let currentWeek = 0;
 
       // We generate up to 16 meetings total for the subject
-      const MAX_MEETINGS = 16;
+
 
       while (meetingCount < MAX_MEETINGS) {
         for (const sch of schedules) {
