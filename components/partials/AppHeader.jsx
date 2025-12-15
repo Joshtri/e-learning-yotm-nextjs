@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { NotificationDropdown } from "../ui/notification-dropdown";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
 import useScrollTop from "@/hooks/useScrollTop";
+import { CommandMenu } from "@/components/command-menu";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
@@ -113,7 +114,7 @@ export default function AppHeader({ onMenuClick, role }) {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth"
+      behavior: "smooth",
     });
   };
 
@@ -132,15 +133,26 @@ export default function AppHeader({ onMenuClick, role }) {
           >
             <Menu className="h-6 w-6" />
           </Button>
-
+        {/* Center Title */}
+        <div className="flex-1 px-4 hidden md:flex justify-center items-center">
+          <h1 className="font-bold text-lg text-white tracking-wide">
+            E-Learning App
+          </h1>
+        </div>
           {/* Desktop Date/Time Widget */}
           <div className="hidden md:block">
             <HeaderDateTimeWidget />
           </div>
         </div>
 
+
+
         {/* Right */}
         <div className="flex items-center gap-2 md:gap-4 pr-1">
+          {/* Command Menu */}
+          <div className="hidden md:block">
+            <CommandMenu role={role} />
+          </div>
           <div className="hidden md:flex relative">
             <span className="sr-only">Notifikasi</span>
             {user && <NotificationDropdown userId={user.id} />}
@@ -148,79 +160,79 @@ export default function AppHeader({ onMenuClick, role }) {
 
           {/* User dropdown */}
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex items-center gap-2 px-2 hover:bg-blue-400"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" alt={displayName} />
-                <AvatarFallback className="bg-blue-700 text-white">
-                  {user?.nama?.charAt(0).toUpperCase() || avatarFallback}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                href={`${rolePrefix}/my-profile`}
-                className="w-full cursor-pointer"
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2 px-2 hover:bg-blue-400"
               >
-                Profil
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link
-                href={`${rolePrefix}/log-activity`}
-                className="w-full cursor-pointer"
-              >
-                Log Aktivitas
-              </Link>
-            </DropdownMenuItem>
-            {isHomeroomTeacher && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSwitchModeClick}
-                  disabled={isSwitching}
-                  className="cursor-pointer"
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder.svg" alt={displayName} />
+                  <AvatarFallback className="bg-blue-700 text-white">
+                    {user?.nama?.charAt(0).toUpperCase() || avatarFallback}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`${rolePrefix}/my-profile`}
+                  className="w-full cursor-pointer"
                 >
-                  {isSwitching ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Switching...</span>
-                    </div>
-                  ) : (
-                    <span>
-                      {mode === "homeroom"
-                        ? "Switch ke Mode Tutor"
-                        : "Switch ke Mode Wali Kelas"}
-                    </span>
-                  )}
-                </DropdownMenuItem>
-              </>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={async () => {
-                try {
-                  await axios.post("/api/auth/logout");
-                  toast.success("Berhasil logout!");
-                  router.push("/");
-                } catch {
-                  toast.error("Gagal logout");
-                }
-              }}
-              className="w-full cursor-pointer text-red-500 focus:text-red-500"
-            >
-              Keluar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                  Profil
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`${rolePrefix}/log-activity`}
+                  className="w-full cursor-pointer"
+                >
+                  Log Aktivitas
+                </Link>
+              </DropdownMenuItem>
+              {isHomeroomTeacher && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSwitchModeClick}
+                    disabled={isSwitching}
+                    className="cursor-pointer"
+                  >
+                    {isSwitching ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Switching...</span>
+                      </div>
+                    ) : (
+                      <span>
+                        {mode === "homeroom"
+                          ? "Switch ke Mode Tutor"
+                          : "Switch ke Mode Wali Kelas"}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    await axios.post("/api/auth/logout");
+                    toast.success("Berhasil logout!");
+                    router.push("/");
+                  } catch {
+                    toast.error("Gagal logout");
+                  }
+                }}
+                className="w-full cursor-pointer text-red-500 focus:text-red-500"
+              >
+                Keluar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Confirmation Dialog */}
         <ConfirmationDialog

@@ -32,9 +32,22 @@ import {
   BookOpen,
   MoreHorizontal,
   Printer,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import dayjs from "dayjs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const STATUS_COLORS = {
   TERJADWALKAN: "bg-blue-100 text-blue-700",
@@ -107,6 +120,81 @@ export default function AttendancePerClassPage() {
       }
     } catch {
       toast.error("Gagal mengubah status");
+    }
+  };
+
+  // Edit Session Logic
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    id: null,
+    tanggal: "",
+    startTime: "",
+    endTime: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const openEditDialog = (s) => {
+    // dayjs handles ISO strings well
+    // format to YYYY-MM-DD for date input
+    // format to HH:mm for time input
+
+    // Safety check if date exists
+    if (!s.tanggal) return;
+
+    setEditDialog({
+      open: true,
+      id: s.id,
+      tanggal: dayjs(s.tanggal).format("YYYY-MM-DD"),
+      startTime: s.startTime ? dayjs(s.startTime).format("HH:mm") : "",
+      endTime: s.endTime ? dayjs(s.endTime).format("HH:mm") : "",
+    });
+  };
+
+  const handleSaveSession = async () => {
+    try {
+      setIsSaving(true);
+
+      // Reconstruct dates
+      // Base date from 'tanggal' input (YYYY-MM-DD)
+      const baseDate = editDialog.tanggal;
+      if (!baseDate) {
+        toast.error("Tanggal wajib diisi");
+        setIsSaving(false);
+        return;
+      }
+
+      // Helper to combine base date + HH:mm -> ISO
+      const toIso = (timeStr) => {
+        if (!timeStr) return undefined;
+        // dayjs(YYYY-MM-DD + " " + HH:mm) -> ISO
+        return dayjs(`${baseDate} ${timeStr}`).toISOString();
+      };
+
+      const payload = {
+        tanggal: dayjs(baseDate).toISOString(),
+        startTime: toIso(editDialog.startTime),
+        endTime: toIso(editDialog.endTime),
+      };
+
+      const res = await api.patch(
+        `/tutor/attendances/${editDialog.id}`,
+        payload
+      );
+
+      if (res.data.success) {
+        toast.success("Sesi berhasil diperbarui");
+        setAllSessions((prev) =>
+          prev.map((s) =>
+            s.id === editDialog.id ? { ...s, ...res.data.data } : s
+          )
+        );
+        setEditDialog((prev) => ({ ...prev, open: false }));
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan perubahan");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -651,13 +739,32 @@ export default function AttendancePerClassPage() {
                                       ).toLocaleDateString("id-ID", {
                                         weekday: "long",
                                       })}
-                                      {session.startTime &&
-                                        ` • ${new Date(
-                                          session.startTime
-                                        ).toLocaleTimeString("id-ID", {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}`}
+                                      {(session.startTime ||
+                                        session.endTime) && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border text-slate-600">
+                                            {session.startTime
+                                              ? new Date(
+                                                  session.startTime
+                                                ).toLocaleTimeString("id-ID", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })
+                                              : "?"}
+                                            <span className="mx-1 text-slate-400">
+                                              &rarr;
+                                            </span>
+                                            {session.endTime
+                                              ? new Date(
+                                                  session.endTime
+                                                ).toLocaleTimeString("id-ID", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })
+                                              : "?"}
+                                          </span>
+                                        </div>
+                                      )}
                                     </span>
                                   </div>
                                 </TableCell>
@@ -760,6 +867,18 @@ export default function AttendancePerClassPage() {
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
+                                          onClick={(e) => {
+                                            // prevent conflict with dropdown closing
+                                            setTimeout(
+                                              () => openEditDialog(session),
+                                              100
+                                            );
+                                          }}
+                                        >
+                                          <Pencil className="mr-2 h-4 w-4" />{" "}
+                                          Edit Sesi
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
                                           onClick={() =>
                                             router.push(
                                               `/tutor/attendances/${session.id}`
@@ -785,6 +904,70 @@ export default function AttendancePerClassPage() {
           );
         })()
       )}
+
+      <Dialog
+        open={editDialog.open}
+        onOpenChange={(v) => setEditDialog((prev) => ({ ...prev, open: v }))}
+        modal={true}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Sesi Presensi</DialogTitle>
+            <DialogDescription>
+              Ubah tanggal dan jam sesi ini. Klik simpan untuk menerapkan
+              perubahan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tanggal</Label>
+              <Input
+                type="date"
+                value={editDialog.tanggal}
+                onChange={(e) =>
+                  setEditDialog({ ...editDialog, tanggal: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Jam Mulai</Label>
+                <Input
+                  type="time"
+                  value={editDialog.startTime}
+                  onChange={(e) =>
+                    setEditDialog({ ...editDialog, startTime: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Jam Selesai</Label>
+                <Input
+                  type="time"
+                  value={editDialog.endTime}
+                  onChange={(e) =>
+                    setEditDialog({ ...editDialog, endTime: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setEditDialog((prev) => ({ ...prev, open: false }))
+              }
+            >
+              Batal
+            </Button>
+            <Button onClick={handleSaveSession} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

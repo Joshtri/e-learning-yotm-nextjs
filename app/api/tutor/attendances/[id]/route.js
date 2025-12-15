@@ -236,6 +236,16 @@ export async function PATCH(request, { params }) {
       updateData.keterangan = body.keterangan;
     }
 
+    if (body.tanggal) {
+      updateData.tanggal = new Date(body.tanggal);
+    }
+    if (body.startTime) {
+      updateData.startTime = new Date(body.startTime);
+    }
+    if (body.endTime) {
+      updateData.endTime = new Date(body.endTime);
+    }
+
     const updated = await prisma.attendanceSession.update({
       where: { id },
       data: updateData,

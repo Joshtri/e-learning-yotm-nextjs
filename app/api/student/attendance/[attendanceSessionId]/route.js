@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 export async function POST(request, { params }) {
   try {
     const { attendanceSessionId } = await params;
+    console.log("DEBUG: POST /api/student/attendance/[id] hit");
+    console.log("DEBUG: attendanceSessionId from params:", attendanceSessionId);
 
     const user = await getUserFromCookie();
     if (!user || user.role !== "STUDENT") {
@@ -38,6 +40,7 @@ export async function POST(request, { params }) {
       where: { id: attendanceSessionId },
       select: { id: true, academicYearId: true, tanggal: true, classId: true },
     });
+    console.log("DEBUG: Session found:", session);
 
     if (!session) {
       return NextResponse.json(
@@ -100,7 +103,6 @@ export async function POST(request, { params }) {
         academicYearId: session.academicYearId,
         attendanceSessionId: session.id,
         status,
-        date: new Date(),
       },
     });
 
