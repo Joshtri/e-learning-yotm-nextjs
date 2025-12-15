@@ -122,11 +122,39 @@ export default function ClassSchedulePage({ params }) {
 
     try {
       setIsSaving(true);
+
+      // Convert Local HH:mm to ISO String (UTC)
+      // Normalize to 1970-01-01 to match backend expectation
+      // We set the date to Jan 1 1970 using Local Time
+      const baseDate = dayjs().year(1970).month(0).date(1);
+
+      const [startH, startM] = formData.startTime.split(":");
+      const startIso = baseDate
+        .hour(parseInt(startH))
+        .minute(parseInt(startM))
+        .second(0)
+        .millisecond(0)
+        .toISOString();
+
+      const [endH, endM] = formData.endTime.split(":");
+      const endIso = baseDate
+        .hour(parseInt(endH))
+        .minute(parseInt(endM))
+        .second(0)
+        .millisecond(0)
+        .toISOString();
+
+      const payload = {
+        ...formData,
+        startTime: startIso,
+        endTime: endIso,
+      };
+
       if (editId) {
-        await api.patch(`/schedules/${editId}`, formData);
+        await api.patch(`/schedules/${editId}`, payload);
         toast.success("Jadwal berhasil diperbarui");
       } else {
-        await api.post(`/classes/${id}/schedules`, formData);
+        await api.post(`/classes/${id}/schedules`, payload);
         toast.success("Jadwal berhasil ditambahkan");
       }
       setIsAddOpen(false);

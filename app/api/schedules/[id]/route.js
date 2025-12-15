@@ -46,10 +46,29 @@ export async function PATCH(req, { params }) {
             return NextResponse.json({ success: false, message: "Incomplete data" }, { status: 400 });
         }
 
-        const [startH, startM] = startTime.split(":");
-        const [endH, endM] = endTime.split(":");
-        const startDt = new Date(1970, 0, 1, parseInt(startH), parseInt(startM), 0);
-        const endDt = new Date(1970, 0, 1, parseInt(endH), parseInt(endM), 0);
+        let startDt, endDt;
+
+        // Helper to parse and normalize time to 1970-01-01 UTC
+        const parseAndNormalizeTime = (timeInput) => {
+            // Check if input is ISO-like (contains T)
+            if (timeInput.includes("T")) {
+                const d = new Date(timeInput);
+                if (isNaN(d.getTime())) throw new Error("Invalid time format");
+                // Create new date on 1970-01-01 UTC with the SAME UTC time as the input
+                return new Date(Date.UTC(1970, 0, 1, d.getUTCHours(), d.getUTCMinutes(), 0));
+            } else {
+                // Fallback for HH:mm format (Legacy/Server-Local interpretation)
+                const [h, m] = timeInput.split(":");
+                return new Date(1970, 0, 1, parseInt(h), parseInt(m), 0);
+            }
+        };
+
+        try {
+            startDt = parseAndNormalizeTime(startTime);
+            endDt = parseAndNormalizeTime(endTime);
+        } catch (e) {
+            return NextResponse.json({ success: false, message: "Invalid Time Format" }, { status: 400 });
+        }
 
         // 1. Get Tutor ID
         const cst = await prisma.classSubjectTutor.findUnique({

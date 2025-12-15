@@ -38,15 +38,12 @@ export default function AssignmentCreatePage() {
     },
   });
 
-
   const fetchClassOptions = async () => {
     try {
-      const res = await api.get("/tutor/my-classes");
+      const res = await api.get("/tutor/my-class-subjects");
+      // API already filters for active academic year
       const all = res.data.data || [];
-      const filtered = all.filter(
-        (item) => item.class.academicYear?.isActive === true
-      );
-      setClassOptions(filtered);
+      setClassOptions(all);
     } catch {
       toast.error("Gagal memuat kelas Anda");
     }
@@ -205,14 +202,20 @@ export default function AssignmentCreatePage() {
                     const selectedDate = new Date(value);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                    return (
+                      selectedDate >= today ||
+                      "Tanggal tidak boleh sebelum hari ini"
+                    );
                   },
                   beforeEndDate: (value) => {
                     const endDate = getValues("tanggalSelesai");
                     if (!endDate) return true;
-                    return new Date(value) <= new Date(endDate) || "Tanggal mulai harus sama dengan atau sebelum tanggal selesai";
-                  }
-                }
+                    return (
+                      new Date(value) <= new Date(endDate) ||
+                      "Tanggal mulai harus sama dengan atau sebelum tanggal selesai"
+                    );
+                  },
+                },
               })}
               className={`mt-1 border ${
                 errors.tanggalMulai ? "border-red-500" : "border-gray-300"
@@ -238,14 +241,20 @@ export default function AssignmentCreatePage() {
                     const selectedDate = new Date(value);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
+                    return (
+                      selectedDate >= today ||
+                      "Tanggal tidak boleh sebelum hari ini"
+                    );
                   },
                   afterStartDate: (value) => {
                     const startDate = getValues("tanggalMulai");
                     if (!startDate) return true;
-                    return new Date(value) >= new Date(startDate) || "Tanggal selesai harus sama dengan atau setelah tanggal mulai";
-                  }
-                }
+                    return (
+                      new Date(value) >= new Date(startDate) ||
+                      "Tanggal selesai harus sama dengan atau setelah tanggal mulai"
+                    );
+                  },
+                },
               })}
               className={`mt-1 border ${
                 errors.tanggalSelesai ? "border-red-500" : "border-gray-300"
