@@ -26,6 +26,7 @@ export default function StudentExamStartPage() {
   const [questions, setQuestions] = useState([]);
   const [examInfo, setExamInfo] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [answerImages, setAnswerImages] = useState({}); // Stores base64 images { [questionId]: base64 }
   const [isLoading, setIsLoading] = useState(true);
   const [timeUp, setTimeUp] = useState(false);
 
@@ -46,6 +47,29 @@ export default function StudentExamStartPage() {
 
   const handleAnswerChange = (questionId, value) => {
     setValue(`answers.${questionId}`, value);
+  };
+
+  const handleImageUpload = (questionId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAnswerImages((prev) => ({ ...prev, [questionId]: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (questionId) => {
+    setAnswerImages((prev) => {
+      const newState = { ...prev };
+      delete newState[questionId];
+      return newState;
+    });
   };
 
   const handleTimeUp = () => {
@@ -75,7 +99,12 @@ export default function StudentExamStartPage() {
     if (isSubmitting) return;
 
     try {
-      await api.post(`/student/exams/${examId}/submit`, data);
+      // Merge text answers with image answers
+      // We pass answerImages separately in the body, which matches the API update we made
+      await api.post(`/student/exams/${examId}/submit`, {
+        ...data,
+        answerImages,
+      });
       toast.success("Jawaban berhasil dikumpulkan!");
       router.push("/siswa/exams");
     } catch {
@@ -218,6 +247,17 @@ export default function StudentExamStartPage() {
                     {currentQuestion.teks}
                   </div>
 
+                  {/* 🖼️ Display Image if Exists */}
+                  {currentQuestion.image && (
+                    <div className="my-2">
+                      <img
+                        src={currentQuestion.image}
+                        alt="Gambar Soal"
+                        className="max-w-full h-auto rounded-md border max-h-96 object-contain"
+                      />
+                    </div>
+                  )}
+
                   {isMultipleChoice &&
                     currentQuestion.options?.map((opt) => (
                       <label
@@ -298,6 +338,56 @@ export default function StudentExamStartPage() {
                       className="min-h-[120px]"
                     />
                   )}
+
+                  {/* 📷 Answer Image Upload */}
+                  <div className="space-y-2 pt-4 border-top">
+                    <label className="text-sm font-medium text-gray-700">
+                      Upload Gambar Jawaban (Opsional)
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      {answerImages[currentQuestion.id] ? (
+                        <div className="relative w-full max-w-sm rounded-md border p-2 bg-gray-50">
+                          <img
+                            src={answerImages[currentQuestion.id]}
+                            alt="Preview Jawaban"
+                            className="w-full h-auto rounded-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => removeImage(currentQuestion.id)}
+                          >
+                            <span className="sr-only">Hapus gambar</span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </Button>
+                        </div>
+                      ) : (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleImageUpload(currentQuestion.id, e)
+                          }
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">

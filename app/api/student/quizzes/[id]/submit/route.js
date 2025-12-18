@@ -142,17 +142,28 @@ export async function POST(req, { params }) {
       const jawabanSiswa = answers[q.id];
       const imageSiswa = answerImages[q.id];
 
-      const opsiBenar = q.options.find(
-        (opt, i) => String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
-      );
+      let benar = false;
+      let nilai = 0;
 
-      const teksJawabanBenar = opsiBenar?.teks || "";
+      if (q.jenis === "ESSAY") {
+        // Essay questions rely on manual grading
+        benar = null;
+        nilai = 0;
+      } else {
+        const opsiBenar = q.options.find(
+          (opt, i) =>
+            String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
+        );
 
-      const benar =
-        jawabanSiswa?.trim().toLowerCase() ===
-        teksJawabanBenar.trim().toLowerCase();
+        const teksJawabanBenar = opsiBenar?.teks || "";
 
-      const nilai = benar ? q.poin : 0;
+        benar =
+          jawabanSiswa?.trim().toLowerCase() ===
+          teksJawabanBenar.trim().toLowerCase();
+
+        nilai = benar ? q.poin : 0;
+      }
+
       totalNilai += nilai;
 
       await prisma.answer.create({

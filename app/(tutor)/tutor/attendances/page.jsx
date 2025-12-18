@@ -180,7 +180,7 @@ export default function AttendanceClassListPage() {
               {classes.flatMap((cls) => {
                 const items = [];
                 // 1. Homeroom Card
-                if (cls.isHomeroom) {
+                {/* if (cls.isHomeroom) {
                   items.push(
                     <Card
                       key={`${cls.id}-homeroom`}
@@ -222,7 +222,7 @@ export default function AttendanceClassListPage() {
                       </CardContent>
                     </Card>
                   );
-                }
+                } */}
                 // 2. Subject Cards
                 if (cls.taughtSubjects && cls.taughtSubjects.length > 0) {
                   cls.taughtSubjects.forEach((sub) => {

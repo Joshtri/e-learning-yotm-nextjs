@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 const QUESTION_TYPES = [
   { label: "Pilihan Ganda", value: "MULTIPLE_CHOICE" },
   { label: "Benar / Salah", value: "TRUE_FALSE" },
+  { label: "Essay", value: "ESSAY" },
 ];
 
 export default function QuizQuestionsPage() {
@@ -198,6 +199,10 @@ export default function QuizQuestionsPage() {
 
       if (question.jenis === "TRUE_FALSE") {
         return question.jawabanBenar !== "";
+      }
+
+      if (question.jenis === "ESSAY") {
+        return true;
       }
 
       return false;
@@ -561,6 +566,16 @@ function QuestionEditor({
                   )}
                 />
               </div>
+            </div>
+          )}
+
+          {/* ESSAY Info */}
+          {watchedQuestions[currentQuestionIndex]?.jenis === "ESSAY" && (
+            <div className="border rounded-md p-4 bg-gray-50 text-sm text-gray-600">
+              <p>
+                Untuk soal Essay, siswa akan menjawab dengan menuliskan teks
+                panjang. Tidak ada kunci jawaban otomatis yang perlu diatur.
+              </p>
             </div>
           )}
         </div>

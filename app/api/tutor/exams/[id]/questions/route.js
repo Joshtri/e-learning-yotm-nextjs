@@ -118,6 +118,7 @@ export async function POST(req, { params }) {
           data: {
             assignmentId,
             teks: q.teks,
+            image: q.image || null, // ✅ Handle image
             jenis: q.jenis,
             poin: isAutoGraded ? poinPerQuestion : 0,
             jawabanBenar: isAutoGraded ? q.jawabanBenar || null : null,
@@ -143,7 +144,8 @@ export async function POST(req, { params }) {
       });
     } else {
       // Single question create
-      const { teks, jenis, poin, pembahasan, jawabanBenar, options } = body;
+      // Single question create
+      const { teks, image, jenis, poin, pembahasan, jawabanBenar, options } = body;
 
       if (!teks || !jenis) {
         return NextResponse.json(
@@ -156,6 +158,7 @@ export async function POST(req, { params }) {
         data: {
           assignmentId,
           teks,
+          image: image || null, // ✅ Handle image
           jenis,
           poin: poin || 10,
           jawabanBenar: jawabanBenar || null,

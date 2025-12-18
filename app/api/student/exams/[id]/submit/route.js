@@ -98,7 +98,7 @@ export async function POST(req, { params }) {
     }
 
     const body = await req.json();
-    const { answers } = body;
+    const { answers, answerImages = {} } = body;
 
     if (!answers || typeof answers !== "object") {
       return new Response(JSON.stringify({ message: "Jawaban tidak valid" }), {
@@ -143,6 +143,7 @@ export async function POST(req, { params }) {
 
     for (const q of questions) {
       const jawabanSiswa = answers[q.id];
+      const imageSiswa = answerImages[q.id];
       let benar = null;
       let nilai = 0;
 
@@ -160,6 +161,7 @@ export async function POST(req, { params }) {
           submissionId: submission.id,
           questionId: q.id,
           jawaban: jawabanSiswa,
+          image: imageSiswa || null, // ✅ Simpan gambar jawaban
           adalahBenar: benar,
           nilai,
         },

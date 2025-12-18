@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, X } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -80,13 +80,19 @@ export default function ExamQuestionsPage() {
       setEditingQuestion(question);
       setFormData({
         teks: question.teks,
+        image: question.image || "", // ✅ Load image
         jenis: question.jenis,
         poin: question.poin,
         pembahasan: question.pembahasan || "",
         jawabanBenar: question.jawabanBenar || "",
       });
       if (question.options && question.options.length > 0) {
-        setOptions(question.options.map(opt => ({ teks: opt.teks, benar: opt.adalahBenar })));
+        setOptions(
+          question.options.map((opt) => ({
+            teks: opt.teks,
+            benar: opt.adalahBenar,
+          }))
+        );
       } else {
         setOptions([{ teks: "", benar: false }]);
       }
@@ -95,6 +101,7 @@ export default function ExamQuestionsPage() {
       setEditingQuestion(null);
       setFormData({
         teks: "",
+        image: "", // ✅ Reset image
         jenis: "MULTIPLE_CHOICE",
         poin: 10,
         pembahasan: "",
@@ -110,6 +117,25 @@ export default function ExamQuestionsPage() {
     setEditingQuestion(null);
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Ukuran gambar maksimal 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData((prev) => ({ ...prev, image: "" }));
+  };
+
   const handleSaveQuestion = async () => {
     if (!formData.teks) {
       toast.error("Soal wajib diisi");
@@ -118,6 +144,7 @@ export default function ExamQuestionsPage() {
 
     const payload = {
       teks: formData.teks,
+      image: formData.image || null, // ✅ Include image
       jenis: formData.jenis,
       poin: Number(formData.poin),
       pembahasan: formData.pembahasan,
@@ -126,7 +153,7 @@ export default function ExamQuestionsPage() {
 
     // Add options for multiple choice
     if (formData.jenis === "MULTIPLE_CHOICE" && options.length > 0) {
-      const validOptions = options.filter(opt => opt.teks.trim() !== "");
+      const validOptions = options.filter((opt) => opt.teks.trim() !== "");
       if (validOptions.length < 2) {
         toast.error("Minimal 2 pilihan untuk soal pilihan ganda");
         return;
@@ -266,6 +293,16 @@ export default function ExamQuestionsPage() {
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap">{question.teks}</p>
+                {/* 🖼️ Display Image if Exists */}
+                {question.image && (
+                  <div className="my-2">
+                    <img
+                      src={question.image}
+                      alt={`Gambar Soal ${index + 1}`}
+                      className="max-w-full h-auto rounded-md border max-h-64 object-contain"
+                    />
+                  </div>
+                )}
                 {question.options && question.options.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <p className="font-medium text-sm">Pilihan Jawaban:</p>
@@ -351,6 +388,38 @@ export default function ExamQuestionsPage() {
               />
             </div>
 
+            {/* 🖼️ Image Upload Section */}
+            <div className="space-y-2">
+              <Label>Gambar Soal (Opsional)</Label>
+              <div className="flex flex-col gap-2">
+                {formData.image ? (
+                  <div className="relative w-full max-w-sm rounded-md border p-2">
+                    <img
+                      src={formData.image}
+                      alt="Preview Soal"
+                      className="w-full h-auto rounded-md"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                )}
+              </div>
+            </div>
+
             <div>
               <Label>Poin *</Label>
               <Input
@@ -406,7 +475,8 @@ export default function ExamQuestionsPage() {
               </div>
             )}
 
-            {(formData.jenis === "TRUE_FALSE" || formData.jenis === "SHORT_ANSWER") && (
+            {(formData.jenis === "TRUE_FALSE" ||
+              formData.jenis === "SHORT_ANSWER") && (
               <div>
                 <Label>Jawaban Benar</Label>
                 {formData.jenis === "TRUE_FALSE" ? (

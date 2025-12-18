@@ -60,6 +60,17 @@ export default function QuizQuestionsPage() {
                 <Badge variant="outline">{q.jenis.replaceAll("_", " ")}</Badge>
               </div>
 
+              {/* Display Image if Exists */}
+              {q.image && (
+                <div className="my-2">
+                  <img
+                    src={q.image}
+                    alt={`Gambar Soal ${i + 1}`}
+                    className="max-w-full h-auto rounded-md border max-h-64 object-contain"
+                  />
+                </div>
+              )}
+
               {q.options?.length > 0 && (
                 <ul className="list-disc pl-5 space-y-1 text-sm">
                   {q.options.map((opt, idx) => (
