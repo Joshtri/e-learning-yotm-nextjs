@@ -69,6 +69,8 @@ export async function GET(request, { params }) {
             id: true,
             studentId: true,
             status: true,
+            note: true,
+            attachment: true,
           },
         },
       },
@@ -143,6 +145,8 @@ export async function GET(request, { params }) {
         namaLengkap: student.namaLengkap,
         email: student.user.email,
         status: existingAttendance?.status ?? null,
+        note: existingAttendance?.note ?? null,
+        attachment: existingAttendance?.attachment ?? null,
 
         attendanceHistory, // ✅ History attendance di hari yang sama
       };

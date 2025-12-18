@@ -36,12 +36,143 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+// Sub-component for handling attendance actions row by row
+function AttendanceRowActions({ session, canFill, isSubmitting, onSubmit }) {
+  const [mode, setMode] = useState(null); // 'SICK' | 'EXCUSED' | 'ABSENT' | null
+  const [reason, setReason] = useState("");
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState("");
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (f) {
+      if (f.size > 2 * 1024 * 1024) {
+        toast.error("Max 2MB");
+        return;
+      }
+      setFileName(f.name);
+      const reader = new FileReader();
+      reader.onloadend = () => setFile(reader.result);
+      reader.readAsDataURL(f);
+    }
+  };
+
+  const handleCancel = () => {
+    setMode(null);
+    setReason("");
+    setFile(null);
+    setFileName("");
+  };
+
+  const handleSubmit = () => {
+    if (!reason.trim()) {
+      toast.error("Alasan wajib diisi!");
+      return;
+    }
+    if (mode === "SICK" && !file) {
+      toast.error("Wajib upload surat sakit!");
+      return;
+    }
+    onSubmit(session.id, mode, reason, file);
+  };
+
+  if (mode) {
+    return (
+      <div className="flex flex-col gap-3 p-2 bg-slate-50 rounded border mt-2 min-w-[250px]">
+        <div className="text-sm font-semibold">
+          Konfirmasi{" "}
+          {mode === "SICK" ? "Sakit" : mode === "EXCUSED" ? "Izin" : "Alpha"}
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Alasan</Label>
+          <textarea
+            className="w-full text-sm p-2 border rounded"
+            rows={2}
+            placeholder="Jelaskan alasan..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
+
+        {mode === "SICK" && (
+          <div className="space-y-1">
+            <Label className="text-xs">Upload Surat (Max 2MB)</Label>
+            <Input
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFile}
+              className="h-8 text-xs"
+            />
+            {fileName && (
+              <p className="text-[10px] text-green-600 truncate">{fileName}</p>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={handleCancel}>
+            Batal
+          </Button>
+          <Button size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+            Kirim
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      <Button
+        size="sm"
+        disabled={!canFill || isSubmitting}
+        className={canFill ? "bg-green-600 hover:bg-green-700" : ""}
+        onClick={() => onSubmit(session.id, "PRESENT")}
+      >
+        Hadir
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!canFill || isSubmitting}
+        onClick={() => setMode("SICK")}
+      >
+        Sakit
+      </Button>
+      <Button
+        size="sm"
+        variant="destructive" // Using destructive color for Izin based on user preference or just distinction
+        className="bg-blue-600 hover:bg-blue-700 text-white" // Force blue Override
+        disabled={!canFill || isSubmitting}
+        onClick={() => setMode("EXCUSED")}
+      >
+        Izin
+      </Button>
+      <Button
+        size="sm"
+        variant="destructive"
+        disabled={!canFill || isSubmitting}
+        onClick={() => setMode("ABSENT")}
+      >
+        Alpha
+      </Button>
+    </div>
+  );
+}
+
 export default function StudentAttendancePage() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("list"); // list (accordion) | calendar
   const [classInfo, setClassInfo] = useState(null);
   const [submittingSessionId, setSubmittingSessionId] = useState(null);
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchClassInfo = async () => {
     try {
@@ -138,13 +269,21 @@ export default function StudentAttendancePage() {
     fetchMonthHolidays(activeMonthDate);
   }, [activeMonthDate]);
 
-  const handleSubmitAttendance = async (sessionId, status) => {
+  const handleSubmitAttendance = async (
+    sessionId,
+    status,
+    note = "",
+    attachment = null
+  ) => {
     try {
       setSubmittingSessionId(sessionId);
       const res = await api.post(`/student/attendance/${sessionId}`, {
         status,
+        note,
+        attachment,
       });
       toast.success(res.data.message || "Presensi berhasil!");
+
       await fetchSessions();
     } catch (error) {
       const msg = error.response?.data?.message || "Gagal mengisi presensi";
@@ -191,9 +330,24 @@ export default function StudentAttendancePage() {
     );
   };
 
-  // Group Sessions by Subject
+  // Filter Active Sessions (Status "DIMULAI" and not yet filled by student)
+  const activeSessions = useMemo(() => {
+    return sessions.filter(
+      (s) => s.status === "DIMULAI" && !s.attendanceStatus
+    );
+  }, [sessions]);
+
+  // Group Sessions by Subject (Filtered by Search)
   const groupedSessions = useMemo(() => {
-    return sessions.reduce((acc, session) => {
+    let filtered = sessions;
+    if (searchQuery.trim()) {
+      const lowerQ = searchQuery.toLowerCase();
+      filtered = sessions.filter((s) =>
+        (s.subjectName || "").toLowerCase().includes(lowerQ)
+      );
+    }
+
+    return filtered.reduce((acc, session) => {
       const name = session.subjectName || "Lainnya";
       if (!acc[name]) {
         acc[name] = {
@@ -205,7 +359,7 @@ export default function StudentAttendancePage() {
       acc[name].sessions.push(session);
       return acc;
     }, {});
-  }, [sessions]);
+  }, [sessions, searchQuery]);
 
   // daftar libur bulan ini (digroup per tanggal)
   const holidayList = useMemo(() => {
@@ -231,6 +385,76 @@ export default function StudentAttendancePage() {
         ]}
         icon={<CalendarCheck className="h-6 w-6" />}
       />
+
+      {/* Active Sessions Highlight */}
+      {activeSessions.length > 0 && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            <h3 className="font-semibold text-green-800">
+              Sesi Sedang Berlangsung
+            </h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {activeSessions.map((session) => (
+              <div
+                key={session.id}
+                className="bg-white p-3 rounded border border-green-100 shadow-sm flex flex-col justify-between h-full"
+              >
+                <div>
+                  <div className="font-medium text-green-900">
+                    {session.subjectName}
+                  </div>
+                  <div className="text-xs text-green-700 mt-1">
+                    Pertemuan {session.meetingNumber} • {session.tutorName}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {new Date(session.tanggal).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    •
+                    {session.startTime
+                      ? new Date(session.startTime).toLocaleTimeString(
+                          "id-ID",
+                          { hour: "2-digit", minute: "2-digit" }
+                        )
+                      : "-"}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <AttendanceRowActions
+                    session={session}
+                    canFill={true} // Always allow fill for active sessions here
+                    isSubmitting={submittingSessionId === session.id}
+                    onSubmit={(sessId, status, note, file) =>
+                      handleSubmitAttendance(sessId, status, note, file)
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      {viewMode === "list" && (
+        <div className="max-w-md">
+          <Label className="sr-only">Cari Mata Pelajaran</Label>
+          <Input
+            placeholder="Cari mata pelajaran..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white"
+          />
+        </div>
+      )}
+
       <GreetingWidget />
 
       {classInfo && (
@@ -404,52 +628,23 @@ export default function StudentAttendancePage() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={!canFill || isSubmitting}
-                                    className={`${
-                                      canFill
-                                        ? "bg-green-600 hover:bg-green-700"
-                                        : ""
-                                    }`}
-                                    onClick={() =>
-                                      handleSubmitAttendance(
-                                        session.id,
-                                        "PRESENT"
-                                      )
-                                    }
-                                  >
-                                    Hadir
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={!canFill || isSubmitting}
-                                    onClick={() =>
-                                      handleSubmitAttendance(session.id, "SICK")
-                                    }
-                                  >
-                                    Sakit
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={!canFill || isSubmitting}
-                                    onClick={() =>
-                                      handleSubmitAttendance(
-                                        session.id,
-                                        "EXCUSED"
-                                      )
-                                    }
-                                  >
-                                    Izin
-                                  </Button>
-                                </div>
+                                <AttendanceRowActions
+                                  session={session}
+                                  canFill={canFill}
+                                  isSubmitting={isSubmitting}
+                                  onSubmit={(sessId, status, note, file) =>
+                                    handleSubmitAttendance(
+                                      sessId,
+                                      status,
+                                      note,
+                                      file
+                                    )
+                                  }
+                                />
                                 {!canFill &&
                                   !isFinal &&
                                   session.status !== "DIMULAI" && (
-                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                    <div className="text-[10px] text-muted-foreground mt-1 text-right">
                                       Sesi belum dimulai / sudah selesai
                                     </div>
                                   )}

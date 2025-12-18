@@ -78,6 +78,7 @@ export async function POST(req) {
       tanggalMulai,
       tanggalSelesai,
       durasiMenit,
+      nilaiMaksimal,
       questions = [],
     } = body;
 
@@ -117,14 +118,7 @@ export async function POST(req) {
     }
 
     // Cek apakah tanggal tidak di masa lalu (opsional, bisa dihapus jika tidak perlu)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (startDate < today) {
-      return NextResponse.json(
-        { message: "Tanggal mulai tidak boleh di masa lalu" },
-        { status: 400 }
-      );
-    }
+
 
     // Validasi akses
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({

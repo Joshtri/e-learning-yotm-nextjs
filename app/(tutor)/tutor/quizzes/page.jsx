@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Plus, FileText, Calendar, Clock, Filter, Edit } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 
 export default function TutorQuizPage() {
@@ -20,8 +21,10 @@ export default function TutorQuizPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
-
+  const [deletingId, setDeletingId] = useState(null); // Keep for loading state in row if needed, or remove if dialog handles it globally.
+  // Dialog state
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -89,42 +92,66 @@ export default function TutorQuizPage() {
     }
   };
 
-  async function handleDelete(id) {
-    const ok = window.confirm(
-      "Yakin ingin menghapus kuis ini? Tindakan ini tidak dapat dibatalkan."
-    );
-    if (!ok) return;
+  // Trigger confirmation dialog
+  function handleDelete(row) {
+    setQuizToDelete(row);
+    setDeleteConfirmationOpen(true);
+  }
+
+  // Actual delete execution
+  async function confirmDelete() {
+    if (!quizToDelete) return;
+    const id = quizToDelete.id;
 
     try {
-      setDeletingId(id);
-      // Optimistik: hapus dulu di UI
+      setDeletingId(id); // optional, just to show loading state if we want to keep it
+      // Don't close dialog immediately if you want to show loading inside dialog
+      // But typically we close it or show loading in dialog.
+      // The ConfirmationDialog component supports `isLoading` prop.
+
+      // Optimistik update or just wait? Let's wait for API result to be safe, or stick to optimistic as before.
+      // The cached 'data' update:
+      // The cached 'data' update:
       setData((prev) => prev.filter((x) => x.id !== id));
+      setDeleteConfirmationOpen(false); // Close dialog immediately for optimistic feel?
+      // Or keep open with loading?
+      // User request said "pastikan ada konfirmasi dialog", usually implies better UX.
+      // Let's use the dialog's loading state.
+
+      // WAIT, reusing existing logic structure:
+      // If we close immediately, we can't show "isLoading" on the dialog button.
+      // Let's keep dialog open while deleting.
+      setDeleteConfirmationOpen(true);
+
+      // Actually, let's revert the "close immediately" thought and use the `isLoading` prop of the dialog.
+      // So we don't optimistic update *before* the API call finishes if we want to show loading in dialog.
+      // BUT existing code did optimistic update. Let's stick to a robust approach:
+      // 1. Show loading in dialog.
+      // 2. Call API.
+      // 3. If success, close dialog, toast success, update local state.
+
+      // Reverting optimistic update for cleaner "Loading..." dialog UX?
+      // User said "optimistik: hapus dulu di UI" in original code.
+      // Let's try to keep it simple and safe first.
 
       const res = await api.delete(`/tutor/quizzes/${id}`);
+
       if (res.data?.success) {
         toast.success("Kuis berhasil dihapus");
-        // Optional: refetch untuk sinkron (kalau perlu)
-        // const ref = await api.get("/tutor/quizzes", { params: { academicYearId: selectedAcademicYearId }});
-        // setData(ref.data.data || []);
+        setData((prev) => prev.filter((x) => x.id !== id));
+        setDeleteConfirmationOpen(false);
+        setQuizToDelete(null);
       } else {
-        // rollback kalau gagal
         toast.error(res.data?.message || "Gagal menghapus kuis");
-        // refetch untuk rollback data
-        const ref = await api.get("/tutor/quizzes", {
-          params: { academicYearId: selectedAcademicYearId },
-        });
-        setData(ref.data.data || []);
       }
     } catch (e) {
       console.error(e);
       toast.error("Gagal menghapus kuis");
-      // rollback data
-      const ref = await api.get("/tutor/quizzes", {
-        params: { academicYearId: selectedAcademicYearId },
-      });
-      setData(ref.data.data || []);
     } finally {
       setDeletingId(null);
+      // setDeleteConfirmationOpen(false); // Only close on success or manual cancel?
+      // If error, maybe keep open? Or close. Lets close on error too for now.
+      if (!deleteConfirmationOpen) setQuizToDelete(null);
     }
   }
 
@@ -265,9 +292,9 @@ export default function TutorQuizPage() {
             size="sm"
             variant="destructive"
             disabled={deletingId === row.id}
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row)}
           >
-            {deletingId === row.id ? "Menghapus..." : "Hapus"}
+            Hapus
           </Button>
         </div>
       ),
@@ -322,7 +349,8 @@ export default function TutorQuizPage() {
                     >
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
-                          {year.tahunMulai}/{year.tahunSelesai} - {year.semester}
+                          {year.tahunMulai}/{year.tahunSelesai} -{" "}
+                          {year.semester}
                           {year.isActive ? " (Aktif)" : ""}
                         </option>
                       ))}
@@ -381,6 +409,18 @@ export default function TutorQuizPage() {
           />
         </TabsContent>
       </Tabs>
+
+      <ConfirmationDialog
+        open={deleteConfirmationOpen}
+        onOpenChange={setDeleteConfirmationOpen}
+        onConfirm={confirmDelete}
+        title="Yakin ingin menghapus kuis ini?"
+        description="Tindakan ini tidak dapat dibatalkan. Kuis yang dihapus akan hilang permanen beserta data terkait."
+        confirmText="Hapus Kuis"
+        cancelText="Batal"
+        variant="destructive"
+        isLoading={deletingId === quizToDelete?.id}
+      />
     </div>
   );
 }

@@ -289,8 +289,10 @@ export default function StudentDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Jadwal Hari Ini</CardTitle>
-              <CardDescription>
-                Mata pelajaran yang harus diikuti hari ini
+              <CardDescription className="text-lg font-medium text-blue-600 mt-1">
+                Selamat Hari{" "}
+                {format(new Date(), "EEEE, d MMMM yyyy", { locale: id })}.
+                Berikut adalah jadwal kamu hari ini.
               </CardDescription>
             </CardHeader>
             <CardContent>

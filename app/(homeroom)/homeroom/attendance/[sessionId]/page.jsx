@@ -89,6 +89,7 @@ export default function AttendanceInputPage({ params }) {
               sessionId: att.sessionId || sessionId,
               status: att.status,
               note: att.note || "",
+              attachment: att.attachment, // ✅
             };
           });
         }
@@ -336,15 +337,38 @@ export default function AttendanceInputPage({ params }) {
                     </RadioGroup>
                   </TableCell>
                   <TableCell>
-                    <Textarea
-                      placeholder="Catatan..."
-                      value={att.note || ""}
-                      onChange={(e) =>
-                        handleNoteChange(student.id, e.target.value)
-                      }
-                      className="min-h-[60px]"
-                      disabled={isReadOnly}
-                    />
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Catatan..."
+                        value={att.note || ""}
+                        onChange={(e) =>
+                          handleNoteChange(student.id, e.target.value)
+                        }
+                        className="min-h-[60px]"
+                        disabled={isReadOnly}
+                      />
+                      {att.attachment && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-blue-600"
+                          onClick={() => {
+                            const win = window.open();
+                            if (win) {
+                              win.document.write(
+                                '<iframe src="' +
+                                  att.attachment +
+                                  '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'
+                              );
+                            } else {
+                              toast.error("Popup blocked");
+                            }
+                          }}
+                        >
+                          Lihat Surat
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );

@@ -28,12 +28,33 @@ export async function POST(request, { params }) {
       );
     }
 
-    const { status } = await request.json();
-    if (!["PRESENT", "SICK", "EXCUSED"].includes(status)) {
+    const { status, note, attachment } = await request.json();
+
+    // Status validation
+    if (!["PRESENT", "SICK", "EXCUSED", "ABSENT"].includes(status)) {
       return NextResponse.json(
         { success: false, message: "Status presensi tidak valid" },
         { status: 400 }
       );
+    }
+
+    // Additional Validation
+    if (status !== "PRESENT") {
+      if (!note || note.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, message: `Alasan wajib diisi untuk status ${status}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (status === "SICK") {
+      if (!attachment) {
+        return NextResponse.json(
+          { success: false, message: "Surat sakit wajib diunggah" },
+          { status: 400 }
+        );
+      }
     }
 
     const session = await prisma.attendanceSession.findUnique({
@@ -74,11 +95,17 @@ export async function POST(request, { params }) {
     });
 
     if (existing) {
-      // ✅ Izinkan update sekali dari ABSENT → final status
-      if (existing.status === "ABSENT") {
+      // ✅ Izinkan update sekali dari ABSENT → final status OR if it was just created (maybe default ABSENT?)
+      // User policy: If student can mark themselves, they update it.
+      // Usually if existing, we might block unless it was default ABSENT.
+      if (existing.status === "ABSENT" || existing.status === "PRESENT") { // Allow correction? Or strict? Sticking to strict or only ABSENT as per previous logic
         await prisma.attendance.update({
           where: { id: existing.id },
-          data: { status },
+          data: {
+            status,
+            note: note || null,
+            attachment: attachment || null
+          },
         });
         return NextResponse.json({
           success: true,
@@ -103,6 +130,8 @@ export async function POST(request, { params }) {
         academicYearId: session.academicYearId,
         attendanceSessionId: session.id,
         status,
+        note: note || null,
+        attachment: attachment || null
       },
     });
 

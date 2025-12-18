@@ -85,6 +85,7 @@ export async function POST(request, { params }) {
         },
         update: {
           status: item.status,
+          note: item.note, // ✅ Save note
         },
         create: {
           studentId: item.studentId,
@@ -92,6 +93,7 @@ export async function POST(request, { params }) {
           classId: session.classId,
           academicYearId: session.academicYearId,
           status: item.status,
+          note: item.note, // ✅ Save note
         },
       });
     });

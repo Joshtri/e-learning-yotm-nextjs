@@ -499,8 +499,9 @@ model Attendance {
   studentId           String
   attendanceSessionId String @db.VarChar(40)
 
-  status AttendanceStatus
-  note   String?          @db.VarChar(255)
+  status     AttendanceStatus
+  note       String?          @db.VarChar(255)
+  attachment String?          @db.Text // Base64 file attachment
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

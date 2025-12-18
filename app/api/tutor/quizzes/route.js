@@ -150,13 +150,7 @@ export async function POST(req) {
     }
 
     // Cek apakah waktu tidak di masa lalu
-    const now = new Date();
-    if (startTime < now) {
-      return NextResponse.json(
-        { message: "Waktu mulai tidak boleh di masa lalu" },
-        { status: 400 }
-      );
-    }
+
 
     // Validasi akses tutor
     const isOwned = await prisma.classSubjectTutor.findFirst({

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input"; // Import Input
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -43,6 +44,8 @@ export default function AttendanceDetailPage() {
 
   const [students, setStudents] = useState([]);
   const [attendanceStatus, setAttendanceStatus] = useState({});
+  const [attendanceNotes, setAttendanceNotes] = useState({}); // ✅ State for notes
+  const [attendanceAttachments, setAttendanceAttachments] = useState({}); // ✅ State for attachments
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sessionInfo, setSessionInfo] = useState(null); // ✅ Info session (subject, etc)
@@ -57,10 +60,16 @@ export default function AttendanceDetailPage() {
       setSessionInfo(data); // ✅ Save session info (subject, kelas, etc)
 
       const initialStatus = {};
+      const initialNotes = {}; // ✅ Initial notes
+      const initialAttachments = {}; // ✅
       siswa.forEach((student) => {
-        initialStatus[student.studentId] = student.status; // 🔥 pakai status dari API
+        initialStatus[student.studentId] = student.status;
+        initialNotes[student.studentId] = student.note || ""; // Load existing note
+        initialAttachments[student.studentId] = student.attachment; // Load attachment
       });
       setAttendanceStatus(initialStatus);
+      setAttendanceNotes(initialNotes);
+      setAttendanceAttachments(initialAttachments);
     } catch (err) {
       console.error("Gagal memuat data siswa:", err);
       toast.error("Gagal memuat data siswa");
@@ -74,7 +83,6 @@ export default function AttendanceDetailPage() {
       fetchStudents();
     }
   }, [id]);
-
   const handleMarkAllPresent = () => {
     const allPresent = {};
     students.forEach((student) => {
@@ -84,6 +92,24 @@ export default function AttendanceDetailPage() {
     toast.success("Semua siswa ditandai hadir!");
   };
 
+  // Hitung statistik presensi
+  const stats = {
+    PRESENT: 0,
+    SICK: 0,
+    EXCUSED: 0,
+    ABSENT: 0,
+    UNFILLED: 0,
+  };
+
+  students.forEach((student) => {
+    const status = attendanceStatus[student.studentId];
+    if (status) {
+      stats[status] = (stats[status] || 0) + 1;
+    } else {
+      stats.UNFILLED++;
+    }
+  });
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -92,6 +118,7 @@ export default function AttendanceDetailPage() {
           ([studentId, status]) => ({
             studentId,
             status,
+            note: attendanceNotes[studentId] || "", // ✅ Include note in save
           })
         ),
       });
@@ -168,6 +195,42 @@ export default function AttendanceDetailPage() {
         </Button>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex flex-col items-center">
+          <span className="text-2xl font-bold text-green-700">
+            {stats.PRESENT}
+          </span>
+          <span className="text-sm text-green-600 font-medium">Hadir</span>
+        </div>
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex flex-col items-center">
+          <span className="text-2xl font-bold text-yellow-700">
+            {stats.SICK}
+          </span>
+          <span className="text-sm text-yellow-600 font-medium">Sakit</span>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex flex-col items-center">
+          <span className="text-2xl font-bold text-blue-700">
+            {stats.EXCUSED}
+          </span>
+          <span className="text-sm text-blue-600 font-medium">Izin</span>
+        </div>
+        <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex flex-col items-center">
+          <span className="text-2xl font-bold text-red-700">
+            {stats.ABSENT}
+          </span>
+          <span className="text-sm text-red-600 font-medium">Alpha</span>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg flex flex-col items-center">
+          <span className="text-2xl font-bold text-gray-700">
+            {stats.UNFILLED}
+          </span>
+          <span className="text-sm text-gray-600 font-medium">
+            Belum Mengisi
+          </span>
+        </div>
+      </div>
+
       <div className="space-y-4">
         {students.map((student) => (
           <div
@@ -211,19 +274,14 @@ export default function AttendanceDetailPage() {
               }
             >
               <SelectTrigger className="w-[140px]">
-                <SelectValue
-                  placeholder="Belum diisi"
-                  defaultValue=""
-                  // kalau ada value tampilkan labelnya, kalau tidak "Belum diisi"
-                  children={
-                    attendanceStatus[student.studentId]
-                      ? ATTENDANCE_OPTIONS.find(
-                          (opt) =>
-                            opt.value === attendanceStatus[student.studentId]
-                        )?.label
-                      : "Belum diisi"
-                  }
-                />
+                <SelectValue placeholder="Belum diisi" defaultValue="">
+                  {attendanceStatus[student.studentId]
+                    ? ATTENDANCE_OPTIONS.find(
+                        (opt) =>
+                          opt.value === attendanceStatus[student.studentId]
+                      )?.label
+                    : "Belum diisi"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {ATTENDANCE_OPTIONS.map((opt) => (
@@ -233,6 +291,46 @@ export default function AttendanceDetailPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Note Input for non-PRESENT status */}
+            {(attendanceStatus[student.studentId] === "SICK" ||
+              attendanceStatus[student.studentId] === "EXCUSED" ||
+              attendanceStatus[student.studentId] === "ABSENT") && (
+              <div className="ml-4 w-1/3 space-y-2">
+                <Input
+                  placeholder="Alasan (opsional)"
+                  value={attendanceNotes[student.studentId] || ""}
+                  onChange={(e) =>
+                    setAttendanceNotes((prev) => ({
+                      ...prev,
+                      [student.studentId]: e.target.value,
+                    }))
+                  }
+                  className="text-sm"
+                />
+                {attendanceAttachments[student.studentId] && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-blue-600"
+                    onClick={() => {
+                      const win = window.open();
+                      if (win) {
+                        win.document.write(
+                          '<iframe src="' +
+                            attendanceAttachments[student.studentId] +
+                            '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'
+                        );
+                      } else {
+                        toast.error("Popup blocked");
+                      }
+                    }}
+                  >
+                    Lihat Surat
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
