@@ -106,3 +106,28 @@ export async function PATCH(req, { params }) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
+
+export async function DELETE(req, { params }) {
+    try {
+        const user = await getUserFromCookie();
+        if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+        const { sessionId } = params;
+
+        const session = await prisma.attendanceSession.findUnique({
+            where: { id: sessionId },
+        });
+
+        if (!session) {
+            return NextResponse.json({ message: "Sesi tidak ditemukan" }, { status: 404 });
+        }
+
+        await prisma.attendanceSession.delete({
+            where: { id: sessionId },
+        });
+
+        return NextResponse.json({ success: true, message: "Sesi berhasil dihapus" });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}

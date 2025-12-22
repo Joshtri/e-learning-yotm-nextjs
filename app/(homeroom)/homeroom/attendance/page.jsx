@@ -52,7 +52,6 @@ import {
   Trash2,
   User,
   Printer,
-  Edit,
   MoreHorizontal,
   Pencil,
   CheckCircle,
@@ -213,21 +212,7 @@ export default function HomeroomAttendancePage() {
     }
   };
 
-  const handleStartSession = async (sessionId) => {
-    try {
-      setUpdatingSessionId(sessionId);
-      await api.patch(`/homeroom/attendance/${sessionId}`, {
-        status: "DIMULAI",
-      });
-      toast.success("Sesi dimulai! Silakan input presensi.");
-      fetchSessions(); // Refresh list to update status and buttons
-    } catch (error) {
-      console.error(error);
-      toast.error("Gagal memulai sesi");
-    } finally {
-      setUpdatingSessionId(null);
-    }
-  };
+  // function removed
 
   const openStatusDialog = (session) => {
     setSelectedSessionForStatus(session);
@@ -824,7 +809,7 @@ export default function HomeroomAttendancePage() {
                               >
                                 {STATUS_LABELS[session.status]}
                               </div>
-                              <DropdownMenu>
+                              <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -837,23 +822,31 @@ export default function HomeroomAttendancePage() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                   <DropdownMenuItem
-                                    onClick={() => openStatusDialog(session)}
+                                    onClick={() => {
+                                      setTimeout(
+                                        () => openStatusDialog(session),
+                                        100
+                                      );
+                                    }}
                                   >
                                     <CheckCircle className="mr-2 h-4 w-4" />{" "}
                                     Ubah Status
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                    onClick={() =>
-                                      setDeleteSessionId(session.id)
-                                    }
+                                    onClick={() => {
+                                      setTimeout(
+                                        () => setDeleteSessionId(session.id),
+                                        100
+                                      );
+                                    }}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" /> Hapus
                                     Sesi
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={(e) => {
+                                    onClick={() => {
                                       setTimeout(
                                         () => openEditDialog(session),
                                         100
