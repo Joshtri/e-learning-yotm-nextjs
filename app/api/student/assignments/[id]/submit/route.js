@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
+export const maxDuration = 120;
+
 export async function POST(req, { params }) {
   try {
     const user = await getUserFromCookie();

@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
+export const maxDuration = 120;
+
 // GET - Ambil semua soal untuk ujian tertentu
 export async function GET(req, { params }) {
   const { id: assignmentId } = params;

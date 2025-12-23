@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
+export const maxDuration = 120;
+
 export async function GET(_, { params }) {
   const { id } = params;
 
