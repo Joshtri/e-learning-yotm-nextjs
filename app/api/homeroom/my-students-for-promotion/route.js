@@ -4,6 +4,10 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 
+//set timeout. 
+//set timeout to 10 seconds. 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     const user = await getUserFromCookie();
