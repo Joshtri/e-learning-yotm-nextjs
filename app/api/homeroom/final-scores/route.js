@@ -3,6 +3,9 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 
+
+export const maxDuration = 60;
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();
