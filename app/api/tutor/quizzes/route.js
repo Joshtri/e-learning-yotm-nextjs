@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 function getUserFromCookie() {
   const token = cookies().get("auth_token")?.value;
