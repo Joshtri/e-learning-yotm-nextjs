@@ -83,6 +83,12 @@ export default function AddQuestionsPage() {
     }
   };
 
+  // Handler khusus untuk submit dari dialog confirmation (bypass form validation)
+  const handleConfirmSubmit = async () => {
+    const data = { questions: watchedQuestions };
+    await onSubmit(data);
+  };
+
   const goToNextQuestion = () => {
     if (currentQuestionIndex < fields.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -280,7 +286,7 @@ export default function AddQuestionsPage() {
                   confirmText="Ya, simpan"
                   cancelText="Batal"
                   loading={isSubmitting}
-                  onConfirm={handleSubmit(onSubmit)}
+                  onConfirm={handleConfirmSubmit}
                   trigger={
                     <Button
                       type="button"

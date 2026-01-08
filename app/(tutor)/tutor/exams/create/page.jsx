@@ -133,8 +133,8 @@ export default function ExamCreatePage() {
 
     const payload = {
       ...data,
-      waktuMulai: mulai.toISOString(),
-      waktuSelesai: selesai.toISOString(),
+      tanggalMulai: mulai.toISOString(),
+      tanggalSelesai: selesai.toISOString(),
     };
 
     try {

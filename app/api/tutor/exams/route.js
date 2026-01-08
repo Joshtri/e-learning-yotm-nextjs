@@ -148,16 +148,12 @@ export async function POST(req) {
       );
     }
 
-    // Validasi UTS/UAS
+    // Validasi UTS/UAS - pastikan hanya 1 UTS/UAS per mata pelajaran per kelas per semester
     if (jenis === "MIDTERM" || jenis === "FINAL_EXAM") {
       const existingExam = await prisma.assignment.findFirst({
         where: {
           jenis,
-          classSubjectTutor: {
-            class: {
-              academicYearId: classSubjectTutor.class.academicYear.id,
-            },
-          },
+          classSubjectTutorId: classSubjectTutorId, // ← Cek spesifik untuk kombinasi kelas-mapel-tutor ini
         },
       });
 
@@ -165,7 +161,7 @@ export async function POST(req) {
         return NextResponse.json(
           {
             message: `Ujian ${jenis === "MIDTERM" ? "UTS" : "UAS"
-              } sudah dibuat tahun ini.`,
+              } sudah dibuat untuk mata pelajaran ${classSubjectTutor.subject.namaMapel} di kelas ${classSubjectTutor.class.namaKelas} pada semester ini.`,
           },
           { status: 400 }
         );

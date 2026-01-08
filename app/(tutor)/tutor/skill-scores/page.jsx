@@ -55,7 +55,26 @@ export default function TutorSkillScoresPage() {
       const res = await api.get("/tutor/my-classes", {
         params: { academicYearId },
       });
-      setClasses(res.data.data || []);
+
+      // Transform the response to flatten class-subject combinations
+      const rawData = res.data.data || [];
+      const flattened = rawData.flatMap((classItem) =>
+        (classItem.taughtSubjects || []).map((subject) => ({
+          id: `${classItem.id}_${subject.id}`,
+          class: {
+            id: classItem.id,
+            namaKelas: classItem.namaKelas,
+            academicYear: classItem.academicYear,
+            program: classItem.program,
+          },
+          subject: {
+            id: subject.id,
+            namaMapel: subject.name,
+          },
+        }))
+      );
+
+      setClasses(flattened);
     } catch (error) {
       toast.error("Gagal memuat daftar kelas");
     } finally {
