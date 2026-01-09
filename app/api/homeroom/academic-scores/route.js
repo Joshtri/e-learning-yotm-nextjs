@@ -26,26 +26,44 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const academicYearId = searchParams.get("academicYearId");
 
-    let whereClause = {
-      homeroomTeacherId: tutor.id,
-    };
-
-    if (academicYearId) {
-      whereClause.academicYearId = academicYearId;
-    } else {
-      whereClause.academicYear = {
-        isActive: true,
-      };
-    }
-
-    // Find the class where this tutor is homeroom teacher
-    const kelas = await prisma.class.findFirst({
-      where: whereClause,
+    // First, get ALL classes where this tutor is homeroom teacher (for filter options)
+    const allHomeroomClasses = await prisma.class.findMany({
+      where: {
+        homeroomTeacherId: tutor.id,
+      },
       include: {
         academicYear: true,
         program: true,
       },
+      orderBy: {
+        academicYear: {
+          tahunMulai: 'desc',
+        },
+      },
     });
+
+    if (allHomeroomClasses.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Kelas tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    // Determine which class to use for data display
+    let kelas;
+    if (academicYearId) {
+      // Find class for specific academic year
+      kelas = allHomeroomClasses.find((c) => c.academicYearId === academicYearId);
+      if (!kelas) {
+        return NextResponse.json(
+          { success: false, message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih" },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Find the class with active academic year, or default to first class
+      kelas = allHomeroomClasses.find((c) => c.academicYear.isActive) || allHomeroomClasses[0];
+    }
 
     if (!kelas) {
       return NextResponse.json(
@@ -144,6 +162,7 @@ export async function GET(request) {
       },
       select: {
         id: true,
+        studentId: true,
         nilai: true,
         quizId: true,
         assignmentId: true,
@@ -248,6 +267,21 @@ export async function GET(request) {
       select: { id: true, namaMapel: true },
     });
 
+    // Build academic years filter options from ALL homeroom classes
+    const academicYearsOptions = allHomeroomClasses.map((c) => ({
+      id: c.academicYear.id,
+      tahunMulai: c.academicYear.tahunMulai,
+      tahunSelesai: c.academicYear.tahunSelesai,
+      semester: c.academicYear.semester,
+      isActive: c.academicYear.isActive,
+      label: `${c.academicYear.tahunMulai}/${c.academicYear.tahunSelesai} - ${c.academicYear.semester}`,
+    }));
+
+    // Remove duplicates by academicYear.id
+    const uniqueAcademicYears = academicYearsOptions.filter(
+      (year, index, self) => index === self.findIndex((y) => y.id === year.id)
+    );
+
     return NextResponse.json({
       quizzes: allQuizzes,
       assignments: tugasList,
@@ -267,15 +301,7 @@ export async function GET(request) {
             },
           },
         ],
-        academicYears: [
-          {
-            id: kelas.academicYear.id,
-            tahunMulai: kelas.academicYear.tahunMulai,
-            tahunSelesai: kelas.academicYear.tahunSelesai,
-            semester: kelas.academicYear.semester,
-            label: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} - ${kelas.academicYear.semester}`,
-          },
-        ],
+        academicYears: uniqueAcademicYears,
       },
       classInfo: {
         id: kelas.id,
@@ -283,6 +309,9 @@ export async function GET(request) {
         program: kelas.program.namaPaket,
         semester: kelas.academicYear.semester,
         tahunAjaran: `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai}`,
+        academicYear: {
+          id: kelas.academicYear.id,
+        },
       },
     });
   } catch (error) {

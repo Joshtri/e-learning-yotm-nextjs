@@ -220,9 +220,9 @@ export default function HomeroomAcademicScoresPage() {
         ]}
       >
          <AcademicYearFilter
-          academicYears={(filterOptions?.academicYears || []).map(y => ({ ...y, value: y.id, label: y.label }))}
-          selectedYear={selectedYear}
-          onYearChange={handleYearChange}
+          academicYears={filterOptions?.academicYears || []}
+          selectedId={selectedYear}
+          onChange={handleYearChange}
         />
       </PageHeader>
 

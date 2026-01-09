@@ -165,11 +165,11 @@ export const navByRole = {
     {
       title: "Pengelolaan",
       items: [
-        {
-          title: "Hari Libur",
-          href: "/admin/holidays",
-          icon: <Volleyball className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Hari Libur",
+        //   href: "/admin/holidays",
+        //   icon: <Volleyball className="h-4 w-4" />,
+        // },
         {
           title: "Kalender Hari Libur",
           href: "/admin/holidays/calendar",
