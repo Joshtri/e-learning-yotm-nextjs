@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   FileBarChart,
   Printer,
@@ -66,7 +67,9 @@ export default function AdminReportsPage() {
         setAcademicYears(academicYearsData.data?.academicYears || []);
 
         // Set default to active year
-        const activeYear = academicYearsData.data?.academicYears?.find(y => y.isActive);
+        const activeYear = academicYearsData.data?.academicYears?.find(
+          (y) => y.isActive
+        );
         if (activeYear) {
           setSelectedAcademicYear(activeYear.id);
         }
@@ -83,7 +86,7 @@ export default function AdminReportsPage() {
       setLoadingReport(true);
 
       if (!selectedAcademicYear) {
-        alert("Pilih tahun ajaran terlebih dahulu");
+        toast.error("Pilih tahun ajaran terlebih dahulu");
         setLoadingReport(false);
         return;
       }
@@ -138,9 +141,11 @@ export default function AdminReportsPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Laporan berhasil dibuat");
     } catch (error) {
       console.error("Error generating report:", error);
-      // alert(`Gagal membuat laporan: ${error.message}`);
+      toast.error(`Gagal membuat laporan: ${error.message}`);
     } finally {
       setLoadingReport(false);
     }
@@ -156,7 +161,6 @@ export default function AdminReportsPage() {
 
   return (
     <div className="container mx-auto py-6 px-4">
-
       <PageHeader
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },
@@ -174,7 +178,11 @@ export default function AdminReportsPage() {
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center">
           <Info className="h-5 w-5 text-blue-500 mr-2" />
           <p className="text-blue-700">
-            Tahun Akademik Aktif: <strong>{currentAcademicYear.year} | Semester {currentAcademicYear.semester}</strong>
+            Tahun Akademik Aktif:{" "}
+            <strong>
+              {currentAcademicYear.year} | Semester{" "}
+              {currentAcademicYear.semester}
+            </strong>
           </p>
         </div>
       )}
@@ -212,7 +220,9 @@ export default function AdminReportsPage() {
 
             {/* Academic Year Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tahun Ajaran / Semester</label>
+              <label className="text-sm font-medium">
+                Tahun Ajaran / Semester
+              </label>
               <Select
                 value={selectedAcademicYear}
                 onValueChange={setSelectedAcademicYear}
@@ -245,7 +255,7 @@ export default function AdminReportsPage() {
                   <SelectItem value="all">Semua Kelas</SelectItem>
                   {classes.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
+                      {cls.name} - {cls.academicYear} ({cls.semester})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -300,8 +310,8 @@ export default function AdminReportsPage() {
                   <Info className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-blue-700">
                     <strong>Laporan Presensi:</strong> Menampilkan rekap
-                    kehadiran siswa per semester dengan rincian hadir, sakit, izin,
-                    dan alpha.
+                    kehadiran siswa per semester dengan rincian hadir, sakit,
+                    izin, dan alpha.
                   </div>
                 </div>
               </div>

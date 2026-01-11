@@ -37,6 +37,7 @@ export async function GET() {
         name: cls.namaKelas,
         program: cls.program.namaPaket,
         academicYear: `${cls.academicYear.tahunMulai}/${cls.academicYear.tahunSelesai}`,
+        semester: cls.academicYear.semester,
         studentCount: cls.students.length,
         subjectCount: cls.classSubjectTutors.length,
         homeroomTeacher: cls.homeroomTeacher
