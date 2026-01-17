@@ -8,6 +8,7 @@ import {
   createAutoTable,
   pdfToBuffer,
   createPDFResponse,
+  sanitizeFilename,
 } from "@/lib/pdf-helper";
 
 export async function GET(request) {
@@ -238,7 +239,9 @@ function generatePDFClassScores(classesData) {
 
   const pdfBuffer = pdfToBuffer(doc);
   const academicYear = classesData[0]?.kelas?.academicYear;
-  const filename = `rekap-nilai-${academicYear?.tahunMulai}-${academicYear?.semester}.pdf`;
+  const filename = sanitizeFilename(
+    `rekap-nilai-${academicYear?.tahunMulai}-${academicYear?.semester}.pdf`
+  );
 
   return createPDFResponse(pdfBuffer, filename);
 }
@@ -300,11 +303,15 @@ function generateExcelClassScores(classesData) {
   });
 
   const academicYear = classesData[0]?.kelas?.academicYear;
+  const filename = sanitizeFilename(
+    `rekap-nilai-${academicYear?.tahunMulai}-${academicYear?.semester}.xlsx`
+  );
+
   return new NextResponse(excelBuffer, {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=rekap-nilai-${academicYear?.tahunMulai}-${academicYear?.semester}.xlsx`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }

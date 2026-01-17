@@ -8,6 +8,7 @@ import {
   createAutoTable,
   pdfToBuffer,
   createPDFResponse,
+  sanitizeFilename,
 } from "@/lib/pdf-helper";
 
 export async function GET(request) {
@@ -335,10 +336,9 @@ function generatePDFSubjectScores(data) {
   }
 
   const pdfBuffer = pdfToBuffer(doc);
-  const filename = `laporan-nilai-${data.subject.namaMapel.replace(
-    /\s+/g,
-    "-"
-  )}-${data.class.namaKelas}.pdf`;
+  const filename = sanitizeFilename(
+    `laporan-nilai-${data.subject.namaMapel}-${data.class.namaKelas}.pdf`
+  );
 
   return createPDFResponse(pdfBuffer, filename);
 }
@@ -392,14 +392,15 @@ function generateExcelSubjectScores(data) {
     bookType: "xlsx",
   });
 
+  const filename = sanitizeFilename(
+    `laporan-nilai-${data.subject.namaMapel}-${data.class.namaKelas}.xlsx`
+  );
+
   return new NextResponse(excelBuffer, {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=laporan-nilai-${data.subject.namaMapel.replace(
-        /\s+/g,
-        "-"
-      )}-${data.class.namaKelas}.xlsx`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }

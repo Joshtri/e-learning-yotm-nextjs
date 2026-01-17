@@ -8,6 +8,7 @@ import {
   createAutoTable,
   pdfToBuffer,
   createPDFResponse,
+  sanitizeFilename,
 } from "@/lib/pdf-helper";
 
 export async function GET(request) {
@@ -173,7 +174,10 @@ function generatePDFAttendance(attendanceData) {
   const className = attendanceData.length === 1 ? attendanceData[0].kelas.namaKelas.replace(/[^a-zA-Z0-9]/g, "_") : "Semua_Kelas";
   const yearStr = `${academicYear?.tahunMulai}-${academicYear?.tahunSelesai}`;
   const semesterStr = academicYear?.semester || "";
-  const filename = `Laporan_Presensi_${className}_${yearStr}_${semesterStr}.pdf`;
+
+  const filename = sanitizeFilename(
+    `Laporan_Presensi_${className}_${yearStr}_${semesterStr}.pdf`
+  );
 
   // Header
   doc.setFontSize(16);
@@ -309,7 +313,10 @@ function generateExcelAttendance(attendanceData) {
   const yearStr = `${academicYear?.tahunMulai}-${academicYear?.tahunSelesai}`;
   const semesterStr = academicYear?.semester || "";
   const className = attendanceData.length === 1 ? attendanceData[0].kelas.namaKelas.replace(/[^a-zA-Z0-9]/g, "_") : "Semua_Kelas";
-  const filename = `Laporan_Presensi_${className}_${yearStr}_${semesterStr}.xlsx`;
+
+  const filename = sanitizeFilename(
+    `Laporan_Presensi_${className}_${yearStr}_${semesterStr}.xlsx`
+  );
 
   attendanceData.forEach((data) => {
     const { kelas, subjectsData } = data;
@@ -395,7 +402,7 @@ function generateExcelAttendance(attendanceData) {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=${filename}`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }

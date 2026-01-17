@@ -68,7 +68,7 @@ export default function AdminReportsPage() {
 
         // Set default to active year
         const activeYear = academicYearsData.data?.academicYears?.find(
-          (y) => y.isActive
+          (y) => y.isActive,
         );
         if (activeYear) {
           setSelectedAcademicYear(activeYear.id);
@@ -125,8 +125,8 @@ export default function AdminReportsPage() {
       const contentDisposition = response.headers.get("Content-Disposition");
       let filename = `laporan-${reportType}.${reportFormat}`;
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch) {
+        const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
           filename = decodeURIComponent(filenameMatch[1]);
         }
       }
