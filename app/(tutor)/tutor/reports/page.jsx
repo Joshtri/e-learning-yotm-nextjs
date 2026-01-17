@@ -99,11 +99,31 @@ export default function TutorReportsPage() {
         responseType: "blob",
       });
 
-      const selectedYear = academicYears.find((y) => y.id === selectedAcademicYear);
-      const selectedClassName = classes.find((c) => c.id === selectedClass)?.namaKelas;
-      const selectedSubjectName = subjects.find((s) => s.id === selectedSubject)?.namaMapel;
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear,
+      );
+      const selectedClassName = classes.find(
+        (c) => c.id === selectedClass,
+      )?.namaKelas;
+      const selectedSubjectName = subjects.find(
+        (s) => s.id === selectedSubject,
+      )?.namaMapel;
 
-      const filename = `laporan-nilai-${selectedSubjectName?.replace(/\s+/g, "-")}-${selectedClassName}-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
+      // Attempt to get filename from header
+      const contentDisposition = res.headers["content-disposition"];
+      let filename = `laporan-nilai-${selectedSubjectName?.replace(
+        /\s+/g,
+        "-",
+      )}-${selectedClassName}-${selectedYear?.tahunMulai}-${
+        selectedYear?.semester
+      }.${format}`;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
@@ -114,7 +134,7 @@ export default function TutorReportsPage() {
       link.remove();
 
       toast.success(
-        `Laporan nilai mata pelajaran berhasil diunduh (${format.toUpperCase()})`
+        `Laporan nilai mata pelajaran berhasil diunduh (${format.toUpperCase()})`,
       );
     } catch (err) {
       console.error("Download error:", err);
@@ -176,8 +196,13 @@ export default function TutorReportsPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Kelas</label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <label className="text-sm font-medium mb-2 block">
+                    Kelas
+                  </label>
+                  <Select
+                    value={selectedClass}
+                    onValueChange={setSelectedClass}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih kelas" />
                     </SelectTrigger>
@@ -217,7 +242,10 @@ export default function TutorReportsPage() {
                 <Button
                   onClick={() => downloadSubjectScoresReport("pdf")}
                   disabled={
-                    loading || !selectedAcademicYear || !selectedClass || !selectedSubject
+                    loading ||
+                    !selectedAcademicYear ||
+                    !selectedClass ||
+                    !selectedSubject
                   }
                   className="flex-1"
                 >
@@ -231,7 +259,10 @@ export default function TutorReportsPage() {
                 <Button
                   onClick={() => downloadSubjectScoresReport("xlsx")}
                   disabled={
-                    loading || !selectedAcademicYear || !selectedClass || !selectedSubject
+                    loading ||
+                    !selectedAcademicYear ||
+                    !selectedClass ||
+                    !selectedSubject
                   }
                   variant="outline"
                   className="flex-1"
