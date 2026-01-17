@@ -38,7 +38,7 @@ export async function GET(request) {
       academicYearId: academicYearId,
     };
 
-    if (classId) {
+    if (classId && classId !== "all") {
       whereClause.id = classId;
     }
 
@@ -48,23 +48,6 @@ export async function GET(request) {
       include: {
         academicYear: true,
         program: true,
-        students: {
-          where: { status: "ACTIVE" },
-          orderBy: { namaLengkap: "asc" },
-          include: {
-            FinalScore: {
-              where: { tahunAjaranId: academicYearId },
-              include: {
-                subject: true,
-              },
-            },
-            BehaviorScore: {
-              where: {
-                academicYearId: academicYearId,
-              },
-            },
-          },
-        },
         homeroomTeacher: {
           include: {
             user: true,
@@ -97,8 +80,57 @@ export async function GET(request) {
 
       const subjects = programSubjects.map((ps) => ps.subject);
 
+      // ✅ FETCH STUDENTS ROBUSTLY
+      // 1. Try to get students from history (for past semesters/accurate historical data)
+      const classHistory = await prisma.studentClassHistory.findMany({
+        where: {
+          classId: kelas.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          student: {
+            include: {
+              FinalScore: {
+                where: { tahunAjaranId: academicYearId },
+                include: { subject: true },
+              },
+              BehaviorScore: {
+                where: { academicYearId: academicYearId },
+              },
+            },
+          },
+        },
+        orderBy: {
+          student: { namaLengkap: "asc" },
+        },
+      });
+
+      let students = classHistory.map((h) => h.student);
+
+      // 2. Fallback: If no history (e.g. current active semester), get current active students
+      if (students.length === 0) {
+        students = await prisma.student.findMany({
+          where: {
+            classId: kelas.id,
+            status: "ACTIVE",
+          },
+          include: {
+            FinalScore: {
+              where: { tahunAjaranId: academicYearId },
+              include: { subject: true },
+            },
+            BehaviorScore: {
+              where: { academicYearId: academicYearId },
+            },
+          },
+          orderBy: {
+            namaLengkap: "asc",
+          },
+        });
+      }
+
       // Organize student data
-      const studentsData = kelas.students.map((student) => {
+      const studentsData = students.map((student) => {
         const scores = {};
         let totalScore = 0;
         let subjectCount = 0;
@@ -185,7 +217,7 @@ function generatePDFClassScores(classesData) {
     );
     addText(
       doc,
-      `Wali Kelas: ${kelas.homeroomTeacher?.user?.name || "-"}`,
+      `Wali Kelas: ${kelas.homeroomTeacher?.namaLengkap || "-"}`,
       14,
       43
     );
@@ -260,7 +292,7 @@ function generateExcelClassScores(classesData) {
       [
         `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - ${kelas.academicYear?.semester}`,
       ],
-      [`Wali Kelas: ${kelas.homeroomTeacher?.user?.name || "-"}`],
+      [`Wali Kelas: ${kelas.homeroomTeacher?.namaLengkap || "-"}`],
       [],
     ];
 
