@@ -13,7 +13,8 @@
     "seed:materi": "node prisma/seed-genap-materi.js",
     "seed:tugas": "node prisma/seed-genap-tugas.js",
     "seed:uts-uas": "node prisma/seed-genap-uts-uas.js",
-    "seed:genap-all": "npm run seed:materi && npm run seed:tugas && npm run seed:uts-uas"
+    "seed:genap-all": "npm run seed:materi && npm run seed:tugas && npm run seed:uts-uas",
+    "convert-doc": "node scripts/convert-doc.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
