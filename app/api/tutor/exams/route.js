@@ -209,7 +209,8 @@ export async function POST(req) {
             questionId: createdQuestion.id,
             teks: opt.teks,
             kode: `OPSI_${i}`,
-            adalahBenar: String(i) === q.jawabanBenar,
+            // Support both formats: adalahBenar from options OR jawabanBenar index
+            adalahBenar: opt.adalahBenar === true || String(i) === q.jawabanBenar,
           })),
         });
       }

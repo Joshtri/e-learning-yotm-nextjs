@@ -57,8 +57,8 @@ export async function PUT(req, { params }) {
       },
     });
 
-    // Update options if multiple choice
-    if (jenis === "MULTIPLE_CHOICE" && options) {
+    // Update options if multiple choice or true/false
+    if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(jenis) && options) {
       // Delete existing options
       await prisma.answerOption.deleteMany({
         where: { questionId },
@@ -70,8 +70,9 @@ export async function PUT(req, { params }) {
           data: options.map((opt, i) => ({
             questionId,
             teks: opt.teks,
-            kode: `OPSI_${String.fromCharCode(65 + i)}`,
-            adalahBenar: opt.benar || false,
+            kode: `OPSI_${i}`, // Use numeric index to match frontend
+            // Support both: adalahBenar from frontend OR benar from legacy
+            adalahBenar: opt.adalahBenar === true || opt.benar === true,
           })),
         });
       }

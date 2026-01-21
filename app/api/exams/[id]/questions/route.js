@@ -26,12 +26,14 @@ export async function POST(req, { params }) {
         },
       });
 
-      for (const opt of q.options) {
+      for (let i = 0; i < q.options.length; i++) {
+        const opt = q.options[i];
         await prisma.answerOption.create({
           data: {
             questionId: createdQuestion.id,
             teks: opt.teks,
-            adalahBenar: opt.adalahBenar || false,
+            kode: `OPSI_${i}`, // Required for grading
+            adalahBenar: opt.adalahBenar === true,
           },
         });
       }

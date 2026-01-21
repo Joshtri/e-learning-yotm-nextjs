@@ -55,6 +55,7 @@ export async function GET(req, { params }) {
       student: {
         ...sub.student,
         namaLengkap: sub.student.namaLengkap || sub.student.user?.nama || "-",
+        nisn: sub.student.nisn || "-",
       },
     }));
 

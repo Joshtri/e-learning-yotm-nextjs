@@ -134,7 +134,8 @@ export async function POST(req, { params }) {
               questionId: createdQuestion.id,
               teks: opt.teks,
               kode: `OPSI_${i}`,
-              adalahBenar: String(i) === q.jawabanBenar,
+              // Support both formats: adalahBenar from options OR jawabanBenar index
+              adalahBenar: opt.adalahBenar === true || String(i) === q.jawabanBenar,
             })),
           });
         }
@@ -168,14 +169,15 @@ export async function POST(req, { params }) {
         },
       });
 
-      // Create options for multiple choice
-      if (jenis === "MULTIPLE_CHOICE" && options?.length) {
+      // Create options for multiple choice or true/false
+      if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(jenis) && options?.length) {
         await prisma.answerOption.createMany({
           data: options.map((opt, i) => ({
             questionId: createdQuestion.id,
             teks: opt.teks,
-            kode: `OPSI_${String.fromCharCode(65 + i)}`,
-            adalahBenar: opt.benar || false,
+            kode: `OPSI_${i}`, // Use numeric index to match frontend
+            // Support both: adalahBenar from frontend OR benar from legacy
+            adalahBenar: opt.adalahBenar === true || opt.benar === true,
           })),
         });
       }

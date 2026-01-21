@@ -47,8 +47,48 @@ export async function GET(request) {
       }
     }
 
-    // ✅ Get unique classes where tutor is homeroom teacher OR teaches any subject
-    // This gives us all classes a tutor manages/teaches
+    // ✅ Get classes where tutor teaches subjects (CSTs)
+    const classesAsTeacher = await prisma.classSubjectTutor.findMany({
+      where: {
+        tutorId: tutor.id,
+        class: {
+          academicYearId: academicYearId,
+        },
+      },
+      include: {
+        subject: { select: { id: true, namaMapel: true } },
+        class: {
+          select: {
+            id: true,
+            namaKelas: true,
+            academicYear: {
+              select: {
+                id: true,
+                tahunMulai: true,
+                tahunSelesai: true,
+                isActive: true,
+                semester: true,
+              },
+            },
+            program: {
+              select: {
+                id: true,
+                namaPaket: true,
+              },
+            },
+            homeroomTeacher: {
+              select: {
+                id: true,
+                namaLengkap: true,
+                userId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // ✅ Get unique classes where tutor is homeroom teacher
     const classesAsHomeroom = await prisma.class.findMany({
       where: {
         academicYearId: academicYearId,
@@ -82,90 +122,22 @@ export async function GET(request) {
       },
     });
 
-    // ✅ Get classes where tutor teaches subjects (deduplicated)
-    const classesAsTeacher = await prisma.classSubjectTutor.findMany({
-      where: {
-        tutorId: tutor.id,
-        class: {
-          academicYearId: academicYearId,
-        },
-      },
-      include: {
-        subject: { select: { id: true, namaMapel: true } }, // 🔥 Include ID & Name
-        class: {
-          select: {
-            id: true,
-            namaKelas: true,
-            academicYear: {
-              select: {
-                id: true,
-                tahunMulai: true,
-                tahunSelesai: true,
-                isActive: true,
-                semester: true,
-              },
-            },
-            program: {
-              select: {
-                id: true,
-                namaPaket: true,
-              },
-            },
-            homeroomTeacher: {
-              select: {
-                id: true,
-                namaLengkap: true,
-                userId: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    // ✅ Identify classes where I teach (to exclude from homeroom-only list)
+    const teachingClassIds = new Set(classesAsTeacher.map((item) => item.class.id));
 
-    // ✅ Deduplicate and combine both lists
-    const classMap = new Map();
+    // Filter homeroom classes where I DON'T teach any subject
+    const homeroomOnlyData = classesAsHomeroom
+      .filter((c) => !teachingClassIds.has(c.id))
+      .map((c) => ({
+        id: `hr_${c.id}`, // Fake ID for key
+        class: c,
+        subject: null, // No subject
+        isHomeroomOnly: true,
+      }));
 
-    // Add homeroom classes
-    classesAsHomeroom.forEach(cls => {
-      classMap.set(cls.id, {
-        id: cls.id,
-        namaKelas: cls.namaKelas,
-        academicYear: cls.academicYear,
-        program: cls.program,
-        homeroomTeacher: cls.homeroomTeacher,
-        taughtSubjects: [], // Init array
-        isHomeroom: true, // Flag for UI
-      });
-    });
-
-    // Add teacher classes (if not already added as homeroom)
-    classesAsTeacher.forEach(item => {
-      if (!classMap.has(item.class.id)) {
-        classMap.set(item.class.id, {
-          id: item.class.id,
-          namaKelas: item.class.namaKelas,
-          academicYear: item.class.academicYear,
-          program: item.class.program,
-          homeroomTeacher: item.class.homeroomTeacher,
-          taughtSubjects: [],
-          isHomeroom: false,
-        });
-      }
-
-      // Add subject to the list
-      const existing = classMap.get(item.class.id);
-      if (item.subject) {
-        existing.taughtSubjects.push({
-          id: item.subject.id,
-          name: item.subject.namaMapel,
-        });
-      }
-    });
-
-    // ✅ Convert to array and sort by class name
-    const data = Array.from(classMap.values()).sort((a, b) =>
-      a.namaKelas.localeCompare(b.namaKelas)
+    // ✅ Combine both lists
+    const data = [...classesAsTeacher, ...homeroomOnlyData].sort((a, b) =>
+      a.class.namaKelas.localeCompare(b.class.namaKelas)
     );
 
     return NextResponse.json({ success: true, data });

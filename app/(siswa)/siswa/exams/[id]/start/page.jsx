@@ -18,6 +18,7 @@ import FormField from "@/components/ui/form-field";
 import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { CountdownTimer } from "@/components/ui/countdown-timer";
 import { LoadingOverlay } from "@/components/ui/loading";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 export default function StudentExamStartPage() {
   const { id: examId } = useParams();
@@ -29,6 +30,7 @@ export default function StudentExamStartPage() {
   const [answerImages, setAnswerImages] = useState({}); // Stores base64 images { [questionId]: base64 }
   const [isLoading, setIsLoading] = useState(true);
   const [timeUp, setTimeUp] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const {
     register,
@@ -110,6 +112,15 @@ export default function StudentExamStartPage() {
     } catch {
       toast.error("Gagal mengirim jawaban");
     }
+  };
+
+  const handleSubmitClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmDialog(false);
+    handleSubmit(onSubmit)();
   };
 
   const goToNextQuestion = () => {
@@ -400,29 +411,45 @@ export default function StudentExamStartPage() {
                   <ArrowLeft className="h-4 w-4 mr-2" /> Sebelumnya
                 </Button>
 
-                {currentIndex === questions.length - 1 ? (
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || timeUp}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isSubmitting ? "Mengirim..." : "Kumpulkan Jawaban"}
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    onClick={goToNextQuestion}
-                    disabled={currentIndex === questions.length - 1 || timeUp}
-                  >
-                    Selanjutnya <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {currentIndex < questions.length - 1 && (
+                    <Button
+                      type="button"
+                      onClick={goToNextQuestion}
+                      disabled={timeUp}
+                    >
+                      Selanjutnya <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+
+                  {currentIndex === questions.length - 1 && (
+                    <Button
+                      type="button"
+                      onClick={handleSubmitClick}
+                      disabled={isSubmitting || timeUp}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {isSubmitting ? "Mengirim..." : "Kumpulkan Jawaban"}
+                    </Button>
+                  )}
+                </div>
               </CardFooter>
             </Card>
           </div>
         </div>
       </form>
+
+      <ConfirmationDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmSubmit}
+        title="Kumpulkan Jawaban?"
+        description={`Anda yakin ingin mengumpulkan jawaban ujian ini? Pastikan semua jawaban sudah terisi dengan benar. Anda telah menjawab ${Object.keys(watchedAnswers).filter(k => watchedAnswers[k]).length} dari ${questions.length} soal.`}
+        confirmText="Ya, Kumpulkan"
+        cancelText="Periksa Lagi"
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }

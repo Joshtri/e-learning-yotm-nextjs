@@ -7,6 +7,10 @@ import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function ExamSubmissionsPage() {
   const { id } = useParams();
@@ -38,15 +42,37 @@ export default function ExamSubmissionsPage() {
     },
     {
       header: "Nama Siswa",
-      cell: (row) => row.student?.namaLengkap || "-",
+      cell: (row) => (
+        <div>
+          <div className="font-medium">{row.student?.namaLengkap || "-"}</div>
+          <div className="text-sm text-muted-foreground">
+            NISN: {row.student?.nisn || "-"}
+          </div>
+        </div>
+      ),
     },
     {
       header: "Status",
-      cell: (row) => row.status,
+      cell: (row) => {
+        const isGraded = row.status === "GRADED" || row.waktuDinilai;
+        return (
+          <Badge variant={isGraded ? "default" : "secondary"}>
+            {isGraded ? (
+              <><CheckCircle className="h-3 w-3 mr-1" /> Sudah Dinilai</>
+            ) : (
+              <><Clock className="h-3 w-3 mr-1" /> Belum Dinilai</>
+            )}
+          </Badge>
+        );
+      },
     },
     {
       header: "Nilai",
-      cell: (row) => row.nilai ?? "-",
+      cell: (row) => (
+        <span className={`font-semibold ${row.nilai !== null ? "text-green-600" : "text-muted-foreground"}`}>
+          {row.nilai ?? "-"}
+        </span>
+      ),
     },
     {
       header: "Waktu Kumpul",
@@ -54,6 +80,17 @@ export default function ExamSubmissionsPage() {
         row.waktuKumpul
           ? new Date(row.waktuKumpul).toLocaleString("id-ID")
           : "-",
+    },
+    {
+      header: "Aksi",
+      cell: (row) => (
+        <Button size="sm" asChild>
+          <Link href={`/tutor/exams/${id}/submissions/${row.id}`}>
+            <Eye className="h-4 w-4 mr-1" />
+            Periksa Jawaban
+          </Link>
+        </Button>
+      ),
     },
   ];
 

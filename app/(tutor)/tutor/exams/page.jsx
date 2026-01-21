@@ -261,15 +261,12 @@ export default function TutorExamsPage() {
             </Link>
           </Button>
 
-          {row.jenis !== "DAILY_TEST" &&
-            row.jenis !== "START_SEMESTER_TEST" && (
-              <Button variant="default" size="sm" asChild>
-                <Link href={`/tutor/exams/${row.id}/submissions`}>
-                  <FileText className="h-4 w-4 mr-1" />
-                  Jawaban
-                </Link>
-              </Button>
-            )}
+          <Button variant="default" size="sm" asChild>
+            <Link href={`/tutor/exams/${row.id}/submissions`}>
+              <FileText className="h-4 w-4 mr-1" />
+              Jawaban
+            </Link>
+          </Button>
 
           <Button variant="outline" size="sm" asChild>
             <Link href={`/tutor/exams/${row.id}/edit`}>

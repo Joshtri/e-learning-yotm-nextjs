@@ -15,11 +15,10 @@ import {
   Calendar,
   ChevronRight,
   Clock,
-  Plus,
   Trash2,
   Loader2,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -29,7 +28,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -117,7 +115,7 @@ export default function MyClassesPage() {
     // Filter by academic year
     if (selectedAcademicYear) {
       filtered = filtered.filter(
-        (item) => item.class?.academicYear?.id === selectedAcademicYear
+        (item) => item.class?.academicYear?.id === selectedAcademicYear,
       );
     }
 
@@ -133,7 +131,7 @@ export default function MyClassesPage() {
             .includes(searchQuery.toLowerCase()) ||
           item.class?.program?.namaPaket
             ?.toLowerCase()
-            .includes(searchQuery.toLowerCase())
+            .includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -175,7 +173,7 @@ export default function MyClassesPage() {
       if (res.data.success) {
         // Filter only for this CST
         const filtered = res.data.data.filter(
-          (s) => s.classSubjectTutorId === cstId
+          (s) => s.classSubjectTutorId === cstId,
         );
         setCstSchedules(filtered);
       }
@@ -269,49 +267,70 @@ export default function MyClassesPage() {
       header: "Aksi",
       cell: (row) => (
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/tutor/my-classes/${row.id}/students`)}
-          >
-            <Users className="h-4 w-4 mr-1" />
-            Siswa
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openScheduleDialog(row)}
-          >
-            <Clock className="h-4 w-4 mr-1" />
-            Atur Jadwal
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/tutor/my-classes/${row.id}/materials`)}
-          >
-            <FileText className="h-4 w-4 mr-1" />
-            Materi
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() =>
-              router.push(`/tutor/my-classes/${row.id}/discussions`)
-            }
-          >
-            <MessageSquare className="h-4 w-4 mr-1" />
-            Diskusi
-          </Button>
+          {!row.isHomeroomOnly && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(`/tutor/my-classes/${row.id}/students`)
+                }
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Siswa
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openScheduleDialog(row)}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Atur Jadwal
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(`/tutor/my-classes/${row.id}/materials`)
+                }
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Materi
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() =>
+                  router.push(`/tutor/my-classes/${row.id}/discussions`)
+                }
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Diskusi
+              </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => router.push(`/tutor/my-classes/${row.id}/detail`)}
-          >
-            Detail
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  router.push(`/tutor/my-classes/${row.id}/detail`)
+                }
+              >
+                Detail
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </>
+          )}
+          {row.isHomeroomOnly && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+              title="Fitur Wali Kelas belum tersedia di halaman ini"
+            >
+              Detail Wali Kelas
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -356,7 +375,11 @@ export default function MyClassesPage() {
         </div>
 
         <TabsContent value="all" className="space-y-4">
-          {filteredData.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : filteredData.length > 0 ? (
             <DataTable
               data={filteredData}
               columns={columns}
@@ -366,12 +389,11 @@ export default function MyClassesPage() {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <LoadingSpinner />
-            // <EmptyState
-            //   title="Belum ada kelas"
-            //   description="Anda belum memiliki kelas yang diajar pada tahun ajaran ini."
-            //   icon={<Users className="h-6 w-6 text-muted-foreground" />}
-            // />
+            <EmptyState
+              title="Belum ada kelas"
+              description="Anda belum memiliki kelas yang diajar pada tahun ajaran ini."
+              icon={<Users className="h-6 w-6 text-muted-foreground" />}
+            />
           )}
         </TabsContent>
 

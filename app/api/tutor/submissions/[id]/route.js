@@ -53,6 +53,7 @@ export async function GET(req, { params }) {
           include: {
             question: {
               include: {
+                options: true, // Include options for showing correct answer
                 assignment: {
                   select: {
                     classSubjectTutor: {
