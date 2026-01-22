@@ -39,21 +39,31 @@ export async function GET() {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    // 🔥 Setup tanggal hari ini - gunakan ISO string untuk menghindari perbedaan zona waktu
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const todayDate = new Date(`${todayStr}T00:00:00.000Z`);
+    // 🔥 Setup tanggal hari ini - gunakan offset UTC+8 (WITA)
+    const now = new Date();
+    // Shift ke UTC+8
+    const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    // Ambil YYYY-MM-DD dari local time
+    const todayStr = localNow.toISOString().split("T")[0];
 
-    const tomorrow = new Date(todayDate);
-    tomorrow.setDate(todayDate.getDate() + 1);
+    // Buat Range Start/End dalam UTC
+    // Start: 00:00:00 WITA = Previous Day 16:00:00 UTC
+    // Tapi karena tanggal di DB tersimpan sebagai absolute timestamp (biasanya 00:00 UTC untuk date-only), 
+    // atau jika ada jamnya kita perlu range seharian.
+    // Asumsi: 'tanggal' di DB menyimpan datetime lengkap atau setidaknya start of day dari inputan user.
+    // Kita filter based on range local day.
+
+    // Range 00:00 WITA s/d 23:59 WITA
+    const startOfDayWITA = new Date(`${todayStr}T00:00:00+08:00`);
+    const endOfDayWITA = new Date(`${todayStr}T23:59:59.999+08:00`);
 
     // 🔥 Cari attendance session untuk hari ini dan kelas yang dia ajar
     const attendances = await prisma.attendanceSession.findMany({
       where: {
         classId: { in: classIds },
         tanggal: {
-          gte: today, // dari jam 00:00 hari ini
-          lt: tomorrow, // sebelum jam 00:00 besok
+          gte: startOfDayWITA,
+          lte: endOfDayWITA,
         },
       },
       include: {

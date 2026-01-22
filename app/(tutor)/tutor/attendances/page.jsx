@@ -64,7 +64,33 @@ export default function AttendanceClassListPage() {
       const res = await api.get("/tutor/my-classes", {
         params: { academicYearId },
       });
-      setClasses(res.data.data || []);
+      const rawData = res.data.data || [];
+
+      // Group by class ID to merge subjects for the same class
+      const groupedMap = {};
+      rawData.forEach((item) => {
+        const clsId = item.class.id;
+        if (!groupedMap[clsId]) {
+          groupedMap[clsId] = {
+            ...item.class,
+            taughtSubjects: [],
+          };
+        }
+        if (item.subject) {
+          // Avoid duplicate subjects if any
+          const exists = groupedMap[clsId].taughtSubjects.find(
+            (s) => s.id === item.subject.id,
+          );
+          if (!exists) {
+            groupedMap[clsId].taughtSubjects.push({
+              ...item.subject,
+              cstId: item.id,
+            });
+          }
+        }
+      });
+
+      setClasses(Object.values(groupedMap));
     } catch {
       toast.error("Gagal memuat kelas");
     } finally {
@@ -180,7 +206,8 @@ export default function AttendanceClassListPage() {
               {classes.flatMap((cls) => {
                 const items = [];
                 // 1. Homeroom Card
-                {/* if (cls.isHomeroom) {
+                {
+                  /* if (cls.isHomeroom) {
                   items.push(
                     <Card
                       key={`${cls.id}-homeroom`}
@@ -222,7 +249,8 @@ export default function AttendanceClassListPage() {
                       </CardContent>
                     </Card>
                   );
-                } */}
+                } */
+                }
                 // 2. Subject Cards
                 if (cls.taughtSubjects && cls.taughtSubjects.length > 0) {
                   cls.taughtSubjects.forEach((sub) => {
@@ -234,7 +262,7 @@ export default function AttendanceClassListPage() {
                         <CardHeader className="pb-3">
                           <div className="flex flex-col gap-2">
                             <Badge className="w-fit bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
-                              {sub.name}
+                              {sub.namaMapel}
                             </Badge>
                             <CardTitle className="text-lg">
                               {cls.namaKelas}
@@ -259,7 +287,7 @@ export default function AttendanceClassListPage() {
                               className="w-full"
                               onClick={() =>
                                 router.push(
-                                  `/tutor/attendances/class/${cls.id}?subjectId=${sub.id}`
+                                  `/tutor/attendances/class/${cls.id}?subjectId=${sub.id}`,
                                 )
                               }
                             >
@@ -267,7 +295,7 @@ export default function AttendanceClassListPage() {
                             </Button>
                           </div>
                         </CardContent>
-                      </Card>
+                      </Card>,
                     );
                   });
                 }

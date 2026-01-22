@@ -17,7 +17,6 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   AlertCircle,
-  BarChart3,
   BookOpen,
   Calendar,
   CheckCircle,
@@ -104,7 +103,7 @@ export default function TutorDashboardPage() {
 
         // 3. Check if tutor profile exists
         const profileRes = await fetch(
-          `/api/users/check-profile?userId=${user.id}&role=${user.role}`
+          `/api/users/check-profile?userId=${user.id}&role=${user.role}`,
         );
         const profileData = await profileRes.json();
 
@@ -151,18 +150,6 @@ export default function TutorDashboardPage() {
     }
   };
 
-  // Format date with time with error handling
-  const formatDateTime = (dateString) => {
-    try {
-      if (!dateString) return "No date";
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Invalid date";
-      return format(date, "d MMM yyyy, HH:mm", { locale: id });
-    } catch (error) {
-      console.error("Error formatting date time:", error);
-      return "Invalid date";
-    }
-  };
   return (
     <>
       {currentUser && (
@@ -317,7 +304,13 @@ export default function TutorDashboardPage() {
                           size="sm"
                           variant="ghost"
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => router.push(`/homeroom/attendance`)}
+                          onClick={() =>
+                            router.push(
+                              sch.classId && sch.subjectId
+                                ? `/tutor/attendances/class/${sch.classId}?subjectId=${sch.subjectId}`
+                                : `/tutor/attendances`,
+                            )
+                          }
                         >
                           Absensi
                         </Button>
@@ -359,7 +352,7 @@ export default function TutorDashboardPage() {
                         router.push(
                           `/tutor/classes/${
                             cls.classId
-                          }/subjects/${encodeURIComponent(cls.subject)}`
+                          }/subjects/${encodeURIComponent(cls.subject)}`,
                         )
                       }
                     >
@@ -419,7 +412,7 @@ export default function TutorDashboardPage() {
                               className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                               onClick={() =>
                                 router.push(
-                                  `/tutor/assignments/${assignment.id}`
+                                  `/tutor/assignments/${assignment.id}`,
                                 )
                               }
                             >
@@ -463,7 +456,7 @@ export default function TutorDashboardPage() {
                                 </div>
                               </div>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     ) : (
@@ -563,7 +556,7 @@ export default function TutorDashboardPage() {
                                 </div>
                               </div>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     ) : (
@@ -661,7 +654,9 @@ export default function TutorDashboardPage() {
                         key={submission.id}
                         className="flex items-start p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                         onClick={() =>
-                          router.push(`/tutor/submissions/${submission.id}`)
+                          router.push(
+                            `/tutor/submissions/${submission.id}/review`,
+                          )
                         }
                       >
                         <div className="p-2 bg-amber-100 rounded-full mr-3">

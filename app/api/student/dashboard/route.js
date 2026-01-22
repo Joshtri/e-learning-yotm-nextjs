@@ -47,6 +47,12 @@ export async function GET() {
 
     const studentId = student.id;
     const now = new Date();
+
+    // Adjust timezone to WITA (UTC+8) for correct day calculation
+    // Vercel server uses UTC, so we shift time by 8 hours to match local school time
+    const localDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const dayOfWeek = localDate.getUTCDay() || 7;
+
     const cstIds = student.class.classSubjectTutors.map((cst) => cst.id);
 
     const [
@@ -194,7 +200,7 @@ export async function GET() {
       prisma.schedule.findMany({
         where: {
           classSubjectTutorId: { in: cstIds },
-          dayOfWeek: now.getDay() || 7, // 1 (Mon) - 7 (Sun)
+          dayOfWeek: dayOfWeek,
         },
         include: {
           classSubjectTutor: {

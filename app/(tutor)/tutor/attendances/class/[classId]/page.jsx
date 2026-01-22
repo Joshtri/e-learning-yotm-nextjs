@@ -69,9 +69,13 @@ const startOfDay = (d) => {
   return x;
 };
 const isSameDay = (a, b) => {
-  const dateA = new Date(a).toISOString().split("T")[0];
-  const dateB = new Date(b).toISOString().split("T")[0];
-  return dateA === dateB;
+  const dateA = new Date(a);
+  const dateB = new Date(b);
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+  );
 };
 
 const formatID = (iso) => {
@@ -115,7 +119,9 @@ export default function AttendancePerClassPage() {
       if (res.data.success) {
         toast.success("Status berhasil diperbarui");
         setAllSessions((prev) =>
-          prev.map((s) => (s.id === sessionId ? { ...s, ...res.data.data } : s))
+          prev.map((s) =>
+            s.id === sessionId ? { ...s, ...res.data.data } : s,
+          ),
         );
       }
     } catch {
@@ -178,15 +184,15 @@ export default function AttendancePerClassPage() {
 
       const res = await api.patch(
         `/tutor/attendances/${editDialog.id}`,
-        payload
+        payload,
       );
 
       if (res.data.success) {
         toast.success("Sesi berhasil diperbarui");
         setAllSessions((prev) =>
           prev.map((s) =>
-            s.id === editDialog.id ? { ...s, ...res.data.data } : s
-          )
+            s.id === editDialog.id ? { ...s, ...res.data.data } : s,
+          ),
         );
         setEditDialog((prev) => ({ ...prev, open: false }));
       }
@@ -226,7 +232,7 @@ export default function AttendancePerClassPage() {
         setLoadingHolidays(true);
         const res = await fetch(
           `/api/holidays/combined?year=${currentYear}&month=${currentMonth}`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         const json = await res.json();
         if (json?.success) {
@@ -234,7 +240,7 @@ export default function AttendancePerClassPage() {
           const sorted = (json.data || []).sort(
             (a, b) =>
               a.date.localeCompare(b.date) ||
-              String(a.name || "").localeCompare(String(b.name || ""))
+              String(a.name || "").localeCompare(String(b.name || "")),
           );
           setHolidayList(sorted);
         } else {
@@ -257,12 +263,12 @@ export default function AttendancePerClassPage() {
         month: "long",
         year: "numeric",
       }),
-    [now]
+    [now],
   );
 
   const sessionsToday = useMemo(
     () => sessions.filter((s) => isSameDay(s.tanggal, today)),
-    [sessions, today]
+    [sessions, today],
   );
   const hasToday = sessionsToday.length > 0;
 
@@ -271,14 +277,14 @@ export default function AttendancePerClassPage() {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
     return sessions.filter(
-      (s) => new Date(s.tanggal) >= start && new Date(s.tanggal) <= end
+      (s) => new Date(s.tanggal) >= start && new Date(s.tanggal) <= end,
     ).length;
   }, [sessions]);
 
   const lastSession = useMemo(() => {
     if (!sessions.length) return null;
     const sorted = [...sessions].sort(
-      (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
+      (a, b) => new Date(b.tanggal) - new Date(a.tanggal),
     );
     return sorted[0];
   }, [sessions]);
@@ -287,7 +293,7 @@ export default function AttendancePerClassPage() {
     try {
       if (!subjectId) {
         toast.error(
-          "Fitur ini hanya tersedia untuk tampilan per mata pelajaran."
+          "Fitur ini hanya tersedia untuk tampilan per mata pelajaran.",
         );
         return;
       }
@@ -522,19 +528,19 @@ export default function AttendancePerClassPage() {
                       h.source === "national"
                         ? "bg-rose-50 border-rose-200 text-rose-700"
                         : h.source === "range"
-                        ? "bg-amber-50 border-amber-200 text-amber-700"
-                        : h.source === "day"
-                        ? "bg-blue-50 border-blue-200 text-blue-700"
-                        : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                          ? "bg-amber-50 border-amber-200 text-amber-700"
+                          : h.source === "day"
+                            ? "bg-blue-50 border-blue-200 text-blue-700"
+                            : "bg-emerald-50 border-emerald-200 text-emerald-700"
                     }`}
                   >
                     {h.source === "national"
                       ? "Nasional"
                       : h.source === "range"
-                      ? "Rentang"
-                      : h.source === "day"
-                      ? "Harian"
-                      : "Mingguan"}
+                        ? "Rentang"
+                        : h.source === "day"
+                          ? "Harian"
+                          : "Mingguan"}
                   </span>
                 </li>
               ))}
@@ -611,13 +617,13 @@ export default function AttendancePerClassPage() {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
-                          }
+                          },
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground font-normal">
                         {new Date(lastSession.tanggal).toLocaleDateString(
                           "id-ID",
-                          { weekday: "long" }
+                          { weekday: "long" },
                         )}
                       </div>
                     </>
@@ -706,7 +712,7 @@ export default function AttendancePerClassPage() {
                           {groups[subjectName].map((session) => {
                             const isTodayRow = isSameDay(
                               session.tanggal,
-                              today
+                              today,
                             );
                             return (
                               <TableRow
@@ -726,7 +732,7 @@ export default function AttendancePerClassPage() {
                                       }`}
                                     >
                                       {new Date(
-                                        session.tanggal
+                                        session.tanggal,
                                       ).toLocaleDateString("id-ID", {
                                         day: "numeric",
                                         month: "long",
@@ -735,7 +741,7 @@ export default function AttendancePerClassPage() {
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                       {new Date(
-                                        session.tanggal
+                                        session.tanggal,
                                       ).toLocaleDateString("id-ID", {
                                         weekday: "long",
                                       })}
@@ -745,7 +751,7 @@ export default function AttendancePerClassPage() {
                                           <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border text-slate-600">
                                             {session.startTime
                                               ? new Date(
-                                                  session.startTime
+                                                  session.startTime,
                                                 ).toLocaleTimeString("id-ID", {
                                                   hour: "2-digit",
                                                   minute: "2-digit",
@@ -756,7 +762,7 @@ export default function AttendancePerClassPage() {
                                             </span>
                                             {session.endTime
                                               ? new Date(
-                                                  session.endTime
+                                                  session.endTime,
                                                 ).toLocaleTimeString("id-ID", {
                                                   hour: "2-digit",
                                                   minute: "2-digit",
@@ -810,7 +816,7 @@ export default function AttendancePerClassPage() {
                                         size="sm"
                                         onClick={() =>
                                           router.push(
-                                            `/tutor/attendances/${session.id}`
+                                            `/tutor/attendances/${session.id}`,
                                           )
                                         }
                                         className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
@@ -839,7 +845,7 @@ export default function AttendancePerClassPage() {
                                           onClick={() =>
                                             handleUpdateStatus(
                                               session.id,
-                                              "TERJADWALKAN"
+                                              "TERJADWALKAN",
                                             )
                                           }
                                         >
@@ -849,7 +855,7 @@ export default function AttendancePerClassPage() {
                                           onClick={() =>
                                             handleUpdateStatus(
                                               session.id,
-                                              "DIMULAI"
+                                              "DIMULAI",
                                             )
                                           }
                                         >
@@ -859,7 +865,7 @@ export default function AttendancePerClassPage() {
                                           onClick={() =>
                                             handleUpdateStatus(
                                               session.id,
-                                              "SELESAI"
+                                              "SELESAI",
                                             )
                                           }
                                         >
@@ -871,7 +877,7 @@ export default function AttendancePerClassPage() {
                                             // prevent conflict with dropdown closing
                                             setTimeout(
                                               () => openEditDialog(session),
-                                              100
+                                              100,
                                             );
                                           }}
                                         >
@@ -881,7 +887,7 @@ export default function AttendancePerClassPage() {
                                         <DropdownMenuItem
                                           onClick={() =>
                                             router.push(
-                                              `/tutor/attendances/${session.id}`
+                                              `/tutor/attendances/${session.id}`,
                                             )
                                           }
                                         >

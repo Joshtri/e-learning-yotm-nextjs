@@ -150,11 +150,23 @@ export async function POST(req, { params }) {
       let nilai = 0;
 
       if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis)) {
-        const jawabanBenar = q.options.find((opt) => opt.adalahBenar);
-        if (jawabanBenar) {
-          benar = jawabanSiswa === jawabanBenar.kode;
+        // Find the option that student selected (by kode or teks)
+        const opsiDipilih = q.options.find(
+          (opt) =>
+            opt.kode === jawabanSiswa ||
+            opt.teks === jawabanSiswa ||
+            opt.teks?.trim().toLowerCase() === jawabanSiswa?.trim().toLowerCase()
+        );
+
+        // Check if the selected option is the correct one
+        if (opsiDipilih) {
+          benar = opsiDipilih.adalahBenar === true;
           nilai = benar ? q.poin : 0;
           totalNilai += nilai;
+        } else {
+          // Student didn't select a valid option
+          benar = false;
+          nilai = 0;
         }
       }
 

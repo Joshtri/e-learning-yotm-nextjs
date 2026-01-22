@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
-import Holidays from "date-holidays";
 
 export async function POST(req) {
   try {
@@ -101,11 +100,9 @@ export async function POST(req) {
 
     const sessionsToCreate = [];
     const startObj = new Date(startDate);
-    const hd = new Holidays("ID"); // Optional: Check holidays/Sundays if needed, but per requirement we generate 1-16 "default".
     // Requirement says: "tanggal_pertemuan_n = tanggal_mulai + (n-1) * 7 hari (+ offset day of week)"
     // Actually: "mengikuti day-of-week jadwal"
 
-    let totalCreated = 0;
     let subjectsProcessed = 0;
 
     for (const cst of classSubjectTutors) {
@@ -184,8 +181,6 @@ export async function POST(req) {
           meetingDate.setDate(meetingDate.getDate() + (currentWeek * 7));
 
           // Adjust day
-          const currentDayJs = meetingDate.getDay();
-          const diff = targetDayJs - currentDayJs; // e.g. Target Mon(1) - Current Sun(0) = 1. Add 1 day.
           // If diff < 0 (e.g. Target Mon(1) - Current Tue(2) = -1), it means the day has passed in this week?
           // "Tanggal Mulai Pertemuan 1" usually implies the start of the academic calendar.
           // If startDate is Monday, and schedule is Tuesday, it's next day.
@@ -238,16 +233,36 @@ export async function POST(req) {
           finalDate.setDate(finalDate.getDate() + daysToAdd);
 
           // Time
-          const startT = new Date(sch.startTime); // It's a DateTime object in Prisma
+          // Time Correction for Timezone (WITA UTC+8)
+          const OFFSET = 8;
+
+          const startT = new Date(sch.startTime);
           const endT = new Date(sch.endTime);
 
-          // Set time on finalDate
-          // Note: sch.startTime has some dummy date component. We only need Time.
-          const sTime = new Date(finalDate);
-          sTime.setHours(startT.getUTCHours(), startT.getUTCMinutes(), 0, 0);
+          // 1. Extract pure Local Hours/Minutes from the Schedule (stored in UTC)
+          // e.g. 23:00 UTC -> 07:00 Local (next day relative to epoch, but we just want HH:mm)
+          const startLocalTime = new Date(startT.getTime() + (OFFSET * 60 * 60 * 1000));
+          const startH = startLocalTime.getUTCHours();
+          const startM = startLocalTime.getUTCMinutes();
 
-          const eTime = new Date(finalDate);
-          eTime.setHours(endT.getUTCHours(), endT.getUTCMinutes(), 0, 0);
+          const endLocalTime = new Date(endT.getTime() + (OFFSET * 60 * 60 * 1000));
+          const endH = endLocalTime.getUTCHours();
+          const endM = endLocalTime.getUTCMinutes();
+
+          // 2. Create the target Local Date-Time (phantom UTC)
+          // finalDate aka baseDate is UTC 00:00 representing the target Day.
+          // We set it to the Target Local Time (e.g. 07:00).
+          // sTimeLocal becomes "Jan 5 07:00 UTC".
+          const sTimeLocal = new Date(finalDate);
+          sTimeLocal.setUTCHours(startH, startM, 0, 0);
+
+          const eTimeLocal = new Date(finalDate);
+          eTimeLocal.setUTCHours(endH, endM, 0, 0);
+
+          // 3. Shift back to real UTC (-8 hours)
+          // "Jan 5 07:00 Local" -> "Jan 4 23:00 UTC"
+          const sTime = new Date(sTimeLocal.getTime() - (OFFSET * 60 * 60 * 1000));
+          const eTime = new Date(eTimeLocal.getTime() - (OFFSET * 60 * 60 * 1000));
 
           sessionsToCreate.push({
             classId: kelas.id,
