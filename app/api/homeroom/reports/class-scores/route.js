@@ -10,6 +10,10 @@ import {
   createPDFResponse,
 } from "@/lib/pdf-helper";
 
+//timeout add. 
+
+export const maxDuration = 60;
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();

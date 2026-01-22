@@ -11,6 +11,9 @@ import {
   sanitizeFilename,
 } from "@/lib/pdf-helper";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();
@@ -319,7 +322,7 @@ function generatePDFClassScores(classesData) {
     });
 
     // Footer
-    const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = (doc.lastAutoTable?.finalY || 60) + 10;
     doc.setFontSize(9);
     addText(
       doc,
@@ -385,7 +388,7 @@ function generateExcelClassScores(classesData) {
     // Sanitize sheet name (max 31 chars, no special chars)
     const sheetName = kelas.namaKelas
       .substring(0, 31)
-      .replace(/[:\\\/?*\[\]]/g, "");
+      .replace(/[:\\/?*[\]]/g, "");
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   });
 
