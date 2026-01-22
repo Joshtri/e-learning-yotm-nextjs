@@ -43,7 +43,42 @@ export async function GET(request) {
       );
     }
 
-    // Get homeroom class
+    // ✅ FETCH STUDENTS ROBUSTLY
+    // Common include for fetching submissions
+    const submissionsInclude = {
+      where: {
+        OR: [
+          {
+            assignment: {
+              classSubjectTutor: {
+                class: { academicYearId: academicYearId },
+              },
+            },
+          },
+          {
+            quiz: {
+              classSubjectTutor: {
+                class: { academicYearId: academicYearId },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        assignment: {
+          select: {
+            classSubjectTutor: { select: { subjectId: true } },
+          },
+        },
+        quiz: {
+          select: {
+            classSubjectTutor: { select: { subjectId: true } },
+          },
+        },
+      },
+    };
+
+    // Get homeroom class with optimized query
     const kelas = await prisma.class.findFirst({
       where: {
         homeroomTeacherId: tutor.id,
@@ -52,23 +87,6 @@ export async function GET(request) {
       include: {
         academicYear: true,
         program: true,
-        students: {
-          where: { status: "ACTIVE" },
-          orderBy: { namaLengkap: "asc" },
-          include: {
-            FinalScore: {
-              where: { tahunAjaranId: academicYearId },
-              include: {
-                subject: true,
-              },
-            },
-            BehaviorScore: {
-              where: {
-                academicYearId: academicYearId,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -77,6 +95,56 @@ export async function GET(request) {
         { success: false, message: "Class not found for this academic year" },
         { status: 404 }
       );
+    }
+
+    // 1. Try to get students from history
+    const classHistory = await prisma.studentClassHistory.findMany({
+      where: {
+        classId: kelas.id,
+        academicYearId: academicYearId,
+      },
+      include: {
+        student: {
+          include: {
+            FinalScore: {
+              where: { tahunAjaranId: academicYearId },
+              include: { subject: true },
+            },
+            BehaviorScore: {
+              where: { academicYearId: academicYearId },
+            },
+            submissions: submissionsInclude,
+          },
+        },
+      },
+      orderBy: {
+        student: { namaLengkap: "asc" },
+      },
+    });
+
+    let students = classHistory.map((h) => h.student);
+
+    // 2. Fallback: If no history (e.g. current active semester), get current active students
+    if (students.length === 0) {
+      students = await prisma.student.findMany({
+        where: {
+          classId: kelas.id,
+          status: "ACTIVE",
+        },
+        include: {
+          FinalScore: {
+            where: { tahunAjaranId: academicYearId },
+            include: { subject: true },
+          },
+          BehaviorScore: {
+            where: { academicYearId: academicYearId },
+          },
+          submissions: submissionsInclude,
+        },
+        orderBy: {
+          namaLengkap: "asc",
+        },
+      });
     }
 
     // Get all subjects for this class's program
@@ -93,25 +161,49 @@ export async function GET(request) {
     const subjects = programSubjects.map((ps) => ps.subject);
 
     // Organize student data
-    const studentsData = kelas.students.map((student) => {
+    const studentsData = students.map((student) => {
       const scores = {};
       let totalScore = 0;
       let subjectCount = 0;
 
       subjects.forEach((subject) => {
+        // 1. Try FinalScore First
         const finalScore = student.FinalScore.find(
           (fs) => fs.subjectId === subject.id
         );
+
         if (finalScore) {
           scores[subject.id] = finalScore.nilaiAkhir;
           totalScore += finalScore.nilaiAkhir;
           subjectCount++;
         } else {
-          scores[subject.id] = "-";
+          // 2. Fallback to calculating average from submissions
+          const subjectSubmissions = student.submissions.filter((s) => {
+            const sSubjectId =
+              s.assignment?.classSubjectTutor?.subjectId ||
+              s.quiz?.classSubjectTutor?.subjectId;
+            return sSubjectId === subject.id && typeof s.nilai === "number";
+          });
+
+          if (subjectSubmissions.length > 0) {
+            const sum = subjectSubmissions.reduce(
+              (acc, curr) => acc + (curr.nilai || 0),
+              0
+            );
+            const avg = parseFloat(
+              (sum / subjectSubmissions.length).toFixed(2)
+            ); // Round to 2 decimals
+            scores[subject.id] = avg;
+            totalScore += avg;
+            subjectCount++;
+          } else {
+            scores[subject.id] = "-";
+          }
         }
       });
 
-      const average = subjectCount > 0 ? (totalScore / subjectCount).toFixed(2) : "-";
+      const average =
+        subjectCount > 0 ? (totalScore / subjectCount).toFixed(2) : "-";
 
       const behaviorScore = student.BehaviorScore[0];
 
@@ -185,17 +277,18 @@ function generatePDFClassScores(kelas, subjects, studentsData) {
     head: [headers],
     body: tableData,
     theme: "grid",
+    styles: { fontSize: 5, cellPadding: 1 },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 5 }, // No
+      1: { cellWidth: 30 }, // Nama Siswa
+      2: { halign: "center", cellWidth: 15 }, // NISN
+    },
     headStyles: {
       fillColor: [41, 128, 185],
       halign: "center",
-      fontSize: 8,
+      fontSize: 5, // Match body font size for header consistency or slightly larger
     },
-    styles: { fontSize: 7, cellPadding: 2 },
-    columnStyles: {
-      0: { halign: "center", cellWidth: 10 },
-      1: { cellWidth: 40 },
-      2: { halign: "center", cellWidth: 25 },
-    },
+    margin: { top: 10, left: 10, right: 10 },
   });
 
   // Footer

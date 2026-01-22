@@ -81,7 +81,42 @@ export async function GET(request) {
       const subjects = programSubjects.map((ps) => ps.subject);
 
       // ✅ FETCH STUDENTS ROBUSTLY
-      // 1. Try to get students from history (for past semesters/accurate historical data)
+      // Common include for fetching submissions
+      const submissionsInclude = {
+        where: {
+          OR: [
+            {
+              assignment: {
+                classSubjectTutor: {
+                  class: { academicYearId: academicYearId },
+                },
+              },
+            },
+            {
+              quiz: {
+                classSubjectTutor: {
+                  class: { academicYearId: academicYearId },
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          assignment: {
+            select: {
+              classSubjectTutor: { select: { subjectId: true } },
+            },
+          },
+          quiz: {
+            select: {
+              classSubjectTutor: { select: { subjectId: true } },
+            },
+          },
+        },
+      };
+
+      // ✅ FETCH STUDENTS ROBUSTLY
+      // 1. Try to get students from history
       const classHistory = await prisma.studentClassHistory.findMany({
         where: {
           classId: kelas.id,
@@ -97,6 +132,7 @@ export async function GET(request) {
               BehaviorScore: {
                 where: { academicYearId: academicYearId },
               },
+              submissions: submissionsInclude,
             },
           },
         },
@@ -122,6 +158,7 @@ export async function GET(request) {
             BehaviorScore: {
               where: { academicYearId: academicYearId },
             },
+            submissions: submissionsInclude,
           },
           orderBy: {
             namaLengkap: "asc",
@@ -136,15 +173,38 @@ export async function GET(request) {
         let subjectCount = 0;
 
         subjects.forEach((subject) => {
+          // 1. Try FinalScore First
           const finalScore = student.FinalScore.find(
             (fs) => fs.subjectId === subject.id
           );
+
           if (finalScore) {
             scores[subject.id] = finalScore.nilaiAkhir;
             totalScore += finalScore.nilaiAkhir;
             subjectCount++;
           } else {
-            scores[subject.id] = "-";
+            // 2. Fallback to calculating average from submissions
+            const subjectSubmissions = student.submissions.filter((s) => {
+              const sSubjectId =
+                s.assignment?.classSubjectTutor?.subjectId ||
+                s.quiz?.classSubjectTutor?.subjectId;
+              return sSubjectId === subject.id && typeof s.nilai === "number";
+            });
+
+            if (subjectSubmissions.length > 0) {
+              const sum = subjectSubmissions.reduce(
+                (acc, curr) => acc + (curr.nilai || 0),
+                0
+              );
+              const avg = parseFloat(
+                (sum / subjectSubmissions.length).toFixed(2)
+              ); // Round to 2 decimals
+              scores[subject.id] = avg;
+              totalScore += avg;
+              subjectCount++;
+            } else {
+              scores[subject.id] = "-";
+            }
           }
         });
 
@@ -244,18 +304,18 @@ function generatePDFClassScores(classesData) {
       head: [headers],
       body: tableData,
       theme: "grid",
+      styles: { fontSize: 5, cellPadding: 1 },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 5 }, // No
+        1: { cellWidth: 30 }, // Nama Siswa
+        2: { halign: "center", cellWidth: 15 }, // NISN
+      },
       headStyles: {
         fillColor: [41, 128, 185],
         halign: "center",
-        fontSize: 7,
+        fontSize: 5, // Match body font size for header consistency or slightly larger
       },
-      styles: { fontSize: 6, cellPadding: 1.5 },
-      columnStyles: {
-        0: { halign: "center", cellWidth: 8 },
-        1: { cellWidth: 35 },
-        2: { halign: "center", cellWidth: 22 },
-      },
-      margin: { left: 14, right: 14 },
+      margin: { top: 10, left: 10, right: 10 },
     });
 
     // Footer

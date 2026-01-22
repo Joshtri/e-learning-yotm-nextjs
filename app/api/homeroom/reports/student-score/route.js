@@ -34,7 +34,8 @@ export async function GET(request) {
       );
     }
 
-    // Get student with all scores
+    // ✅ FETCH DATA ROBUSTLY with Fallback
+    // 1. Get student basic info and class
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
@@ -42,24 +43,60 @@ export async function GET(request) {
         class: {
           include: {
             academicYear: true,
-            program: true,
+            // Get all subjects for the class program
+            program: {
+              include: {
+                ProgramSubject: {
+                  include: { subject: true },
+                },
+              },
+            },
           },
         },
+        // Get existing final scores
         FinalScore: {
           where: { tahunAjaranId: academicYearId },
-          include: {
-            subject: true,
-          },
-          orderBy: {
-            subject: { namaMapel: "asc" },
-          },
+          include: { subject: true },
         },
+        // Get behavior scores
         BehaviorScore: {
           where: { academicYearId: academicYearId },
         },
+        // Get attendance
         Attendance: {
+          where: { academicYearId: academicYearId },
+        },
+        // Get submissions for fallback calculation
+        submissions: {
           where: {
-            academicYearId: academicYearId,
+            OR: [
+              {
+                assignment: {
+                  classSubjectTutor: {
+                    class: { academicYearId: academicYearId },
+                  },
+                },
+              },
+              {
+                quiz: {
+                  classSubjectTutor: {
+                    class: { academicYearId: academicYearId },
+                  },
+                },
+              },
+            ],
+          },
+          include: {
+            assignment: {
+              select: {
+                classSubjectTutor: { select: { subjectId: true } },
+              },
+            },
+            quiz: {
+              select: {
+                classSubjectTutor: { select: { subjectId: true } },
+              },
+            },
           },
         },
       },
@@ -98,14 +135,64 @@ export async function GET(request) {
       attendanceSummary.izin +
       attendanceSummary.alpha;
 
+    // ✅ PROCESS SCORES (FinalScore vs Fallback)
+    // Get all subjects from the student's program to ensure we list ALL subjects, not just those with scores
+    const allSubjects =
+      student.class?.program?.ProgramSubject?.map((ps) => ps.subject) || [];
+
+    const processedScores = allSubjects
+      .map((subject) => {
+        // 1. Try to find existing FinalScore
+        const finalScore = student.FinalScore.find(
+          (fs) => fs.subjectId === subject.id
+        );
+
+        if (finalScore) {
+          return {
+            subject,
+            nilaiAkhir: finalScore.nilaiAkhir,
+            isFinal: true,
+          };
+        }
+
+        // 2. Fallback: Calculate from submissions
+        const subjectSubmissions = student.submissions.filter((s) => {
+          const sSubjectId =
+            s.assignment?.classSubjectTutor?.subjectId ||
+            s.quiz?.classSubjectTutor?.subjectId;
+          return sSubjectId === subject.id && typeof s.nilai === "number";
+        });
+
+        if (subjectSubmissions.length > 0) {
+          const sum = subjectSubmissions.reduce(
+            (acc, curr) => acc + (curr.nilai || 0),
+            0
+          );
+          const avg = parseFloat((sum / subjectSubmissions.length).toFixed(2));
+          return {
+            subject,
+            nilaiAkhir: avg,
+            isFinal: false, // Mark as calculated/temporary
+          };
+        }
+
+        // 3. No data
+        return {
+          subject,
+          nilaiAkhir: 0,
+          isFinal: false,
+        };
+      })
+      .sort((a, b) => a.subject.namaMapel.localeCompare(b.subject.namaMapel));
+
     // Calculate average score
-    const totalScore = student.FinalScore.reduce(
-      (sum, score) => sum + score.nilaiAkhir,
+    const totalScoreValue = processedScores.reduce(
+      (sum, item) => sum + item.nilaiAkhir,
       0
     );
     const averageScore =
-      student.FinalScore.length > 0
-        ? (totalScore / student.FinalScore.length).toFixed(2)
+      processedScores.length > 0
+        ? (totalScoreValue / processedScores.length).toFixed(2)
         : 0;
 
     const reportData = {
@@ -120,7 +207,7 @@ export async function GET(request) {
         tahun: `${academicYear?.tahunMulai}/${academicYear?.tahunSelesai}`,
         semester: academicYear?.semester,
       },
-      scores: student.FinalScore,
+      scores: processedScores, // Use the processed list with fallbacks
       averageScore,
       behaviorScore: student.BehaviorScore[0] || null,
       attendance: attendanceSummary,
