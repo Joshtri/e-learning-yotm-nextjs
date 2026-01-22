@@ -23,7 +23,6 @@ import api from "@/lib/axios";
 import {
   FileText,
   Download,
-  Calendar,
   Users,
   User,
   ClipboardCheck,
@@ -51,7 +50,7 @@ export default function HomeroomReportsPage() {
         if (activeYear) {
           setSelectedAcademicYear(activeYear.id);
         }
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat tahun ajaran");
       }
     };
@@ -67,8 +66,8 @@ export default function HomeroomReportsPage() {
         if (res.data.success && res.data.data) {
           setMyClass(res.data.data);
         }
-      } catch (err) {
-        console.error("Error fetching class:", err);
+      } catch {
+        // Silent error for class info
       }
     };
 
@@ -77,21 +76,21 @@ export default function HomeroomReportsPage() {
 
   // Fetch students when academic year selected
   useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const res = await api.get("/homeroom/my-students", {
+          params: { academicYearId: selectedAcademicYear },
+        });
+        setStudents(res.data.data || []);
+      } catch {
+        toast.error("Gagal memuat data siswa");
+      }
+    };
+
     if (selectedAcademicYear) {
       fetchStudents();
     }
   }, [selectedAcademicYear]);
-
-  const fetchStudents = async () => {
-    try {
-      const res = await api.get("/homeroom/my-students", {
-        params: { academicYearId: selectedAcademicYear },
-      });
-      setStudents(res.data.data || []);
-    } catch (err) {
-      toast.error("Gagal memuat data siswa");
-    }
-  };
 
   // Download handlers
   const downloadAttendanceReport = async (format) => {
@@ -111,7 +110,7 @@ export default function HomeroomReportsPage() {
       });
 
       const selectedYear = academicYears.find(
-        (y) => y.id === selectedAcademicYear
+        (y) => y.id === selectedAcademicYear,
       );
       const filename = `laporan-presensi-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
 
@@ -124,11 +123,10 @@ export default function HomeroomReportsPage() {
       link.remove();
 
       toast.success(
-        `Laporan presensi berhasil diunduh (${format.toUpperCase()})`
+        `Laporan presensi berhasil diunduh (${format.toUpperCase()})`,
       );
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengunduh laporan presensi");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -151,7 +149,7 @@ export default function HomeroomReportsPage() {
       });
 
       const selectedYear = academicYears.find(
-        (y) => y.id === selectedAcademicYear
+        (y) => y.id === selectedAcademicYear,
       );
       const filename = `laporan-nilai-kelas-${selectedYear?.tahunMulai}-${selectedYear?.semester}.${format}`;
 
@@ -164,9 +162,9 @@ export default function HomeroomReportsPage() {
       link.remove();
 
       toast.success(
-        `Laporan nilai kelas berhasil diunduh (${format.toUpperCase()})`
+        `Laporan nilai kelas berhasil diunduh (${format.toUpperCase()})`,
       );
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengunduh laporan nilai kelas");
     } finally {
       setLoading(false);
@@ -197,7 +195,7 @@ export default function HomeroomReportsPage() {
 
       const student = students.find((s) => s.id === selectedStudent);
       const selectedYear = academicYears.find(
-        (y) => y.id === selectedAcademicYear
+        (y) => y.id === selectedAcademicYear,
       );
       const filename = `rapor-${student?.namaLengkap?.replace(/\s+/g, "-")}-${
         selectedYear?.tahunMulai
@@ -212,7 +210,7 @@ export default function HomeroomReportsPage() {
       link.remove();
 
       toast.success(`Rapor siswa berhasil diunduh (${format.toUpperCase()})`);
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengunduh rapor siswa");
     } finally {
       setLoading(false);
@@ -297,7 +295,7 @@ export default function HomeroomReportsPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih tahun ajaran" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent side="bottom">
                     {academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
                         {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
@@ -359,7 +357,7 @@ export default function HomeroomReportsPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih tahun ajaran" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent side="bottom">
                     {academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
                         {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
@@ -422,7 +420,7 @@ export default function HomeroomReportsPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih tahun ajaran" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom">
                       {academicYears.map((y) => (
                         <SelectItem key={y.id} value={y.id}>
                           {y.tahunMulai}/{y.tahunSelesai} - {y.semester}
@@ -443,7 +441,7 @@ export default function HomeroomReportsPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih siswa" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom">
                       {students.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.namaLengkap} - {s.nisn}
