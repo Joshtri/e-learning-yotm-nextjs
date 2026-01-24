@@ -146,12 +146,12 @@ export default function EditUserPage() {
                 <FormField
                   control={form.control}
                   name="nama"
-                  rules={{ required: "Nama wajib diisi" }}
+                  rules={{ required: "Username wajib diisi" }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nama Lengkap</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="Masukkan nama lengkap" {...field} />
+                        <Input placeholder="Masukkan username" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

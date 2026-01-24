@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { getSubjectById, updateSubject } from "@/services/SubjectService";
+import api from "@/lib/axios";
 
 export default function SubjectEditPage() {
   const { id } = useParams();
@@ -17,8 +17,10 @@ export default function SubjectEditPage() {
     namaMapel: "",
     kodeMapel: "",
     deskripsi: "",
+    programId: "",
   });
 
+  const [programs, setPrograms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,25 +28,38 @@ export default function SubjectEditPage() {
   useEffect(() => {
     if (!id) return;
 
-    getSubjectById(id)
-      .then((res) => {
-        if (res.success) {
+    const fetchData = async () => {
+      try {
+        const [subjectRes, programsRes] = await Promise.all([
+          getSubjectById(id),
+          api.get("/programs?limit=0"),
+        ]);
+
+        if (subjectRes.success) {
           setFormData({
-            namaMapel: res.data.namaMapel || "",
-            kodeMapel: res.data.kodeMapel || "",
-            deskripsi: res.data.deskripsi || "",
+            namaMapel: subjectRes.data.namaMapel || "",
+            kodeMapel: subjectRes.data.kodeMapel || "",
+            deskripsi: subjectRes.data.deskripsi || "",
+            programId: subjectRes.data.programId || "",
           });
         } else {
           toast.error("Data tidak ditemukan");
           router.push("/admin/subject");
         }
-      })
-      .catch(() => {
+
+        if (programsRes.data.success) {
+          setPrograms(programsRes.data.data.programs || []);
+        }
+      } catch {
         toast.error("Gagal mengambil data");
         router.push("/admin/subject");
-      })
-      .finally(() => setIsLoading(false));
-  }, [id]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, router]);
 
   // Handle form change
   const handleChange = (e) => {
@@ -57,14 +72,19 @@ export default function SubjectEditPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await updateSubject(id, formData);
+      const payload = {
+        ...formData,
+        programId: formData.programId || null,
+      };
+
+      const res = await updateSubject(id, payload);
       if (res.success) {
         toast.success("Mata pelajaran berhasil diperbarui");
         router.push("/admin/subject");
       } else {
         toast.error(res.message || "Gagal memperbarui");
       }
-    } catch (err) {
+    } catch {
       toast.error("Terjadi kesalahan saat update");
     } finally {
       setIsSubmitting(false);
@@ -94,6 +114,25 @@ export default function SubjectEditPage() {
                   onChange={handleChange}
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium">
+                  Paket/Program (opsional)
+                </label>
+                <select
+                  name="programId"
+                  value={formData.programId}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">-- Pilih Program --</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.namaPaket}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* <div>

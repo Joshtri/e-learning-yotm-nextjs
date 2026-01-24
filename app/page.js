@@ -20,57 +20,57 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [identifierError, setIdentifierError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
 
   // Check if user is already authenticated
   useEffect(() => {
-    checkExistingAuth();
-  }, []);
+    const checkExistingAuth = async () => {
+      try {
+        const response = await axios.get("/api/auth/me", {
+          timeout: 5000, // 5 second timeout
+        });
 
-  const checkExistingAuth = async () => {
-    try {
-      const response = await axios.get("/api/auth/me", {
-        timeout: 5000, // 5 second timeout
-      });
+        const user = response.data.user;
 
-      const user = response.data.user;
+        // If user exists, redirect to their dashboard
+        if (user && user.role) {
+          const dashboardMap = {
+            ADMIN: "/admin/dashboard",
+            TUTOR: "/tutor/dashboard",
+            STUDENT: "/siswa/dashboard",
+          };
 
-      // If user exists, redirect to their dashboard
-      if (user && user.role) {
-        const dashboardMap = {
-          ADMIN: "/admin/dashboard",
-          TUTOR: "/tutor/dashboard",
-          STUDENT: "/siswa/dashboard",
-        };
-
-        const dashboard = dashboardMap[user.role] || "/";
-        router.push(dashboard);
-      } else {
-        // No user, show login page
+          const dashboard = dashboardMap[user.role] || "/";
+          router.push(dashboard);
+        } else {
+          // No user, show login page
+          setIsCheckingAuth(false);
+        }
+      } catch (error) {
+        // Error or timeout, show login page
+        console.error("Auth check error:", error);
         setIsCheckingAuth(false);
       }
-    } catch (error) {
-      // Error or timeout, show login page
-      console.error("Auth check error:", error);
-      setIsCheckingAuth(false);
-    }
-  };
+    };
+
+    checkExistingAuth();
+  }, [router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setEmailError("");
+    setIdentifierError("");
     setPasswordError("");
 
     try {
       const res = await axios.post("/api/auth/login", {
-        email,
+        identifier,
         password,
       });
 
@@ -93,12 +93,12 @@ export default function LoginPage() {
           error.response?.data?.message || "Terjadi kesalahan saat login";
         toast.error(errorMessage);
         // Simple error mapping
-        if (errorMessage.toLowerCase().includes("email")) {
-          setEmailError(errorMessage);
+        if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("username")) {
+          setIdentifierError(errorMessage);
         } else if (errorMessage.toLowerCase().includes("password")) {
           setPasswordError(errorMessage);
         } else {
-          setEmailError(errorMessage);
+          setIdentifierError(errorMessage);
         }
       } else {
         toast.error("Terjadi kesalahan saat login");
@@ -164,17 +164,17 @@ export default function LoginPage() {
           <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="identifier">Username or Email</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="nama@email.com"
+                  id="identifier"
+                  type="text"
+                  placeholder="Username atau Email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                 />
-                {emailError && (
-                  <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                {identifierError && (
+                  <p className="text-sm text-red-600 mt-1">{identifierError}</p>
                 )}
               </div>
               <div className="space-y-2">

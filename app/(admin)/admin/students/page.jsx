@@ -5,6 +5,7 @@ import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { DataExport } from "@/components/ui/data-export";
@@ -31,14 +32,20 @@ export default function StudentsPage() {
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(null);
 
+  const [programs, setPrograms] = useState([]);
+  const [selectedProgram, setSelectedProgram] = useState(null);
+
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedGender, setSelectedGender] = useState(null);
+
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" atau "desc"
+
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [classOptions, setClassOptions] = useState([]);
   const [isSelectingClass, setIsSelectingClass] = useState(false);
-  const [sortOrder, setSortOrder] = useState("asc"); // "asc" atau "desc"
 
   const router = useRouter();
 
-  // Fetch Academic Years
   // Fetch Academic Years
   const fetchAcademicYears = async () => {
     try {
@@ -56,6 +63,16 @@ export default function StudentsPage() {
       }
     } catch (err) {
       toast.error("Gagal memuat tahun ajaran");
+    }
+  };
+
+  // Fetch Programs
+  const fetchPrograms = async () => {
+    try {
+      const res = await api.get("/programs");
+      setPrograms(res.data.data.programs || []);
+    } catch (err) {
+      console.error("Gagal memuat program:", err);
     }
   };
 
@@ -77,9 +94,10 @@ export default function StudentsPage() {
     return "-";
   };
 
-  // Set default selected year
+  // Initial Fetch
   useEffect(() => {
     fetchAcademicYears();
+    fetchPrograms();
   }, []);
 
   useEffect(() => {
@@ -98,7 +116,11 @@ export default function StudentsPage() {
       params.append("page", pagination.page.toString());
       params.append("limit", pagination.limit.toString());
       params.append("academicYearId", selectedAcademicYear);
+
       if (searchQuery) params.append("search", searchQuery);
+      if (selectedProgram) params.append("programId", selectedProgram);
+      if (selectedStatus) params.append("status", selectedStatus);
+      if (selectedGender) params.append("jenisKelamin", selectedGender);
 
       const res = await api.get(`/students?${params.toString()}`);
       setStudents(res.data.data.students);
@@ -112,17 +134,25 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudents();
-  }, [pagination.page, pagination.limit, searchQuery, selectedAcademicYear]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    searchQuery,
+    selectedAcademicYear,
+    selectedProgram,
+    selectedStatus,
+    selectedGender,
+  ]);
 
   const filteredStudents = useMemo(() => {
     let result = students;
 
-    // Filter by search
+    // Filter by search (Handling client-side filtering lag if any, though API handles it)
     if (searchQuery) {
       result = result.filter((student) =>
         [student.user?.nama, student.nisn, student.user?.email].some((val) =>
-          val?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+          val?.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
       );
     }
 
@@ -168,8 +198,6 @@ export default function StudentsPage() {
       header: "Nama",
       cell: (student) => (
         <div className="flex items-center gap-2">
-          {/* <EntityAvatar name={student.user?.nama || "-"} />
-          <div className="font-medium">{student.user?.nama || "-"}</div> */}
           <EntityAvatar name={student.namaLengkap || "-"} />
           <div className="font-medium">{student.namaLengkap || "-"}</div>
         </div>
@@ -184,7 +212,7 @@ export default function StudentsPage() {
           student.jenisKelamin ??
             student.gender ??
             student.user?.jenisKelamin ??
-            student.user?.gender
+            student.user?.gender,
         ),
     },
     {
@@ -198,24 +226,38 @@ export default function StudentsPage() {
       header: "Paket",
       cell: (student) => student.class?.program?.namaPaket || "-",
     },
+    // {
+    //   header: "NIS",
+    //   accessorKey: "nis",
+    //   cell: (student) => student.nis || "-",
+    // },
+    // {
+    //   header: "No Telepon",
+    //   accessorKey: "noTelepon",
+    //   cell: (student) => student.noTelepon || "-",
+    // },
+    // {
+    //   header: "Tanggal Lahir",
+    //   cell: (student) =>
+    //     student.tanggalLahir
+    //       ? new Date(student.tanggalLahir).toLocaleDateString("id-ID")
+    //       : "-",
+    // },
     {
-      header: "NIS",
-      accessorKey: "nis",
-      cell: (student) => student.nis || "-",
+      header: "Status",
+      accessorKey: "status",
+      cell: (student) => (
+        <span
+          className={`px-2 py-1 rounded text-xs font-semibold ${
+            student.status === "ACTIVE"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          {student.status || "ACTIVE"}
+        </span>
+      ),
     },
-    {
-      header: "No Telepon",
-      accessorKey: "noTelepon",
-      cell: (student) => student.noTelepon || "-",
-    },
-    {
-      header: "Tanggal Lahir",
-      cell: (student) =>
-        student.tanggalLahir
-          ? new Date(student.tanggalLahir).toLocaleDateString("id-ID")
-          : "-",
-    },
-    // { header: "  Alamat", accessorKey: "alamat" },
     {
       header: "Aksi",
       cell: (student) => (
@@ -240,6 +282,77 @@ export default function StudentsPage() {
         </div>
       ),
       className: "text-right",
+    },
+  ];
+
+  const toolbarFilters = [
+    {
+      label: "Tahun Ajaran",
+      content: (
+        <AcademicYearFilter
+          academicYears={academicYears}
+          selectedId={selectedAcademicYear}
+          onChange={(val) => {
+            setSelectedAcademicYear(val);
+            setPagination((prev) => ({ ...prev, page: 1 }));
+          }}
+        />
+      ),
+    },
+    {
+      label: "Program",
+      options: [
+        { label: "Semua Program", value: "ALL" },
+        ...(Array.isArray(programs) ? programs : []).map((p) => ({
+          label: p.namaPaket,
+          value: p.id,
+        })),
+      ],
+      onSelect: (value) => {
+        setSelectedProgram(value === "ALL" ? null : value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      },
+    },
+    {
+      label: "Status",
+      options: [
+        { label: "Semua Status", value: "ALL" },
+        { label: "Aktif", value: "ACTIVE" },
+        { label: "Lulus", value: "GRADUATED" },
+        { label: "Pindah", value: "TRANSFERRED" },
+        { label: "Keluar", value: "DROPPED_OUT" },
+        { label: "Meninggal", value: "DECEASED" },
+      ],
+      onSelect: (value) => {
+        setSelectedStatus(value === "ALL" ? null : value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      },
+    },
+    {
+      label: "Gender",
+      options: [
+        { label: "Semua Gender", value: "ALL" },
+        { label: "Laki-laki", value: "MALE" },
+        { label: "Perempuan", value: "FEMALE" },
+      ],
+      onSelect: (value) => {
+        setSelectedGender(value === "ALL" ? null : value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      },
+    },
+    {
+      label: "Urut Nama",
+      content: (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+          }
+        >
+          {sortOrder === "asc" ? "A-Z" : "Z-A"}
+        </Button>
+      ),
     },
   ];
 
@@ -279,37 +392,7 @@ export default function StudentsPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
               searchPlaceholder="Cari siswa..."
-              filterOptions={[
-                {
-                  label: "Tahun Ajaran",
-                  content: (
-                    <AcademicYearFilter
-                      academicYears={academicYears}
-                      selectedId={selectedAcademicYear}
-                      onChange={(val) => {
-                        setSelectedAcademicYear(val);
-                        setPagination((prev) => ({ ...prev, page: 1 }));
-                      }}
-                    />
-                  ),
-                },
-                {
-                  label: "Urut Nama",
-                  content: (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setSortOrder((prev) =>
-                          prev === "asc" ? "desc" : "asc"
-                        )
-                      }
-                    >
-                      {sortOrder === "asc" ? "A-Z" : "Z-A"}
-                    </Button>
-                  ),
-                },
-              ]}
+              filterOptions={toolbarFilters}
             />
 
             <TabsContent value="all" className="space-y-4">
@@ -323,9 +406,7 @@ export default function StudentsPage() {
               />
 
               {/* Pagination footer */}
-              {/* Footer: info + page size + shadcn pagination */}
               <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
-                {/* Range info */}
                 <div className="text-sm text-muted-foreground">
                   {pagination.total > 0 ? (
                     <>
@@ -333,14 +414,14 @@ export default function StudentsPage() {
                       <span className="font-medium">
                         {Math.min(
                           (pagination.page - 1) * pagination.limit + 1,
-                          pagination.total
+                          pagination.total,
                         )}
                       </span>{" "}
                       –{" "}
                       <span className="font-medium">
                         {Math.min(
                           pagination.page * pagination.limit,
-                          pagination.total
+                          pagination.total,
                         )}
                       </span>{" "}
                       dari{" "}
@@ -352,9 +433,7 @@ export default function StudentsPage() {
                   )}
                 </div>
 
-                {/* Controls */}
                 <div className="flex items-center gap-4">
-                  {/* Page size */}
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       Baris per halaman
@@ -366,7 +445,8 @@ export default function StudentsPage() {
                         setPagination((prev) => ({
                           ...prev,
                           limit: Number(e.target.value),
-                          page: 1, // reset ke halaman 1
+                          page: 1,
+                          // reset ke halaman 1
                         }))
                       }
                     >
@@ -378,7 +458,6 @@ export default function StudentsPage() {
                     </select>
                   </div>
 
-                  {/* shadcn Pagination */}
                   <PaginationBar
                     page={pagination.page}
                     pages={Math.max(1, pagination.pages ?? 1)}
@@ -394,7 +473,6 @@ export default function StudentsPage() {
         </main>
       </div>
 
-      {/* Modal Tambah Kelas */}
       {isSelectingClass && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 space-y-4 w-full max-w-md">

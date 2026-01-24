@@ -811,19 +811,20 @@ export default function AttendancePerClassPage() {
                                 </TableCell>
                                 <TableCell className="text-right pr-6">
                                   <div className="flex justify-end gap-2 items-center">
-                                    {isTodayRow && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() =>
-                                          router.push(
-                                            `/tutor/attendances/${session.id}`,
-                                          )
-                                        }
-                                        className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                                      >
-                                        Presensi
-                                      </Button>
-                                    )}
+                                    {isTodayRow &&
+                                      session.status === "DIMULAI" && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() =>
+                                            router.push(
+                                              `/tutor/attendances/${session.id}`,
+                                            )
+                                          }
+                                          className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                        >
+                                          Presensi
+                                        </Button>
+                                      )}
 
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -841,36 +842,43 @@ export default function AttendancePerClassPage() {
                                         <DropdownMenuLabel>
                                           Ubah Status
                                         </DropdownMenuLabel>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            handleUpdateStatus(
-                                              session.id,
-                                              "TERJADWALKAN",
-                                            )
-                                          }
-                                        >
-                                          Reset ke Terjadwal
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            handleUpdateStatus(
-                                              session.id,
-                                              "DIMULAI",
-                                            )
-                                          }
-                                        >
-                                          Mulai Sesi
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            handleUpdateStatus(
-                                              session.id,
-                                              "SELESAI",
-                                            )
-                                          }
-                                        >
-                                          Selesai
-                                        </DropdownMenuItem>
+                                        {session.status !== "TERJADWALKAN" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleUpdateStatus(
+                                                session.id,
+                                                "TERJADWALKAN",
+                                              )
+                                            }
+                                          >
+                                            Reset ke Terjadwal
+                                          </DropdownMenuItem>
+                                        )}
+                                        {isTodayRow &&
+                                          session.status === "TERJADWALKAN" && (
+                                            <DropdownMenuItem
+                                              onClick={() =>
+                                                handleUpdateStatus(
+                                                  session.id,
+                                                  "DIMULAI",
+                                                )
+                                              }
+                                            >
+                                              Mulai Sesi
+                                            </DropdownMenuItem>
+                                          )}
+                                        {session.status === "DIMULAI" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleUpdateStatus(
+                                                session.id,
+                                                "SELESAI",
+                                              )
+                                            }
+                                          >
+                                            Selesai
+                                          </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                           onClick={(e) => {
@@ -884,15 +892,17 @@ export default function AttendancePerClassPage() {
                                           <Pencil className="mr-2 h-4 w-4" />{" "}
                                           Edit Sesi
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            router.push(
-                                              `/tutor/attendances/${session.id}`,
-                                            )
-                                          }
-                                        >
-                                          Detail & Presensi
-                                        </DropdownMenuItem>
+                                        {session.status !== "TERJADWALKAN" && (
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              router.push(
+                                                `/tutor/attendances/${session.id}`,
+                                              )
+                                            }
+                                          >
+                                            Detail & Presensi
+                                          </DropdownMenuItem>
+                                        )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </div>

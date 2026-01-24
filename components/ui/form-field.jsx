@@ -24,8 +24,6 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Controller } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
@@ -147,24 +145,25 @@ const FormField = forwardRef(
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-auto p-0 border rounded-md shadow-md bg-white dark:bg-zinc-900"
+                      className="w-auto p-0 border rounded-md shadow-lg bg-white"
                       side="bottom"
                       align="start"
                     >
                       <div className="flex">
-                        <div className="border-r p-2 max-h-[300px] overflow-y-auto">
-                          <h3 className="font-medium text-sm mb-2 px-2">
+                        <div className="border-r border-gray-200 p-2 max-h-[300px] overflow-y-auto w-[80px]">
+                          <h3 className="font-medium text-sm mb-2 px-2 text-center text-gray-700">
                             Tahun
                           </h3>
                           {years.map((year) => (
                             <div
                               key={year}
-                              className={`px-3 py-1 text-sm rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                              className={cn(
+                                "px-2 py-1.5 text-sm rounded cursor-pointer text-center transition-colors",
                                 field.value &&
-                                new Date(field.value).getFullYear() === year
-                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                  : ""
-                              }`}
+                                  new Date(field.value).getFullYear() === year
+                                  ? "bg-primary text-white font-medium"
+                                  : "text-gray-700 hover:bg-gray-100"
+                              )}
                               onClick={() => {
                                 const currentDate = field.value
                                   ? new Date(field.value)
@@ -179,7 +178,7 @@ const FormField = forwardRef(
                             </div>
                           ))}
                         </div>
-                        <DayPicker
+                        <Calendar
                           mode="single"
                           selected={
                             field.value ? new Date(field.value) : undefined
@@ -188,10 +187,17 @@ const FormField = forwardRef(
                             field.onChange(date?.toISOString())
                           }
                           locale={id}
-                          captionLayout="dropdown"
-                          fromYear={currentYear - 100}
-                          toYear={currentYear}
+                          month={field.value ? new Date(field.value) : undefined}
+                          onMonthChange={(month) => {
+                            if (field.value) {
+                              const currentDate = new Date(field.value);
+                              currentDate.setMonth(month.getMonth());
+                              currentDate.setFullYear(month.getFullYear());
+                              field.onChange(currentDate.toISOString());
+                            }
+                          }}
                           initialFocus
+                          className="p-3"
                         />
                       </div>
                     </PopoverContent>

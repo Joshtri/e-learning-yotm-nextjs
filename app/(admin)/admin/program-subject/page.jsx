@@ -29,7 +29,7 @@ export default function ProgramSubjectPage() {
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 200,
     total: 0,
     pages: 0,
   });
@@ -140,7 +140,7 @@ export default function ProgramSubjectPage() {
       if (!acc[programName]) acc[programName] = [];
       acc[programName].push(item);
       return acc;
-    }, {})
+    }, {}),
   );
 
   return (

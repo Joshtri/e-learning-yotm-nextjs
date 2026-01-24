@@ -13,6 +13,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { DataToolbar } from "@/components/ui/data-toolbar";
 import { DataExport } from "@/components/ui/data-export";
 import SubjectCreateModal from "@/components/subject/SubjectCreateModal";
+import SubjectDuplicateModal from "@/components/subject/SubjectDuplicateModal";
 import {
   Pagination,
   PaginationContent,
@@ -24,15 +25,18 @@ import {
 
 export default function SubjectPage() {
   const [subjects, setSubjects] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 200,
     total: 0,
     pages: 0,
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [subjectToDuplicate, setSubjectToDuplicate] = useState(null);
 
   const router = useRouter();
 
@@ -55,14 +59,28 @@ export default function SubjectPage() {
     }
   };
 
+  const fetchPrograms = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get(`/programs`);
+      setPrograms(response.data.data.programs || []);
+    } catch (error) {
+      console.error("Gagal memuat data program:", error);
+      toast.error("Gagal memuat data program");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchSubjects();
+    fetchPrograms();
   }, [pagination.page, pagination.limit, searchQuery]);
 
   const filteredSubjects = useMemo(() => {
     if (!searchQuery) return subjects;
     return subjects.filter((item) =>
-      item.namaMapel.toLowerCase().includes(searchQuery.toLowerCase())
+      item.namaMapel.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [subjects, searchQuery]);
 
@@ -86,7 +104,18 @@ export default function SubjectPage() {
     {
       header: "Aksi",
       cell: (item) => (
-        <>
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSubjectToDuplicate(item);
+              setIsDuplicateModalOpen(true);
+            }}
+            title="Salin ke Program Lain"
+          >
+            Copy
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -95,11 +124,9 @@ export default function SubjectPage() {
             Edit
           </Button>
 
-
           <Button
             variant="destructive"
             size="sm"
-            className="ml-2"
             onClick={async () => {
               if (confirm("Yakin ingin menghapus mata pelajaran ini?")) {
                 try {
@@ -115,9 +142,9 @@ export default function SubjectPage() {
           >
             Hapus
           </Button>
-        </>
+        </div>
       ),
-      className: "w-[120px] text-right",
+      className: "w-[180px] text-right",
     },
   ];
 
@@ -161,19 +188,46 @@ export default function SubjectPage() {
               filterOptions={[]}
             />
 
-            <TabsContent value="all" className="space-y-4">
-              <DataTable
-                data={filteredSubjects}
-                columns={columns}
-                isLoading={isLoading}
-                loadingMessage="Memuat data mata pelajaran..."
-                emptyMessage="Tidak ada data mata pelajaran ditemukan"
-                keyExtractor={(item) => item.id}
-                pagination={null} // atau bisa dihapus kalau tidak dipakai
-              />
+            <TabsContent value="all" className="space-y-8">
+              {Object.entries(
+                filteredSubjects.reduce((acc, subject) => {
+                  const programName =
+                    subject.program?.namaPaket || "Tanpa Paket Program";
+                  if (!acc[programName]) acc[programName] = [];
+                  acc[programName].push(subject);
+                  return acc;
+                }, {}),
+              )
+                .sort(([a], [b]) => a.localeCompare(b)) // Sorting abjad (A-Z)
+                .map(([programName, items]) => (
+                  <div key={programName} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-1 bg-primary rounded-full"></div>
+                      <h3 className="font-semibold text-lg">{programName}</h3>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                        {items.length} Mapel
+                      </span>
+                    </div>
+                    <DataTable
+                      data={items}
+                      columns={columns}
+                      isLoading={isLoading}
+                      loadingMessage="Memuat data..."
+                      emptyMessage="Tidak ada data"
+                      keyExtractor={(item) => item.id}
+                      pagination={null}
+                    />
+                  </div>
+                ))}
+
+              {filteredSubjects.length === 0 && !isLoading && (
+                <div className="text-center py-10 text-muted-foreground">
+                  Tidak ada mata pelajaran ditemukan
+                </div>
+              )}
 
               {/* Tambahkan Pagination di sini */}
-              <Pagination className="mt-4">
+              <Pagination className="mt-8">
                 <PaginationContent>
                   {pagination.page > 1 && (
                     <PaginationItem>
@@ -222,6 +276,15 @@ export default function SubjectPage() {
             open={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onSuccess={fetchSubjects}
+            programs={programs}
+          />
+
+          <SubjectDuplicateModal
+            open={isDuplicateModalOpen}
+            onClose={() => setIsDuplicateModalOpen(false)}
+            onSuccess={fetchSubjects}
+            programs={programs}
+            sourceSubject={subjectToDuplicate}
           />
         </main>
       </div>

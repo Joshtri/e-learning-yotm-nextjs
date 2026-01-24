@@ -8,22 +8,29 @@ export async function GET(request) {
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
     const search = searchParams.get("search")?.toLowerCase();
+    const programId = searchParams.get("programId"); // Ambil programId dari query params
 
     const page = pageParam ? parseInt(pageParam) : 1;
     const limit = limitParam ? parseInt(limitParam) : 0; // 0 berarti ambil semua
 
-    const where = search
-      ? {
+    const where = {
+      ...(search
+        ? {
           namaMapel: {
             contains: search,
             mode: "insensitive",
           },
         }
-      : {};
+        : {}),
+      ...(programId ? { programId } : {}),
+    };
 
     const findOptions = {
       where,
       orderBy: { namaMapel: "asc" },
+      include: {
+        program: true, // Include data program
+      },
     };
 
     // Jika limit > 0, berarti pagination aktif
@@ -79,6 +86,7 @@ export async function POST(request) {
       typeof body?.kodeMapel === "string" ? body.kodeMapel.trim() : undefined;
     const rawDeskripsi =
       typeof body?.deskripsi === "string" ? body.deskripsi.trim() : undefined;
+    const programId = body?.programId || null;
 
     // Validasi dasar
     if (!rawNamaMapel) {
@@ -105,11 +113,15 @@ export async function POST(request) {
       namaMapel: rawNamaMapel,
       kodeMapel: rawKodeMapel ? rawKodeMapel : null,
       deskripsi: rawDeskripsi ? rawDeskripsi : null,
+      programId: programId,
     };
 
     // Optional pre-check biar bisa balikin 409 yang rapi sebelum kena constraint DB
-    const existing = await prisma.subject.findUnique({
-      where: { namaMapel: rawNamaMapel },
+    const existing = await prisma.subject.findFirst({
+      where: {
+        namaMapel: rawNamaMapel,
+        programId: programId,
+      },
       select: { id: true },
     });
     if (existing) {

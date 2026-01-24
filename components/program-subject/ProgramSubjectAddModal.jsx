@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import ModalForm from "@/components/ui/modal-form";
 import FormField from "@/components/ui/form-field";
@@ -12,9 +12,12 @@ export default function ProgramSubjectAddModal({
   onClose,
   onSuccess,
   programs = [],
-  subjects = [],
+  subjects,
   editData,
 }) {
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -26,15 +29,59 @@ export default function ProgramSubjectAddModal({
     defaultValues: { programId: "", subjectId: "" },
   });
 
+  const selectedProgramId = useWatch({
+    control,
+    name: "programId",
+  });
+
+  // Effect to fetch subjects when program changes
+  useEffect(() => {
+    const fetchSubjectsByProgram = async () => {
+      if (!selectedProgramId) {
+        setSubjectOptions([]);
+        return;
+      }
+
+      setIsLoadingSubjects(true);
+      try {
+        // Fetch subjects specific to the selected program (limit=0 for all)
+        const res = await api.get("/subjects", {
+          params: {
+            programId: selectedProgramId,
+            limit: 0,
+          },
+        });
+
+        const fetchedSubjects = res.data.data.subjects || [];
+        setSubjectOptions(
+          fetchedSubjects.map((s) => ({ value: s.id, label: s.namaMapel })),
+        );
+      } catch (error) {
+        console.error("Failed to fetch subjects:", error);
+        toast.error("Gagal memuat daftar mata pelajaran");
+        setSubjectOptions([]);
+      } finally {
+        setIsLoadingSubjects(false);
+      }
+    };
+
+    fetchSubjectsByProgram();
+  }, [selectedProgramId]);
+
   useEffect(() => {
     if (!open) return;
     if (editData) {
+      // Set initial values
       reset({
         programId: editData?.program?.id ?? "",
         subjectId: editData?.subject?.id ?? "",
       });
+      // Note: The subjects dropdown will be populated by the useWatch effect above
+      // once programId is set. But we might need to verify if the current subjectId
+      // is valid for the fetched list. For now, we trust the flow.
     } else {
       reset({ programId: "", subjectId: "" });
+      setSubjectOptions([]);
     }
   }, [editData, open, reset]);
 
@@ -123,13 +170,14 @@ export default function ProgramSubjectAddModal({
         name="subjectId"
         type="select"
         control={control}
-        placeholder="Pilih mata pelajaran"
-        {...register("subjectId", { required: "Mata pelajaran wajib dipilih" })}
-        options={
-          Array.isArray(subjects)
-            ? subjects.map((s) => ({ value: s.id, label: s.namaMapel }))
-            : []
+        placeholder={
+          isLoadingSubjects
+            ? "Memuat mata pelajaran..."
+            : "Pilih mata pelajaran"
         }
+        disabled={!selectedProgramId || isLoadingSubjects}
+        {...register("subjectId", { required: "Mata pelajaran wajib dipilih" })}
+        options={subjectOptions}
         error={errors?.subjectId?.message}
       />
     </ModalForm>

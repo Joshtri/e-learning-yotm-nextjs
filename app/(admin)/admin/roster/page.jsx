@@ -47,11 +47,11 @@ export default function RosterListPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Manajemen Roster / Jadwal"
-        description="Pilih kelas untuk mengatur jadwal mingguan (Roster)"
+        title="Jadwal Pelajaran"
+        description="Pilih kelas untuk mengatur jadwal mingguan"
         breadcrumbs={[
           { label: "Dashboard", href: "/admin/dashboard" },
-          { label: "Roster" },
+          { label: "Jadwal Pelajaran" },
         ]}
       />
 

@@ -5,29 +5,35 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? parseInt(limitParam) : 10;
     const search = searchParams.get("search")?.toLowerCase();
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * (limit > 0 ? limit : 0);
 
     const where = search
       ? {
-          namaPaket: {
-            contains: search,
-            mode: "insensitive",
-          },
-        }
+        namaPaket: {
+          contains: search,
+          mode: "insensitive",
+        },
+      }
       : {};
 
+    const queryOptions = {
+      where,
+      orderBy: {
+        namaPaket: "asc",
+      },
+    };
+
+    if (limit > 0) {
+      queryOptions.skip = skip;
+      queryOptions.take = limit;
+    }
+
     const [programs, total] = await Promise.all([
-      prisma.program.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          namaPaket: "asc",
-        },
-      }),
+      prisma.program.findMany(queryOptions),
       prisma.program.count({ where }),
     ]);
 

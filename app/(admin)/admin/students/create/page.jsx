@@ -85,13 +85,13 @@ export default function StudentCreatePage() {
         router.push("/admin/students");
       } else {
         throw new Error(
-          response.data.message || "Gagal menambahkan data siswa"
+          response.data.message || "Gagal menambahkan data siswa",
         );
       }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error(
-        error.response?.data?.message || error.message || "Terjadi kesalahan"
+        error.response?.data?.message || error.message || "Terjadi kesalahan",
       );
     } finally {
       setSubmitting(false);
@@ -164,30 +164,30 @@ export default function StudentCreatePage() {
               <FormField
                 control={form.control}
                 name="nisn"
-                label="NISN"
+                label="NISN (Opsional)"
                 type="text"
                 placeholder="10 digit NISN"
-                required
                 rules={{
-                  required: "NISN wajib diisi",
                   validate: {
                     exactLength: (value) =>
-                      value?.length === 10 || "NISN harus tepat 10 digit",
+                      !value ||
+                      value.length === 10 ||
+                      "NISN harus tepat 10 digit",
                     onlyNumbers: (value) =>
-                      /^[0-9]*$/.test(value) || "NISN hanya boleh berisi angka",
+                      !value ||
+                      /^[0-9]*$/.test(value) ||
+                      "NISN hanya boleh berisi angka",
                   },
                 }}
-                inputProps={{ maxLength: 10 }} // jika komponen mendukung ini
+                inputProps={{ maxLength: 10 }}
                 onChange={(e) => {
-                  const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
-                  const trimmed = rawValue.slice(0, 10); // maksimal 10 digit
-                  form.setValue("nisn", trimmed, { shouldValidate: true });
+                  const rawValue = e.target.value.replace(/\D/g, "");
+                  const trimmed = rawValue.slice(0, 10);
+                  // Force update the form value to the trimmed version
+                  form.setValue("nisn", trimmed);
+                  // Manually update the input value to ensure UI sync if controlled/uncontrolled mix issues occur
+                  e.target.value = trimmed;
                 }}
-                helperText={
-                  form.watch("nisn")?.length > 10
-                    ? "NISN tidak boleh lebih dari 10 digit"
-                    : `Sisa digit: ${10 - (form.watch("nisn")?.length || 0)}`
-                }
               />
 
               <FormField
@@ -209,45 +209,39 @@ export default function StudentCreatePage() {
             <FormField
               control={form.control}
               name="noTelepon"
-              label="Nomor Telepon"
+              label="Nomor Telepon (Opsional)"
               type="text"
               placeholder="Nomor telepon siswa"
-              required
               rules={{
-                required: "Nomor telepon wajib diisi",
                 pattern: {
                   value: /^[0-9]{10,15}$/,
                   message: "Nomor telepon harus 10-15 digit angka",
                 },
               }}
-              inputProps={{ maxLength: 15 }} // maksimal 15 digit
+              inputProps={{ maxLength: 15 }}
               onChange={(e) => {
-                const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+                const rawValue = e.target.value.replace(/\D/g, "");
                 form.setValue("noTelepon", rawValue, { shouldValidate: true });
               }}
             />
             <FormField
               control={form.control}
               name="nis"
-              label="NIS"
+              label="NIS (Opsional)"
               type="text"
               placeholder="Nomor Induk Siswa"
-              required
               rules={{
-                required: "NIS wajib diisi",
                 pattern: {
                   value: /^[0-9]{1,20}$/,
                   message: "NIS harus berupa angka (maksimal 20 digit)",
                 },
               }}
-              inputProps={{ maxLength: 20 }} // maksimal 20 digit
+              inputProps={{ maxLength: 20 }}
               onChange={(e) => {
-                const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
+                const rawValue = e.target.value.replace(/\D/g, "");
                 form.setValue("nis", rawValue, { shouldValidate: true });
               }}
             />
-
-          
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -260,20 +254,11 @@ export default function StudentCreatePage() {
                 rules={{ required: "Tempat lahir wajib diisi" }}
               />
 
-              {/* <FormField
-                control={form.control}
-                name="tanggalLahir"
-                label="Tanggal Lahir"
-                type="date"
-                required
-                rules={{ required: "Tanggal lahir wajib diisi" }}
-              /> */}
-
               <FormField
                 control={form.control}
                 name="tanggalLahir"
                 label="Tanggal Lahir"
-                type="birthdate" // type khusus untuk tanggal lahir
+                type="birthdate"
                 required
                 rules={{ required: "Tanggal lahir wajib diisi" }}
               />
@@ -282,15 +267,13 @@ export default function StudentCreatePage() {
             <FormField
               control={form.control}
               name="alamat"
-              label="Alamat"
+              label="Alamat (Opsional)"
               type="textarea"
               placeholder="Alamat lengkap siswa"
-              required
               rules={{
-                required: "Alamat wajib diisi",
                 minLength: {
                   value: 10,
-                  message: "Alamat minimal 10 karakter",
+                  message: "Alamat minimal 10 karakter jika diisi",
                 },
               }}
             />

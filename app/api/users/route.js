@@ -9,6 +9,7 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const role = searchParams.get("role");
+    const status = searchParams.get("status");
     const search = searchParams.get("search");
 
     const skip = (page - 1) * limit;
@@ -18,8 +19,8 @@ export async function GET(request) {
     if (role) {
       filter.role = role;
 
-      if (role === "STUDENT") {
-        filter.student = null;
+      if (status) {
+        filter.status = status;
       }
     }
 

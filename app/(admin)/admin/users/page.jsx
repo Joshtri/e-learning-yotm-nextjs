@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EntityActions } from "@/components/ui/entity-actions";
 import { DataExport } from "@/components/ui/data-export";
 import { EntityDialog } from "@/components/ui/entity-dialog";
-// import { useAuth } from "@/lib/useAuth";
-import { Upload } from "lucide-react";
-import { useRef } from "react";
 import * as XLSX from "xlsx";
 
 import {
@@ -31,10 +28,10 @@ import {
 
 export default function UsersPage() {
   const router = useRouter();
-  // const { user } = useAuth();
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -46,14 +43,6 @@ export default function UsersPage() {
   const fileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  // Check if user is admin and redirect if not
-  // useEffect(() => {
-  //   if (user && user.role !== 'ADMIN') {
-  //     toast.error("Akses ditolak: Halaman ini hanya untuk admin");
-  //     router.push('/dashboard');
-  //   }
-  // }, [user, router]);
-
   // Fetch users from API
   const fetchUsers = async () => {
     try {
@@ -64,6 +53,10 @@ export default function UsersPage() {
 
       if (selectedRole) {
         params.append("role", selectedRole);
+      }
+
+      if (selectedStatus) {
+        params.append("status", selectedStatus);
       }
 
       if (searchQuery) {
@@ -84,7 +77,13 @@ export default function UsersPage() {
   // Fetch users when dependencies change
   useEffect(() => {
     fetchUsers();
-  }, [pagination.page, pagination.limit, selectedRole, searchQuery]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    selectedRole,
+    selectedStatus,
+    searchQuery,
+  ]);
 
   // Filter users based on search query (client-side filtering)
   const filteredUsers = useMemo(() => {
@@ -92,7 +91,7 @@ export default function UsersPage() {
 
     return users.filter((user) => {
       return (
-        user.nama.toLowerCase().includes(searchQuery.toLowerCase()) || // Ubah di sini
+        user.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase())
       );
     });
@@ -109,12 +108,11 @@ export default function UsersPage() {
       header: "Username account",
       cell: (user) => (
         <div className="flex items-center gap-2">
-          <EntityAvatar name={user.nama} /> {/* Ubah di sini */}
+          <EntityAvatar name={user.nama} />
           <div className="font-medium">{user.nama}</div>
         </div>
       ),
     },
-
     {
       header: "Email",
       accessorKey: "email",
@@ -122,7 +120,6 @@ export default function UsersPage() {
     {
       header: "Role",
       accessorKey: "role",
-
       cell: (user) => (
         <StatusBadge
           status={user.role}
@@ -158,7 +155,6 @@ export default function UsersPage() {
           viewPath={`/admin/users/${user.id}`}
           editPath={`/admin/users/${user.id}/edit`}
           onDelete={() => handleDeleteUser(user.id)}
-          // disableDelete={user.id === (currentUser?.id || "")} // Disable delete for current user
         />
       ),
       className: "text-right",
@@ -235,12 +231,33 @@ export default function UsersPage() {
     },
   ];
 
-  // Define filter options
-  const roleFilterOptions = [
-    { label: "Semua", value: null },
-    { label: "Admin", value: "ADMIN" },
-    { label: "Tutor", value: "TUTOR" },
-    { label: "Siswa", value: "STUDENT" },
+  // Toolbar Filters Configuration
+  const toolbarFilters = [
+    {
+      label: "Role",
+      options: [
+        { label: "Semua Role", value: "ALL" },
+        { label: "Admin", value: "ADMIN" },
+        { label: "Tutor", value: "TUTOR" },
+        { label: "Siswa", value: "STUDENT" },
+      ],
+      onSelect: (value) => {
+        setSelectedRole(value === "ALL" ? null : value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      },
+    },
+    {
+      label: "Status",
+      options: [
+        { label: "Semua Status", value: "ALL" },
+        { label: "Aktif", value: "ACTIVE" },
+        { label: "Nonaktif", value: "INACTIVE" },
+      ],
+      onSelect: (value) => {
+        setSelectedStatus(value === "ALL" ? null : value);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+      },
+    },
   ];
 
   // Handle user deletion
@@ -268,7 +285,6 @@ export default function UsersPage() {
 
   // Create user function that will be used by EntityDialog
   const createUser = async (userData) => {
-    // Remove confirmPassword as it's not needed in the API
     const { confirmPassword, ...userDataToSend } = userData;
 
     try {
@@ -298,7 +314,6 @@ export default function UsersPage() {
 
         const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 0 });
 
-        // Konversi jadi CSV string manual untuk kirim ke backend
         const csvRows = ["nama,email,password,role"];
         jsonData.forEach((row) => {
           const nama = row.nama || "";
@@ -353,10 +368,6 @@ export default function UsersPage() {
     XLSX.writeFile(workbook, "template_pengguna.xlsx");
   };
 
-  // if (!user) {
-  //   return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
-  // }
-
   return (
     <div className="flex min-h-screen bg-background">
       <div className="flex-1">
@@ -373,7 +384,6 @@ export default function UsersPage() {
                   style={{ display: "none" }}
                 />
 
-                {/* Download Template */}
                 <Button variant="ghost" onClick={handleDownloadTemplate}>
                   Template Excel
                 </Button>
@@ -397,7 +407,7 @@ export default function UsersPage() {
             breadcrumbs={[
               { label: "Dashboard", href: "/admin/dashboard" },
               { label: "Pengguna" },
-            ]} // Add breadcrumbs here
+            ]}
           />
 
           <Tabs defaultValue="all" className="space-y-6">
@@ -405,16 +415,10 @@ export default function UsersPage() {
               searchValue={searchQuery}
               onSearchChange={(value) => {
                 setSearchQuery(value);
-                setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on search
+                setPagination((prev) => ({ ...prev, page: 1 }));
               }}
               searchPlaceholder="Cari pengguna..."
-              filterOptions={roleFilterOptions}
-              onFilterSelect={(value) => {
-                setSelectedRole(value);
-                setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on filter change
-              }}
-              filterValue={selectedRole}
-              filterLabel="Filter Berdasarkan"
+              filterOptions={toolbarFilters}
             />
 
             <TabsContent value="all" className="space-y-4">
@@ -434,7 +438,6 @@ export default function UsersPage() {
                 }}
               />
 
-              {/* Pagination manual */}
               <Pagination className="mt-4">
                 <PaginationContent>
                   {pagination.page > 1 && (
@@ -492,13 +495,9 @@ export default function UsersPage() {
         fields={userFormFields}
         onSuccess={() => {
           fetchUsers();
-          setIsCreateUserOpen(false); // Close dialog after success
+          setIsCreateUserOpen(false);
         }}
         onSubmit={createUser}
-        // onSuccess={() => {
-        //   fetchUsers();
-        //   toast.success("Pengguna berhasil ditambahkan!");
-        // }}
         errorMessage="Gagal menambahkan pengguna."
         submitLabel="Tambah Pengguna"
       />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Trash2, Plus, Clock, User, Pencil } from "lucide-react";
@@ -40,12 +39,63 @@ const DAYS = [
   { value: 7, label: "Minggu" },
 ];
 
+// Generate Hours 07-22
+const HOURS = Array.from({ length: 16 }, (_, i) => {
+  const h = i + 7;
+  return h < 10 ? `0${h}` : `${h}`;
+});
+
+// Generate Minutes 00-55 (step 5)
+const MINUTES = Array.from({ length: 12 }, (_, i) => {
+  const m = i * 5;
+  return m < 10 ? `0${m}` : `${m}`;
+});
+
+// Helper component for Time Picker
+const TimeSelect = ({ value, onChange }) => {
+  const [h, m] = value ? value.split(":") : ["07", "00"];
+
+  const handleHourChange = (newH) => onChange(`${newH}:${m}`);
+  const handleMinuteChange = (newM) => onChange(`${h}:${newM}`);
+
+  return (
+    <div className="flex gap-2 items-center">
+      <Select value={h} onValueChange={handleHourChange}>
+        <SelectTrigger className="w-[70px]">
+          <SelectValue placeholder="Jam" />
+        </SelectTrigger>
+        <SelectContent>
+          {HOURS.map((hour) => (
+            <SelectItem key={hour} value={hour}>
+              {hour}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span>:</span>
+      <Select value={m} onValueChange={handleMinuteChange}>
+        <SelectTrigger className="w-[70px]">
+          <SelectValue placeholder="Mnt" />
+        </SelectTrigger>
+        <SelectContent>
+          {MINUTES.map((minute) => (
+            <SelectItem key={minute} value={minute}>
+              {minute}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 export default function ClassSchedulePage({ params }) {
+  // ... (existing code top part setup)
   const { classId: id } = use(params); // Map classId to id
   const [schedules, setSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [classData, setClassData] = useState(null);
-  const [subjects, setSubjects] = useState([]); // ClassSubjectTutor list for dropdown
+  const [subjects, setSubjects] = useState([]);
 
   // Add Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -53,9 +103,19 @@ export default function ClassSchedulePage({ params }) {
   const [formData, setFormData] = useState({
     classSubjectTutorId: "",
     dayOfWeek: "1",
-    startTime: "08:00",
-    endTime: "09:00",
+    startTime: "07:00",
+    endTime: "08:00",
   });
+
+  // ... (existing helper functions)
+
+  // Skip to render part of Modal Content
+  /* ... */
+
+  // Replacement for the time inputs in render
+  /* 
+     Target lines around 306-327 (the grid for time input)
+  */
 
   // Delete Confirmation State
   const [deleteId, setDeleteId] = useState(null);
@@ -64,33 +124,15 @@ export default function ClassSchedulePage({ params }) {
   // Edit State
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    if (id) {
-      fetchClassData();
-      fetchSchedules();
-    }
-  }, [id]);
-
   // ... (fetchClassData, fetchSubjects, fetchSchedules remain same - skipping for brevity in replacement if possible, but I need to be contiguous)
   // Actually, I can't skip lines in replace_file_content.
   // I'll just insert the State first.
 
   // Wait, I will target the existing Delete State block.
 
-  const fetchClassData = async () => {
-    try {
-      const res = await api.get(`/classes/${id}`);
-      if (res.data.success) {
-        setClassData(res.data.data);
-        fetchSubjects();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchSubjects = async () => {
-    // Reuse existing logic
+  /* ... inside ClassSchedulePage component ... */
+  // Use useCallback to stabilize function references
+  const fetchSubjects = useCallback(async () => {
     try {
       const res = await api.get(`/class-subject-tutors?classId=${id}`);
       if (res.data.success) {
@@ -99,9 +141,23 @@ export default function ClassSchedulePage({ params }) {
     } catch (err) {
       // Ignore
     }
-  };
+  }, [id]);
 
-  const fetchSchedules = async () => {
+  const fetchClassData = useCallback(async () => {
+    try {
+      const res = await api.get(`/classes/${id}`);
+      if (res.data.success) {
+        setClassData(res.data.data);
+        // fetchSubjects is stable now, safe to call here?
+        // Better to separate concerns or rely on effect deps
+        fetchSubjects();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [id, fetchSubjects]);
+
+  const fetchSchedules = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await api.get(`/classes/${id}/schedules`);
@@ -114,7 +170,14 @@ export default function ClassSchedulePage({ params }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchClassData();
+      fetchSchedules();
+    }
+  }, [id, fetchClassData, fetchSchedules]);
 
   const handleSave = async () => {
     if (!formData.classSubjectTutorId)
@@ -129,16 +192,36 @@ export default function ClassSchedulePage({ params }) {
       const baseDate = dayjs().year(1970).month(0).date(1);
 
       const [startH, startM] = formData.startTime.split(":");
+      const [endH, endM] = formData.endTime.split(":");
+
+      // Validasi jam operasional (07:00 - 22:00)
+      const startHour = parseInt(startH);
+      const endHour = parseInt(endH);
+
+      if (
+        startHour < 7 ||
+        startHour > 22 ||
+        (startHour === 22 && parseInt(startM) > 0)
+      ) {
+        return toast.error("Jam mulai harus antara 07:00 - 22:00");
+      }
+      if (
+        endHour < 7 ||
+        endHour > 22 ||
+        (endHour === 22 && parseInt(endM) > 0)
+      ) {
+        return toast.error("Jam selesai harus antara 07:00 - 22:00");
+      }
+
       const startIso = baseDate
-        .hour(parseInt(startH))
+        .hour(startHour)
         .minute(parseInt(startM))
         .second(0)
         .millisecond(0)
         .toISOString();
 
-      const [endH, endM] = formData.endTime.split(":");
       const endIso = baseDate
-        .hour(parseInt(endH))
+        .hour(endHour)
         .minute(parseInt(endM))
         .second(0)
         .millisecond(0)
@@ -224,7 +307,7 @@ export default function ClassSchedulePage({ params }) {
   // Sort by time
   Object.keys(scheduleByDay).forEach((key) => {
     scheduleByDay[key].sort(
-      (a, b) => new Date(a.startTime) - new Date(b.startTime)
+      (a, b) => new Date(a.startTime) - new Date(b.startTime),
     );
   });
 
@@ -306,21 +389,19 @@ export default function ClassSchedulePage({ params }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Jam Mulai</Label>
-                  <Input
-                    type="time"
+                  <TimeSelect
                     value={formData.startTime}
-                    onChange={(e) =>
-                      setFormData({ ...formData, startTime: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, startTime: val })
                     }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Jam Selesai</Label>
-                  <Input
-                    type="time"
+                  <TimeSelect
                     value={formData.endTime}
-                    onChange={(e) =>
-                      setFormData({ ...formData, endTime: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, endTime: val })
                     }
                   />
                 </div>

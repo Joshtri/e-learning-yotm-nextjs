@@ -87,7 +87,7 @@ enum Semester {
 // ========== MAIN MODELS ==========
 model User {
   id          String    @id @default(dbgenerated("concat('usr_', gen_random_uuid())")) @db.VarChar(40)
-  nama        String    @db.VarChar(100)
+  nama        String    @unique @db.VarChar(100)
   email       String    @unique @db.VarChar(255)
   password    String
   role        Role
@@ -124,7 +124,7 @@ model Student {
   namaLengkap String @db.VarChar(100) // ✅ Tambahan
 
   user         User          @relation(fields: [userId], references: [id])
-  nisn         String        @unique @db.VarChar(20)
+  nisn         String?       @unique @db.VarChar(20)
   jenisKelamin Gender?
   tempatLahir  String?       @db.VarChar(50)
   tanggalLahir DateTime?
@@ -205,6 +205,7 @@ model Program {
   namaPaket      String           @db.VarChar(50)
   classes        Class[]
   ProgramSubject ProgramSubject[]
+  subjects       Subject[]
 
   // Index
   @@unique([namaPaket])
@@ -239,9 +240,13 @@ model Subject {
   kodeMapel String? @db.VarChar(20)
   deskripsi String? @db.Text
 
+  // Relasi ke Program (One-to-Many) - Simpel & Jelas
+  programId String?  @db.VarChar(40)
+  program   Program? @relation(fields: [programId], references: [id])
+
   // Relations
   classSubjectTutors ClassSubjectTutor[]
-  ProgramSubject     ProgramSubject[]
+  ProgramSubject     ProgramSubject[] // Tetap ada untuk backward compatibility kalau perlu
 
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
@@ -250,7 +255,7 @@ model Subject {
   attendanceSessions AttendanceSession[]
 
   // Index
-  @@unique([namaMapel])
+  @@unique([namaMapel, programId]) // Unik PER PROGRAM, bukan global
   @@index([kodeMapel])
 }
 

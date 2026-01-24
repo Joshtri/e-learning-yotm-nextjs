@@ -94,7 +94,7 @@ export const navByRole = {
           icon: <Users className="h-4 w-4" />,
         },
         {
-          title: "Roster / Jadwal",
+          title: "Jadwal Pelajaran",
           href: "/admin/roster",
           icon: <CalendarCheck className="h-4 w-4" />,
         },
@@ -106,37 +106,37 @@ export const navByRole = {
         // },
       ],
     },
-    {
-      title: "Pembelajaran",
-      items: [
-        {
-          title: "Materi Pembelajaran",
-          href: "/admin/learning-materials",
-          icon: <ChartBar className="h-4 w-4" />,
-        },
+    // {
+    //   title: "Pembelajaran",
+    //   items: [
+    //     {
+    //       title: "Materi Pembelajaran",
+    //       href: "/admin/learning-materials",
+    //       icon: <ChartBar className="h-4 w-4" />,
+    //     },
 
-        {
-          title: "Tugas",
-          href: "/admin/assignments",
-          icon: <NotebookPen className="h-4 w-4" />,
-        },
-        {
-          title: "Kuis",
-          href: "/admin/quizzes",
-          icon: <FileCheck2 className="h-4 w-4" />,
-        },
-        {
-          title: "Ujian Mid & Final",
-          href: "/admin/exams",
-          icon: <ClipboardList className="h-4 w-4" />,
-        },
-        // {
-        //   title: "Ujian Harian & Awal Semester",
-        //   href: "/admin/exams",
-        //   icon: <ClipboardList className="h-4 w-4" />,
-        // },
-      ],
-    },
+    //     {
+    //       title: "Tugas",
+    //       href: "/admin/assignments",
+    //       icon: <NotebookPen className="h-4 w-4" />,
+    //     },
+    //     {
+    //       title: "Kuis",
+    //       href: "/admin/quizzes",
+    //       icon: <FileCheck2 className="h-4 w-4" />,
+    //     },
+    //     {
+    //       title: "Ujian Mid & Final",
+    //       href: "/admin/exams",
+    //       icon: <ClipboardList className="h-4 w-4" />,
+    //     },
+    //     // {
+    //     //   title: "Ujian Harian & Awal Semester",
+    //     //   href: "/admin/exams",
+    //     //   icon: <ClipboardList className="h-4 w-4" />,
+    //     // },
+    //   ],
+    // },
     {
       title: "Penilaian",
       items: [

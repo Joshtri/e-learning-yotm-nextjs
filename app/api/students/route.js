@@ -9,6 +9,8 @@ export async function GET(request) {
     const classId = searchParams.get("classId");
     const gender = searchParams.get("jenisKelamin");
     const academicYearId = searchParams.get("academicYearId");
+    const programId = searchParams.get("programId");
+    const status = searchParams.get("status");
 
     const skip = (page - 1) * limit;
 
@@ -50,7 +52,7 @@ export async function GET(request) {
         },
       ];
     }
-    
+
 
     // Relasi ke class.academicYearId
     // if (academicYearId) {
@@ -65,6 +67,19 @@ export async function GET(request) {
 
     if (gender) {
       filter.jenisKelamin = gender;
+    }
+
+    if (programId) {
+      filter.class = {
+        ...filter.class,
+        program: {
+          id: programId,
+        },
+      };
+    }
+
+    if (status) {
+      filter.status = status;
     }
 
     if (search) {
@@ -100,6 +115,7 @@ export async function GET(request) {
           fotoUrl: true,
           createdAt: true,
           updatedAt: true,
+          status: true,
           user: {
             select: {
               id: true,
@@ -180,13 +196,9 @@ export async function POST(request) {
     if (
       !userId ||
       !namaLengkap?.trim() ||
-      !nisn?.trim() ||
-      !nis?.trim() ||
-      !noTelepon?.trim() ||
       !jenisKelamin ||
       !tempatLahir?.trim() ||
-      !tanggalLahir ||
-      !alamat?.trim()
+      !tanggalLahir
     ) {
       return new Response(
         JSON.stringify({ success: false, message: "Semua field wajib diisi" }),
@@ -214,13 +226,13 @@ export async function POST(request) {
       data: {
         userId,
         namaLengkap: namaLengkap.trim(),
-        nisn: nisn.trim(),
+        nisn: nisn?.trim() || null,
         jenisKelamin,
-        noTelepon: noTelepon.trim(),
-        nis: nis.trim(),
+        noTelepon: noTelepon?.trim() || null,
+        nis: nis?.trim() || null,
         tempatLahir: tempatLahir.trim(),
         tanggalLahir: new Date(tanggalLahir),
-        alamat: alamat.trim(),
+        alamat: alamat?.trim() || null,
         classId: classId || null,
       },
       include: {

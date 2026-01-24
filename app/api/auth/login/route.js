@@ -2,22 +2,27 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, identifier, password } = body;
+    const loginInput = identifier || email;
 
-    if (!email || !password) {
+    if (!loginInput || !password) {
       return NextResponse.json(
-        { message: "Missing email or password" },
+        { message: "Missing username/email or password" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: loginInput },
+          { nama: loginInput }
+        ]
+      },
       select: {
         id: true,
         nama: true,
@@ -30,7 +35,7 @@ export async function POST(request) {
 
     if (!user || user.status !== "ACTIVE") {
       return NextResponse.json(
-        { message: "Invalid email or password" },
+        { message: "Invalid username/email or password" },
         { status: 401 }
       );
     }
@@ -43,7 +48,7 @@ export async function POST(request) {
       );
     }
 
-    const { password: _, ...userData } = user;
+    const { password: passwordHash, ...userData } = user;
 
     const token = jwt.sign(userData, process.env.JWT_SECRET, {
       expiresIn: "24h",
@@ -73,7 +78,7 @@ export async function POST(request) {
       user: userData,
       token,
     });
-    
+
     response.cookies.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -81,9 +86,9 @@ export async function POST(request) {
       maxAge: 86400,
       path: "/",
     });
-    
+
     return response;
-    
+
   } catch (error) {
     console.error("Error during login:", error);
     return NextResponse.json(

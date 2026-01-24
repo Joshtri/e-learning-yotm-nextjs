@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Calendar,
   Clock,
@@ -20,6 +21,7 @@ import {
   BookOpen,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   BarChart3,
   Book,
   Play,
@@ -38,6 +40,25 @@ export default function StudentDashboardPage() {
     error,
   } = useStudentDashboard();
   const router = useRouter();
+  const [profileCheck, setProfileCheck] = useState(null);
+
+  // Check profile completeness
+  useEffect(() => {
+    const checkProfile = async () => {
+      try {
+        const res = await fetch("/api/students/check-profile", {
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProfileCheck(data);
+        }
+      } catch (err) {
+        console.error("Error checking profile:", err);
+      }
+    };
+    checkProfile();
+  }, []);
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -185,6 +206,29 @@ export default function StudentDashboardPage() {
           {student.class} | Tahun Ajaran {student.academicYear}
         </p>
       </div>
+
+      {/* Profile Incomplete Alert */}
+      {profileCheck && !profileCheck.isComplete && (
+        <Alert variant="destructive" className="mb-6 border-amber-500 bg-amber-50 text-amber-900">
+          <AlertTriangle className="h-5 w-5 text-amber-600" />
+          <AlertTitle className="text-amber-800 font-semibold">
+            Data Profil Belum Lengkap!
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="mb-2">
+              Silakan lengkapi data berikut: <strong>{profileCheck.missingFields.join(", ")}</strong>
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-600 text-amber-700 hover:bg-amber-100"
+              onClick={() => router.push("/siswa/my-profile")}
+            >
+              Lengkapi Profil Sekarang
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

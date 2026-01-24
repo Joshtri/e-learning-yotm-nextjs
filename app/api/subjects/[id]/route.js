@@ -15,6 +15,9 @@ export async function GET(request, context) {
   try {
     const subject = await prisma.subject.findUnique({
       where: { id },
+      include: {
+        program: true,
+      },
     });
 
     if (!subject) {
@@ -46,7 +49,7 @@ export async function PATCH(request, context) {
   }
 
   const body = await request.json();
-  const { namaMapel, kodeMapel, deskripsi } = body;
+  const { namaMapel, kodeMapel, deskripsi, programId } = body;
 
   try {
     const updated = await prisma.subject.update({
@@ -55,6 +58,10 @@ export async function PATCH(request, context) {
         namaMapel,
         kodeMapel,
         deskripsi,
+        programId: programId || null,
+      },
+      include: {
+        program: true,
       },
     });
 

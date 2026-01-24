@@ -38,8 +38,13 @@ export default function StudentForm({
       onSuccess?.(); // Tutup dialog jika ada callback
       router.push("/siswa/dashboard"); // bisa diarahkan ke dashboard jika perlu
     } catch (err) {
-      const msg =
-        err?.response?.data?.message || "Gagal menyimpan profil siswa";
+      console.error("Error submitting student form:", err);
+      let msg = "Gagal menyimpan profil siswa";
+      if (typeof err?.response?.data?.message === "string") {
+        msg = err.response.data.message;
+      } else if (typeof err?.message === "string") {
+        msg = err.message;
+      }
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -65,46 +70,37 @@ export default function StudentForm({
       />
 
       <FormField
-        label="NISN"
+        label="NISN (Opsional)"
         name="nisn"
         control={control}
-        required
         placeholder="10 digit NISN"
         error={errors.nisn?.message}
         maxLength={10}
-        onKeyDown={(e) => {
-          // Only allow numbers and control keys
-          if (!/[0-9]|Backspace|Delete|Tab|ArrowLeft|ArrowRight/.test(e.key)) {
-            e.preventDefault();
-          }
-        }}
         rules={{
-          required: "NISN wajib diisi",
-          pattern: {
-            value: /^[0-9]{10}$/,
-            message: "NISN harus 10 digit angka",
+          validate: {
+            exactLength: (value) =>
+              !value || value.length === 10 || "NISN harus tepat 10 digit",
+            onlyNumbers: (value) =>
+              !value ||
+              /^[0-9]+$/.test(value) ||
+              "NISN hanya boleh berisi angka",
           },
-          validate: (value) => {
-            if (value.length !== 10) return "NISN harus tepat 10 digit";
-            return true;
-          },
+        }}
+        inputProps={{ maxLength: 10 }}
+        onChange={(e) => {
+          const rawValue = e.target.value.replace(/\D/g, "");
+          const trimmed = rawValue.slice(0, 10);
+          setValue("nisn", trimmed, { shouldValidate: true });
+          e.target.value = trimmed;
         }}
       />
 
       <FormField
-        label="NIS"
+        label="NIS (Opsional)"
         name="nis"
         control={control}
-        required
         placeholder="NIS siswa"
-        rules={{
-          required: "NIS wajib diisi",
-          // Uncomment jika ingin validasi format khusus
-          // pattern: {
-          //   value: /^[0-9]{8}$/,
-          //   message: "NIS harus 8 digit angka",
-          // },
-        }}
+        error={errors.nis?.message}
       />
 
       <FormField
@@ -149,7 +145,6 @@ export default function StudentForm({
           required: "Tanggal lahir wajib diisi",
           validate: (value) => {
             if (!value) return "Tanggal lahir wajib diisi";
-            // Add additional validation if needed (e.g., minimum age)
             return true;
           },
         }}
@@ -157,39 +152,35 @@ export default function StudentForm({
       />
 
       <FormField
-        label="No Telepon"
+        label="No Telepon (Opsional)"
         name="noTelepon"
         control={control}
         type="text"
-        required
         placeholder="Nomor telepon siswa"
         rules={{
-          required: "Nomor telepon wajib diisi",
           pattern: {
             value: /^[0-9]{10,15}$/,
             message: "Nomor telepon harus 10-15 digit angka",
           },
         }}
-        inputProps={{ maxLength: 15 }} // maksimal 15 digit
+        inputProps={{ maxLength: 15 }}
         onChange={(e) => {
-          const rawValue = e.target.value.replace(/\D/g, ""); // hanya angka
-          setValue("noTelepon", rawValue, { shouldValidate: true }); // Fix: gunakan setValue bukan form.setValue
+          const rawValue = e.target.value.replace(/\D/g, "");
+          setValue("noTelepon", rawValue, { shouldValidate: true });
         }}
         error={errors.noTelepon?.message}
       />
 
       <FormField
-        label="Alamat"
+        label="Alamat (Opsional)"
         name="alamat"
         control={control}
         type="textarea"
-        required
         rows={4}
         rules={{
-          required: "Alamat wajib diisi",
           minLength: {
             value: 10,
-            message: "Alamat minimal 10 karakter",
+            message: "Alamat minimal 10 karakter jika diisi",
           },
         }}
         error={errors.alamat?.message}

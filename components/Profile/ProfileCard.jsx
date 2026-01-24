@@ -4,10 +4,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Edit2, LogOut, Save, X } from "lucide-react";
@@ -26,12 +38,20 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
     nama: user?.nama || "",
     email: user?.email || "",
     // Student fields
-    namaLengkap: isStudent ? user.student.namaLengkap || "" : isTutor ? user.tutor.namaLengkap || "" : "",
+    namaLengkap: isStudent
+      ? user.student.namaLengkap || ""
+      : isTutor
+        ? user.tutor.namaLengkap || ""
+        : "",
     nisn: isStudent ? user.student.nisn || "" : "",
     nis: isStudent ? user.student.nis || "" : "",
     jenisKelamin: isStudent ? user.student.jenisKelamin || "" : "",
     tempatLahir: isStudent ? user.student.tempatLahir || "" : "",
-    tanggalLahir: isStudent ? user.student.tanggalLahir ? new Date(user.student.tanggalLahir).toISOString().split('T')[0] : "" : "",
+    tanggalLahir: isStudent
+      ? user.student.tanggalLahir
+        ? new Date(user.student.tanggalLahir).toISOString().split("T")[0]
+        : ""
+      : "",
     noTelepon: isStudent ? user.student.noTelepon || "" : "",
     alamat: isStudent ? user.student.alamat || "" : "",
     // Tutor fields
@@ -46,12 +66,20 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
     setFormData({
       nama: user?.nama || "",
       email: user?.email || "",
-      namaLengkap: isStudent ? user.student.namaLengkap || "" : isTutor ? user.tutor.namaLengkap || "" : "",
+      namaLengkap: isStudent
+        ? user.student.namaLengkap || ""
+        : isTutor
+          ? user.tutor.namaLengkap || ""
+          : "",
       nisn: isStudent ? user.student.nisn || "" : "",
       nis: isStudent ? user.student.nis || "" : "",
       jenisKelamin: isStudent ? user.student.jenisKelamin || "" : "",
       tempatLahir: isStudent ? user.student.tempatLahir || "" : "",
-      tanggalLahir: isStudent ? user.student.tanggalLahir ? new Date(user.student.tanggalLahir).toISOString().split('T')[0] : "" : "",
+      tanggalLahir: isStudent
+        ? user.student.tanggalLahir
+          ? new Date(user.student.tanggalLahir).toISOString().split("T")[0]
+          : ""
+        : "",
       noTelepon: isStudent ? user.student.noTelepon || "" : "",
       alamat: isStudent ? user.student.alamat || "" : "",
       telepon: isTutor ? user.tutor.telepon || "" : "",
@@ -64,11 +92,11 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -244,7 +272,8 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
           <DialogHeader>
             <DialogTitle>Edit Profil</DialogTitle>
             <DialogDescription>
-              Perbarui informasi profil Anda di sini. Klik simpan ketika selesai.
+              Perbarui informasi profil Anda di sini. Klik simpan ketika
+              selesai.
             </DialogDescription>
           </DialogHeader>
 
@@ -255,13 +284,13 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
 
               <div className="grid gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="nama">Nama</Label>
+                  <Label htmlFor="nama">Username</Label>
                   <Input
                     id="nama"
                     name="nama"
                     value={formData.nama}
                     onChange={handleInputChange}
-                    placeholder="Masukkan nama"
+                    placeholder="Masukkan username"
                     required
                   />
                 </div>
@@ -330,7 +359,9 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
                     <Select
                       name="jenisKelamin"
                       value={formData.jenisKelamin}
-                      onValueChange={(value) => handleSelectChange("jenisKelamin", value)}
+                      onValueChange={(value) =>
+                        handleSelectChange("jenisKelamin", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih jenis kelamin" />
@@ -464,7 +495,8 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
             {/* Admin atau role lain hanya bisa edit User data */}
             {!isStudent && !isTutor && (
               <div className="text-sm text-gray-500">
-                Role ADMIN atau lainnya hanya dapat mengubah informasi akun dasar.
+                Role ADMIN atau lainnya hanya dapat mengubah informasi akun
+                dasar.
               </div>
             )}
 
