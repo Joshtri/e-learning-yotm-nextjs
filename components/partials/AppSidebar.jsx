@@ -66,7 +66,7 @@ const NavGroup = ({
               <ChevronDown
                 className={cn(
                   "h-4 w-4 transition-transform",
-                  isGroupExpanded ? "rotate-180" : ""
+                  isGroupExpanded ? "rotate-180" : "",
                 )}
               />
             )}
@@ -78,7 +78,7 @@ const NavGroup = ({
           "space-y-1",
           group.title !== "Dashboard" && !isGroupExpanded && isOpen
             ? "hidden"
-            : "block"
+            : "block",
         )}
       >
         {group.items.map((item) => {
@@ -89,7 +89,9 @@ const NavGroup = ({
             }
           }
 
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/" && pathname.startsWith(`${item.href}/`));
           return (
             <ConditionalTooltip
               key={item.href}
@@ -102,7 +104,7 @@ const NavGroup = ({
                 className={cn(
                   "justify-start w-full transition-all duration-200 hover:bg-blue-500/20 hover:text-white text-blue-100",
                   isActive &&
-                    "bg-blue-400/30 text-white font-semibold border-r-2 border-blue-300"
+                    "bg-blue-400/30 text-white font-semibold border-r-2 border-blue-300",
                 )}
               >
                 <Link
@@ -112,7 +114,7 @@ const NavGroup = ({
                   <span
                     className={cn(
                       "transition-colors",
-                      isActive && "text-white"
+                      isActive && "text-white",
                     )}
                   >
                     {item.icon}
@@ -120,7 +122,7 @@ const NavGroup = ({
                   <span
                     className={cn(
                       "transition-opacity",
-                      isOpen ? "opacity-100" : "opacity-0 md:hidden"
+                      isOpen ? "opacity-100" : "opacity-0 md:hidden",
                     )}
                   >
                     {item.title}
@@ -146,7 +148,7 @@ export function AppSidebar({
   const [currentSemester, setCurrentSemester] = useState(null);
 
   const [expandedGroups, setExpandedGroups] = useState(
-    Object.fromEntries(navigationGroups.map((g) => [g.title, true]))
+    Object.fromEntries(navigationGroups.map((g) => [g.title, true])),
   );
 
   useEffect(() => {
@@ -194,7 +196,7 @@ export function AppSidebar({
         <aside
           className={cn(
             "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-gradient-to-b from-blue-600 to-blue-700 transition-transform duration-300 ease-in-out md:hidden",
-            isOpen ? "translate-x-0" : "-translate-x-full"
+            isOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
           <SidebarHeader href={baseHref} onClose={onClose} isOpen />
@@ -217,7 +219,7 @@ export function AppSidebar({
       <aside
         className={cn(
           "sticky top-0 hidden md:flex md:flex-col bg-gradient-to-b from-blue-600 to-blue-700 transition-all shadow-xl",
-          isOpen ? "md:w-64" : "md:w-16"
+          isOpen ? "md:w-64" : "md:w-16",
         )}
         style={{ height: "100vh" }}
       >
@@ -258,7 +260,7 @@ function SidebarHeader({ href, onClose, onToggleSidebar, isOpen = true }) {
           <span
             className={cn(
               "font-bold text-white drop-shadow-sm transition-opacity",
-              isOpen ? "opacity-100" : "opacity-0 md:hidden"
+              isOpen ? "opacity-100" : "opacity-0 md:hidden",
             )}
           >
             Obor Timor Ministry
@@ -337,14 +339,14 @@ function LogoutButton({ isOpen }) {
       onClick={handleLogout}
       variant="ghost"
       className={cn(
-        "flex w-full items-center gap-2 text-red-500 hover:text-red-600 justify-start transition-colors"
+        "flex w-full items-center gap-2 text-red-500 hover:text-red-600 justify-start transition-colors",
       )}
     >
       <LogOut className="h-4 w-4" />
       <span
         className={cn(
           "transition-opacity text-sm",
-          isOpen ? "opacity-100" : "opacity-0"
+          isOpen ? "opacity-100" : "opacity-0",
         )}
       >
         Keluar

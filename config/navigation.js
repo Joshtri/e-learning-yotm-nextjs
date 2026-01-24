@@ -16,8 +16,6 @@ import {
   NotebookPen,
   Users,
   Users2,
-  Volleyball,
-  Download,
   Printer,
 } from "lucide-react";
 
@@ -466,7 +464,7 @@ export const navByRole = {
         },
         {
           title: "Hitung Nilai Akhir",
-          href: "/homeroom/final-scores ",
+          href: "/homeroom/final-scores",
           icon: <FileCheck2 className="h-4 w-4" />,
         },
         // {
