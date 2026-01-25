@@ -327,7 +327,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Second Row Stats */}
-          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {/* <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-sm font-medium">
@@ -383,7 +383,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </div> */}
 
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
             {/* Recent Activities */}

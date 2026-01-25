@@ -50,6 +50,7 @@ export async function GET(request, { params }) {
         homeroomTeacher: {
           select: {
             id: true,
+            namaLengkap: true,
             user: {
               select: {
                 nama: true,
@@ -76,8 +77,8 @@ export async function GET(request, { params }) {
     const formattedClasses = classes.map((cls) => ({
       id: cls.id,
       namaKelas: cls.namaKelas,
-      program: cls.program?.namaProgram || "-",
-      homeroomTeacher: cls.homeroomTeacher?.user?.namaLengkap || "Belum ada wali kelas",
+      program: cls.program?.namaPaket || "-",
+      homeroomTeacher: cls.homeroomTeacher?.namaLengkap || cls.homeroomTeacher?.user?.nama || "Belum ada wali kelas",
       studentCount: cls._count.students,
       createdAt: cls.createdAt,
     }));
