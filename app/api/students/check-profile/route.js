@@ -37,8 +37,6 @@ export async function GET(request) {
     if (!student.jenisKelamin) missingFields.push("Jenis Kelamin");
     if (!student.tempatLahir) missingFields.push("Tempat Lahir");
     if (!student.tanggalLahir) missingFields.push("Tanggal Lahir");
-    if (!student.alamat) missingFields.push("Alamat");
-    if (!student.noTelepon) missingFields.push("No. Telepon");
 
     const isComplete = missingFields.length === 0;
 

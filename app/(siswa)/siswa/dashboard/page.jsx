@@ -80,7 +80,7 @@ export default function StudentDashboardPage() {
         // Cek profil student
         const profileRes = await fetch(
           `/api/users/check-profile?userId=${user.id}&role=STUDENT`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
 
         if (!profileRes.ok) {
@@ -208,27 +208,73 @@ export default function StudentDashboardPage() {
       </div>
 
       {/* Profile Incomplete Alert */}
-      {profileCheck && !profileCheck.isComplete && (
-        <Alert variant="destructive" className="mb-6 border-amber-500 bg-amber-50 text-amber-900">
-          <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <AlertTitle className="text-amber-800 font-semibold">
-            Data Profil Belum Lengkap!
-          </AlertTitle>
-          <AlertDescription className="mt-2">
-            <p className="mb-2">
-              Silakan lengkapi data berikut: <strong>{profileCheck.missingFields.join(", ")}</strong>
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-amber-600 text-amber-700 hover:bg-amber-100"
-              onClick={() => router.push("/siswa/my-profile")}
+      {profileCheck &&
+        !profileCheck.isComplete &&
+        (() => {
+          const missingFields = profileCheck.missingFields;
+          const hasAdminFields = missingFields.some((f) => f.includes("NIS"));
+          const hasStudentFields = missingFields.some(
+            (f) => !f.includes("NIS"),
+          );
+
+          return (
+            <Alert
+              variant="destructive"
+              className="mb-6 border-amber-500 bg-amber-50 text-amber-900 shadow-sm"
             >
-              Lengkapi Profil Sekarang
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTitle className="text-amber-800 font-bold text-lg">
+                Data Profil Belum Lengkap!
+              </AlertTitle>
+              <AlertDescription className="mt-2 text-amber-900">
+                <div className="space-y-4">
+                  <p>
+                    Beberapa informasi penting di profil Anda masih kosong:{" "}
+                    <strong className="text-amber-700">
+                      {missingFields.join(", ")}
+                    </strong>
+                  </p>
+
+                  {hasAdminFields && (
+                    <div className="bg-amber-100 p-3 rounded-md border border-amber-200 text-sm">
+                      <p className="font-semibold text-amber-800 mb-1">
+                        ⚠️ Informasi Penting:
+                      </p>
+                      <p>
+                        Khusus untuk data <strong>NIS dan NISN</strong>,
+                        pengisian hanya dapat dilakukan oleh{" "}
+                        <strong>Admin Sekolah</strong>. Silakan hubungi bagian
+                        tata usaha jika data tersebut belum terisi.
+                      </p>
+                    </div>
+                  )}
+
+                  {hasStudentFields ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm">
+                        Silakan lengkapi data lainnya melalui halaman profil
+                        agar Anda dapat menggunakan platform dengan lancar.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-fit border-amber-600 text-amber-700 hover:bg-amber-100 bg-white"
+                        onClick={() => router.push("/siswa/my-profile")}
+                      >
+                        Lengkapi Profil Sekarang
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm italic">
+                      Data wajib lainnya sudah terisi. Tunggu Admin untuk
+                      melengkapi sisa data Anda.
+                    </p>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          );
+        })()}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -407,7 +453,7 @@ export default function StudentDashboardPage() {
                             onClick={() => {
                               if (isAvailable) {
                                 router.push(
-                                  `/siswa/assignments/${assignment.id}`
+                                  `/siswa/assignments/${assignment.id}`,
                                 );
                               }
                             }}

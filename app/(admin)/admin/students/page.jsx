@@ -1,7 +1,7 @@
 "use client";
 
 import api from "@/lib/axios";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Info, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,6 +14,12 @@ import { DataToolbar } from "@/components/ui/data-toolbar";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
 import PaginationBar from "@/components/ui/PaginationBar";
@@ -43,6 +49,7 @@ export default function StudentsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [classOptions, setClassOptions] = useState([]);
   const [isSelectingClass, setIsSelectingClass] = useState(false);
+  const [selectedCompleteness, setSelectedCompleteness] = useState(null);
 
   const router = useRouter();
 
@@ -90,7 +97,6 @@ export default function StudentsPage() {
     if (["female", "woman", "f", "p", "wanita", "perempuan"].includes(s)) {
       return "Perempuan";
     }
-    // enum uppercase (MALE/FEMALE) juga kepangkas oleh toLowerCase di atas
     return "-";
   };
 
@@ -126,6 +132,7 @@ export default function StudentsPage() {
       setStudents(res.data.data.students);
       setPagination(res.data.data.pagination);
     } catch (error) {
+      console.error("Error fetching students:", error);
       toast.error("Gagal memuat data siswa");
     } finally {
       setIsLoading(false);
@@ -144,16 +151,39 @@ export default function StudentsPage() {
     selectedGender,
   ]);
 
+  // Helper untuk cek kelengkapan
+  const checkCompleteness = (student) => {
+    const missing = [];
+    if (!student.nis) missing.push("NIS");
+    if (!student.nisn) missing.push("NISN");
+    // Tambah field lain jika perlu
+
+    return {
+      isComplete: missing.length === 0,
+      missing,
+    };
+  };
+
   const filteredStudents = useMemo(() => {
     let result = students;
 
-    // Filter by search (Handling client-side filtering lag if any, though API handles it)
+    // Filter by search
     if (searchQuery) {
       result = result.filter((student) =>
         [student.user?.nama, student.nisn, student.user?.email].some((val) =>
           val?.toLowerCase().includes(searchQuery.toLowerCase()),
         ),
       );
+    }
+
+    // Filter by Completeness (Client-side)
+    if (selectedCompleteness) {
+      result = result.filter((student) => {
+        const { isComplete } = checkCompleteness(student);
+        if (selectedCompleteness === "COMPLETE") return isComplete;
+        if (selectedCompleteness === "INCOMPLETE") return !isComplete;
+        return true;
+      });
     }
 
     // Sort by namaLengkap
@@ -164,7 +194,7 @@ export default function StudentsPage() {
         ? nameA.localeCompare(nameB, "id")
         : nameB.localeCompare(nameA, "id");
     });
-  }, [students, searchQuery, sortOrder]);
+  }, [students, searchQuery, sortOrder, selectedCompleteness]); // Add selectedCompleteness dependency
 
   const handleAddClass = async (studentId) => {
     setSelectedStudentId(studentId);
@@ -199,12 +229,17 @@ export default function StudentsPage() {
       cell: (student) => (
         <div className="flex items-center gap-2">
           <EntityAvatar name={student.namaLengkap || "-"} />
-          <div className="font-medium">{student.namaLengkap || "-"}</div>
+          <div className="flex flex-col">
+            <span className="font-medium">{student.namaLengkap || "-"}</span>
+            <span className="text-xs text-muted-foreground">
+              {student.nis || "NIS Kosong"}
+            </span>
+          </div>
         </div>
       ),
     },
     { header: "Email", cell: (student) => student.user?.email || "-" },
-    { header: "NISN", accessorKey: "nisn" },
+    { header: "NISN", accessorKey: "nisn", cell: (s) => s.nisn || "-" },
     {
       header: "Jenis Kelamin",
       cell: (student) =>
@@ -222,27 +257,48 @@ export default function StudentsPage() {
           <span className="text-muted-foreground">Belum terdaftar</span>
         ),
     },
+    // {
+    //   header: "Paket",
+    //   cell: (student) => student.class?.program?.namaPaket || "-",
+    // },
     {
-      header: "Paket",
-      cell: (student) => student.class?.program?.namaPaket || "-",
+      header: "Kelengkapan Data",
+      cell: (student) => {
+        const { isComplete, missing } = checkCompleteness(student);
+
+        if (isComplete) {
+          return (
+            <div className="flex items-center gap-1.5 text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-xs font-medium">Lengkap</span>
+            </div>
+          );
+        }
+
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 text-amber-600 cursor-help">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-xs font-medium decoration-dotted underline underline-offset-2">
+                    Belum Lengkap
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-semibold text-xs mb-1">Data Belum Diisi:</p>
+                <ul className="list-disc pl-4 text-xs">
+                  {missing.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
     },
-    // {
-    //   header: "NIS",
-    //   accessorKey: "nis",
-    //   cell: (student) => student.nis || "-",
-    // },
-    // {
-    //   header: "No Telepon",
-    //   accessorKey: "noTelepon",
-    //   cell: (student) => student.noTelepon || "-",
-    // },
-    // {
-    //   header: "Tanggal Lahir",
-    //   cell: (student) =>
-    //     student.tanggalLahir
-    //       ? new Date(student.tanggalLahir).toLocaleDateString("id-ID")
-    //       : "-",
-    // },
     {
       header: "Status",
       accessorKey: "status",
@@ -314,7 +370,19 @@ export default function StudentsPage() {
       },
     },
     {
-      label: "Status",
+      label: "Status Data",
+      options: [
+        { label: "Semua", value: "ALL" },
+        { label: "Data Lengkap", value: "COMPLETE" },
+        { label: "Belum Lengkap", value: "INCOMPLETE" },
+      ],
+      onSelect: (value) => {
+        setSelectedCompleteness(value === "ALL" ? null : value);
+        // Note: Client side filtering only affects current page data
+      },
+    },
+    {
+      label: "Status Siswa",
       options: [
         { label: "Semua Status", value: "ALL" },
         { label: "Aktif", value: "ACTIVE" },

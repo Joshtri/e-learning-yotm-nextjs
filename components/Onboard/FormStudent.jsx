@@ -70,40 +70,6 @@ export default function StudentForm({
       />
 
       <FormField
-        label="NISN (Opsional)"
-        name="nisn"
-        control={control}
-        placeholder="10 digit NISN"
-        error={errors.nisn?.message}
-        maxLength={10}
-        rules={{
-          validate: {
-            exactLength: (value) =>
-              !value || value.length === 10 || "NISN harus tepat 10 digit",
-            onlyNumbers: (value) =>
-              !value ||
-              /^[0-9]+$/.test(value) ||
-              "NISN hanya boleh berisi angka",
-          },
-        }}
-        inputProps={{ maxLength: 10 }}
-        onChange={(e) => {
-          const rawValue = e.target.value.replace(/\D/g, "");
-          const trimmed = rawValue.slice(0, 10);
-          setValue("nisn", trimmed, { shouldValidate: true });
-          e.target.value = trimmed;
-        }}
-      />
-
-      <FormField
-        label="NIS (Opsional)"
-        name="nis"
-        control={control}
-        placeholder="NIS siswa"
-        error={errors.nis?.message}
-      />
-
-      <FormField
         label="Jenis Kelamin"
         name="jenisKelamin"
         control={control}

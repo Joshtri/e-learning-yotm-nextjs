@@ -338,7 +338,7 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
                         value={formData.nisn}
                         onChange={handleInputChange}
                         placeholder="NISN"
-                        required
+                        disabled={isStudent}
                       />
                     </div>
 
@@ -350,6 +350,7 @@ export default function ProfileCard({ user, onEdit, onLogout }) {
                         value={formData.nis}
                         onChange={handleInputChange}
                         placeholder="NIS"
+                        disabled={isStudent}
                       />
                     </div>
                   </div>

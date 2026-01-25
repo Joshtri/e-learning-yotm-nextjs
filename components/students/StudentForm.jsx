@@ -54,7 +54,6 @@ export default function StudentForm({
         label="NISN"
         name="nisn"
         control={control}
-        required
         placeholder="10 digit NISN"
         error={errors.nisn?.message}
         maxLength={10}
@@ -64,7 +63,6 @@ export default function StudentForm({
           }
         }}
         rules={{
-          required: "NISN wajib diisi",
           pattern: {
             value: /^[0-9]{10}$/,
             message: "NISN harus 10 digit angka",
@@ -75,11 +73,9 @@ export default function StudentForm({
         label="No Telepon"
         name="noTelepon"
         control={control}
-        required
         placeholder="Contoh: 08123456789"
         error={errors.noTelepon?.message}
         rules={{
-          required: "No telepon wajib diisi",
           pattern: {
             value: /^[0-9]{10,12}$/,
             message: "No telepon harus 10-12 digit angka",
@@ -91,19 +87,15 @@ export default function StudentForm({
         label="NIS"
         name="nis"
         control={control}
-        required
         placeholder="Contoh: 1234567890"
         error={errors.nis?.message}
         rules={{
-          required: "NIS wajib diisi",
           pattern: {
             value: /^[0-9]{10}$/,
             message: "NIS harus 10 digit angka",
           },
         }}
       />
-
-      
 
       <FormField
         label="Jenis Kelamin"
@@ -159,7 +151,6 @@ export default function StudentForm({
         type="textarea"
         rows={4}
         rules={{
-          required: "Alamat wajib diisi",
           minLength: { value: 10, message: "Alamat minimal 10 karakter" },
         }}
         error={errors.alamat?.message}
