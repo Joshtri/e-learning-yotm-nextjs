@@ -22,7 +22,8 @@ export default function ClassCreatePage() {
 
   const form = useForm({
     defaultValues: {
-      namaKelas: "",
+      classLevel: "",
+      classSuffix: "",
       programId: "",
       academicYearId: "",
     },
@@ -50,8 +51,7 @@ export default function ClassCreatePage() {
         ]);
         setPrograms(programRes.data?.data?.programs || []);
         setAcademicYears(yearRes.data?.data?.academicYears || []);
-      } catch (err) {
-        console.error("Gagal memuat data:", err);
+      } catch {
         toast.error("Gagal memuat data program/tahun ajaran");
       } finally {
         setLoading(false);
@@ -66,7 +66,7 @@ export default function ClassCreatePage() {
       setSubmitting(true);
 
       const payload = {
-        namaKelas: data.namaKelas.trim(),
+        namaKelas: `${data.classLevel} ${data.classSuffix}`.trim(),
         programId: data.programId,
         academicYearId: data.academicYearId,
       };
@@ -117,25 +117,49 @@ export default function ClassCreatePage() {
             <CardTitle>Data Kelas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="namaKelas"
-              label="Nama Kelas"
-              type="select"
-              placeholder="Pilih nama kelas"
-              required
-              rules={{ required: "Nama kelas wajib dipilih" }}
-              options={[
-                { value: "Kelas 5", label: "Kelas 5" },
-                { value: "Kelas 6", label: "Kelas 6" },
-                { value: "Kelas 7", label: "Kelas 7" },
-                { value: "Kelas 8", label: "Kelas 8" },
-                { value: "Kelas 9", label: "Kelas 9" },
-                { value: "Kelas 10", label: "Kelas 10" },
-                { value: "Kelas 11", label: "Kelas 11" },
-                { value: "Kelas 12", label: "Kelas 12" },
-              ]}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="classLevel"
+                label="Tingkat Kelas"
+                type="select"
+                placeholder="Pilih tingkat"
+                required
+                rules={{ required: "Tingkat kelas wajib dipilih" }}
+                options={[
+                  { value: "Kelas 1", label: "Kelas 1" },
+                  { value: "Kelas 2", label: "Kelas 2" },
+                  { value: "Kelas 3", label: "Kelas 3" },
+                  { value: "Kelas 4", label: "Kelas 4" },
+                  { value: "Kelas 5", label: "Kelas 5" },
+                  { value: "Kelas 6", label: "Kelas 6" },
+                  { value: "Kelas 7", label: "Kelas 7" },
+                  { value: "Kelas 8", label: "Kelas 8" },
+                  { value: "Kelas 9", label: "Kelas 9" },
+                  { value: "Kelas 10", label: "Kelas 10" },
+                  { value: "Kelas 11", label: "Kelas 11" },
+                  { value: "Kelas 12", label: "Kelas 12" },
+                ]}
+              />
+
+              <FormField
+                control={form.control}
+                name="classSuffix"
+                label="Nama Kelas / Peminatan"
+                type="select"
+                placeholder="Pilih kelas (A, B, C...)"
+                required
+                rules={{ required: "Nama kelas wajib dipilih" }}
+                options={[
+                  { value: "A", label: "A" },
+                  { value: "B", label: "B" },
+                  { value: "C", label: "C" },
+                  { value: "D", label: "D" },
+                  { value: "E", label: "E" },
+                  { value: "F", label: "F" },
+                ]}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -182,7 +206,9 @@ export default function ClassCreatePage() {
                   <li>
                     • <span className="font-medium">Status:</span>{" "}
                     {selectedYear.isActive ? (
-                      <span className="text-green-600 font-semibold">Aktif</span>
+                      <span className="text-green-600 font-semibold">
+                        Aktif
+                      </span>
                     ) : (
                       <span className="text-gray-600">Tidak Aktif</span>
                     )}

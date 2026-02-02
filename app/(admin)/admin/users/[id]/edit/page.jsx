@@ -261,7 +261,7 @@ export default function EditUserPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/admin/users/${id}`)}
+              onClick={() => router.back()}
               disabled={submitting}
             >
               Batal

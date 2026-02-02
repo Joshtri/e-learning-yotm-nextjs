@@ -76,7 +76,7 @@ export const navByRole = {
           icon: <FileText className="h-4 w-4" />,
         },
         {
-          title: "Mata Pelajaran",
+          title: "Master Mata Pelajaran",
           href: "/admin/subject",
           icon: <BookOpen className="h-4 w-4" />,
         },

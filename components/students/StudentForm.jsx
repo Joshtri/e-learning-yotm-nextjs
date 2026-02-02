@@ -10,6 +10,7 @@ export default function StudentForm({
   defaultValues = {},
   onSubmit,
   classOptions = [],
+  showStatus = true, // Default true, but can be disabled
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -112,6 +113,23 @@ export default function StudentForm({
         error={errors.jenisKelamin?.message}
       />
 
+      {showStatus && (
+        <FormField
+          label="Status Siswa"
+          name="status"
+          control={control}
+          type="select"
+          required
+          options={[
+            { label: "Aktif", value: "ACTIVE" },
+            { label: "Tidak Aktif", value: "INACTIVE" },
+            { label: "Lulus", value: "GRADUATED" },
+          ]}
+          rules={{ required: "Status wajib dipilih" }}
+          error={errors.status?.message}
+        />
+      )}
+
       <FormField
         label="Tempat Lahir"
         name="tempatLahir"
@@ -128,7 +146,7 @@ export default function StudentForm({
         label="Tanggal Lahir"
         name="tanggalLahir"
         control={control}
-        type="datetime"
+        type="birthdate"
         required
         placeholder="Pilih tanggal lahir"
         rules={{

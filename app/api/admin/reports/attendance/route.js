@@ -11,6 +11,8 @@ import {
   sanitizeFilename,
 } from "@/lib/pdf-helper";
 
+export const maxDuration = 60;
+
 export async function GET(request) {
   try {
     const user = await getUserFromCookie();

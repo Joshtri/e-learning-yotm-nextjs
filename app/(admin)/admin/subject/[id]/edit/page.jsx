@@ -118,12 +118,13 @@ export default function SubjectEditPage() {
 
               <div>
                 <label className="block text-sm font-medium">
-                  Paket/Program (opsional)
+                  Paket/Program
                 </label>
                 <select
                   name="programId"
                   value={formData.programId}
                   onChange={handleChange}
+                  required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">-- Pilih Program --</option>

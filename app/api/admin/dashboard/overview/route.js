@@ -20,7 +20,8 @@ export async function GET() {
       totalAssignments,
       totalQuizzes,
       totalMaterials,
-      currentAcademicYear
+      currentAcademicYear,
+      totalUsers
     ] = await Promise.all([
       prisma.student.count(),
       prisma.tutor.count(),
@@ -30,7 +31,8 @@ export async function GET() {
       prisma.assignment.count(),
       prisma.quiz.count(),
       prisma.learningMaterial.count(),
-      prisma.academicYear.findFirst({ where: { isActive: true } })
+      prisma.academicYear.findFirst({ where: { isActive: true } }),
+      prisma.user.count()
     ]);
 
     return NextResponse.json({
@@ -42,6 +44,7 @@ export async function GET() {
       totalAssignments,
       totalQuizzes,
       totalMaterials,
+      totalUsers,
       currentAcademicYear: currentAcademicYear ? {
         id: currentAcademicYear.id,
         year: `${currentAcademicYear.tahunMulai}/${currentAcademicYear.tahunSelesai}`,

@@ -201,7 +201,6 @@ export default function StudentCreatePage() {
                 options={[
                   { value: "MALE", label: "Laki-laki" },
                   { value: "FEMALE", label: "Perempuan" },
-                  { value: "OTHER", label: "Lainnya" },
                 ]}
               />
             </div>

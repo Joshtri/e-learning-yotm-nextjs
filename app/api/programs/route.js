@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(request) {
@@ -75,14 +75,19 @@ export async function POST(request) {
       );
     }
 
-    // Cek duplikat
-    const existing = await prisma.program.findUnique({
-      where: { namaPaket },
+    // Cek duplikat (Case-insensitive)
+    const existing = await prisma.program.findFirst({
+      where: {
+        namaPaket: {
+          equals: namaPaket,
+          mode: "insensitive",
+        },
+      },
     });
 
     if (existing) {
       return NextResponse.json(
-        { success: false, message: "Nama program sudah terdaftar" },
+        { success: false, message: "Program paket ini sudah ada" },
         { status: 409 }
       );
     }

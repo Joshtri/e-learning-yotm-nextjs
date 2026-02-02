@@ -386,10 +386,8 @@ export default function StudentsPage() {
       options: [
         { label: "Semua Status", value: "ALL" },
         { label: "Aktif", value: "ACTIVE" },
+        { label: "Tidak Aktif", value: "INACTIVE" },
         { label: "Lulus", value: "GRADUATED" },
-        { label: "Pindah", value: "TRANSFERRED" },
-        { label: "Keluar", value: "DROPPED_OUT" },
-        { label: "Meninggal", value: "DECEASED" },
       ],
       onSelect: (value) => {
         setSelectedStatus(value === "ALL" ? null : value);

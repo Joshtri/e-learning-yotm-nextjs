@@ -78,7 +78,6 @@ export default function StudentForm({
         options={[
           { label: "Laki-laki", value: "MALE" },
           { label: "Perempuan", value: "FEMALE" },
-          { label: "Lainnya", value: "OTHER" },
         ]}
         rules={{ required: "Jenis kelamin wajib dipilih" }}
         error={errors.jenisKelamin?.message}

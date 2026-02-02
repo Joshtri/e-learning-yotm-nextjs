@@ -48,6 +48,7 @@ export async function GET(request) {
       success: true,
       data: {
         subjects,
+        total, // Selalu tampilkan total untuk debugging
       },
     };
 

@@ -21,9 +21,11 @@ export default function EditProgramSubjectPage() {
   const [programs, setPrograms] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     try {
+      setIsLoading(true);
       const [programRes, subjectRes, detailRes] = await Promise.all([
         api.get('/programs'),
         api.get('/subjects'),
@@ -31,17 +33,22 @@ export default function EditProgramSubjectPage() {
       ]);
 
       const item = detailRes.data.data;
+      const subjectsList = subjectRes.data.data.subjects || [];
 
-      setPrograms(programRes.data.data.programs);
-      setSubjects(subjectRes.data.data.subjects);
+      setPrograms(programRes.data.data.programs || []);
+      setSubjects(subjectsList);
 
+      // Set form after subjects are loaded
       setForm({
-        programId: item.program?.id ?? '',
-        subjectId: item.subject?.id ?? '',
+        programId: item.programId ?? item.program?.id ?? '',
+        subjectId: item.subjectId ?? item.subject?.id ?? '',
       });
     } catch (err) {
+      console.error('Error fetching data:', err);
       toast.error('Gagal memuat data');
       router.push('/admin/program-subject');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,8 +57,18 @@ export default function EditProgramSubjectPage() {
   }, [id]);
 
   const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === 'programId') {
+      // Reset subjectId when program changes
+      setForm((prev) => ({ ...prev, programId: value, subjectId: '' }));
+    } else {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    }
   };
+
+  // Filter subjects by selected program (include general subjects without programId)
+  const filteredSubjects = form.programId
+    ? subjects.filter((s) => !s.programId || s.programId === form.programId)
+    : [];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,6 +84,14 @@ export default function EditProgramSubjectPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -106,12 +131,19 @@ export default function EditProgramSubjectPage() {
               <Select
                 value={form.subjectId}
                 onValueChange={(val) => handleChange('subjectId', val)}
+                disabled={!form.programId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih mata pelajaran" />
+                  <SelectValue
+                    placeholder={
+                      form.programId
+                        ? "Pilih mata pelajaran"
+                        : "Pilih program terlebih dahulu"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {subjects.map((s) => (
+                  {filteredSubjects.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.namaMapel}
                     </SelectItem>

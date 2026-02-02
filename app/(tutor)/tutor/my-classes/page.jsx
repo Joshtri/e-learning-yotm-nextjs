@@ -50,7 +50,7 @@ const DAYS = [
   { value: 4, label: "Kamis" },
   { value: 5, label: "Jumat" },
   { value: 6, label: "Sabtu" },
-  { value: 7, label: "Minggu" },
+  // { value: 7, label: "Minggu" },
 ];
 
 export default function MyClassesPage() {

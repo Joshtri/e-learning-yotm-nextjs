@@ -6,6 +6,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     let academicYearId = searchParams.get("academicYearId");
+    const classId = searchParams.get("classId"); // Add this
 
     const cookieStore = cookies();
     const token = cookieStore.get("auth_token")?.value;
@@ -58,6 +59,7 @@ export async function GET(request) {
 
     const where = {
       ...(tutorId && { tutorId }),
+      ...(classId && { classId }), // Add this
       ...(academicYearId && {
         class: {
           academicYearId,

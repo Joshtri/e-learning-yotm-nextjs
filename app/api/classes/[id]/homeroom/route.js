@@ -33,6 +33,40 @@ export async function PATCH(req, { params }) {
       );
     }
 
+    // Ambil data kelas yang akan diupdate untuk dapat academicYearId
+    const currentClass = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { academicYearId: true },
+    });
+
+    if (!currentClass) {
+      return NextResponse.json(
+        { message: "Kelas tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    // Cek apakah tutor sudah jadi wali kelas di kelas lain pada tahun ajaran yang sama
+    const existingHomeroom = await prisma.class.findFirst({
+      where: {
+        homeroomTeacherId: homeroomTeacherId,
+        academicYearId: currentClass.academicYearId,
+        id: { not: classId }, // Kecuali kelas ini sendiri
+      },
+      include: {
+        academicYear: true,
+      },
+    });
+
+    if (existingHomeroom) {
+      return NextResponse.json(
+        {
+          message: `Tutor ini sudah menjadi wali kelas di "${existingHomeroom.namaKelas}" pada tahun ajaran ${existingHomeroom.academicYear?.tahunMulai}/${existingHomeroom.academicYear?.tahunSelesai}`,
+        },
+        { status: 409 }
+      );
+    }
+
     // Update homeroomTeacherId di tabel Class
     await prisma.class.update({
       where: { id: classId },

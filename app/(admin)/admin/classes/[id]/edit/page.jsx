@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -22,15 +23,14 @@ export default function EditClassPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    namaKelas: "",
+    classLevel: "",
+    classSuffix: "",
     programId: "",
     academicYearId: "",
-    homeroomTeacherId: "", // akan dipakai "none" di UI
   });
 
   const [programs, setPrograms] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
-  const [tutors, setTutors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
 
@@ -43,21 +43,32 @@ export default function EditClassPage() {
         const res = await getClassById(id);
         if (res?.success) {
           const cls = res.data;
+          // Parse namaKelas -> Level + Suffix
+          let level = "";
+          let suffix = "";
+          if (cls?.namaKelas) {
+            const parts = cls.namaKelas.trim().split(" ");
+            if (parts.length >= 2) {
+              suffix = parts.pop();
+              level = parts.join(" ");
+            } else {
+              level = cls.namaKelas;
+            }
+          }
+
           setForm({
-            namaKelas: cls?.namaKelas ?? "",
+            classLevel: level,
+            classSuffix: suffix,
             programId: cls?.programId ? String(cls.programId) : "",
             academicYearId: cls?.academicYearId
               ? String(cls.academicYearId)
               : "",
-            homeroomTeacherId: cls?.homeroomTeacherId
-              ? String(cls.homeroomTeacherId)
-              : "none",
           });
         } else {
           toast.error("Kelas tidak ditemukan");
           router.push("/admin/classes");
         }
-      } catch (err) {
+      } catch {
         toast.error("Gagal mengambil data kelas");
         router.push("/admin/classes");
       }
@@ -65,15 +76,14 @@ export default function EditClassPage() {
 
     fetchData();
     fetchOptions();
-  }, [id]);
+  }, [id, router]);
 
-  // Ambil data program, tahun ajaran, dan tutor
+  // Ambil data program, tahun ajaran
   const fetchOptions = async () => {
     try {
-      const [prog, years, tutorsRes] = await Promise.all([
+      const [prog, years] = await Promise.all([
         api.get("/programs"),
         api.get("/academic-years"),
-        api.get("/tutors"),
       ]);
 
       const programsArr = Array.isArray(prog?.data?.data?.programs)
@@ -82,15 +92,12 @@ export default function EditClassPage() {
       const yearsArr = Array.isArray(years?.data?.data?.academicYears)
         ? years.data.data.academicYears
         : [];
-      const tutorsArr = Array.isArray(tutorsRes?.data?.data?.tutors)
-        ? tutorsRes.data.data.tutors
-        : [];
 
       setPrograms(
         programsArr.map((p) => ({
           id: String(p.id),
           label: p.namaPaket ?? p.nama ?? String(p.id),
-        }))
+        })),
       );
       setAcademicYears(
         yearsArr.map((y) => ({
@@ -100,13 +107,7 @@ export default function EditClassPage() {
           tahunMulai: y.tahunMulai,
           tahunSelesai: y.tahunSelesai,
           isActive: !!y.isActive,
-        }))
-      );
-      setTutors(
-        tutorsArr.map((t) => ({
-          id: String(t.id),
-          label: t.user?.nama ?? t.namaLengkap ?? String(t.id),
-        }))
+        })),
       );
     } catch (err) {
       console.error(err);
@@ -138,13 +139,9 @@ export default function EditClassPage() {
     setIsSubmitting(true);
 
     try {
-      // ubah "none" jadi null untuk dikirim ke backend
       const payload = {
         ...form,
-        homeroomTeacherId:
-          form.homeroomTeacherId && form.homeroomTeacherId !== "none"
-            ? form.homeroomTeacherId
-            : null,
+        namaKelas: `${form.classLevel} ${form.classSuffix}`.trim(),
       };
 
       const res = await updateClass(id, payload);
@@ -154,10 +151,22 @@ export default function EditClassPage() {
       } else {
         toast.error(res?.message || "Gagal memperbarui kelas");
       }
-    } catch (err) {
+    } catch {
       toast.error("Terjadi kesalahan saat menyimpan");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Apakah Anda yakin ingin menghapus kelas ini?")) return;
+    try {
+      await api.delete(`/classes/${id}`);
+      toast.success("Kelas berhasil dihapus");
+      router.push("/admin/classes");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal menghapus kelas");
     }
   };
 
@@ -173,17 +182,57 @@ export default function EditClassPage() {
               { label: "Kelas", href: "/admin/classes" },
               { label: "Edit Kelas" },
             ]}
+            actions={
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hapus Kelas
+              </Button>
+            }
           />
 
           <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
-            <div>
-              <label className="block text-sm font-medium">Nama Kelas</label>
-              <Input
-                name="namaKelas"
-                value={form.namaKelas}
-                onChange={handleChange}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Tingkat Kelas
+                </label>
+                <Select
+                  value={form.classLevel}
+                  onValueChange={(val) => handleSelect("classLevel", val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Tingkat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                      <SelectItem key={i} value={`Kelas ${i}`}>
+                        Kelas {i}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Suffix (A, B, C...)
+                </label>
+                <Select
+                  value={form.classSuffix}
+                  onValueChange={(val) => handleSelect("classSuffix", val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Suffix" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["A", "B", "C", "D", "E", "F"].map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>
@@ -212,7 +261,9 @@ export default function EditClassPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium">Tahun Ajaran & Semester</label>
+              <label className="block text-sm font-medium">
+                Tahun Ajaran & Semester
+              </label>
               <Select
                 value={form.academicYearId}
                 onValueChange={(val) => handleSelect("academicYearId", val)}
@@ -224,7 +275,8 @@ export default function EditClassPage() {
                   {academicYears.length ? (
                     academicYears.map((y) => (
                       <SelectItem key={y.id} value={y.id}>
-                        {y.label}{y.isActive ? " (Aktif)" : ""}
+                        {y.label}
+                        {y.isActive ? " (Aktif)" : ""}
                       </SelectItem>
                     ))
                   ) : (
@@ -252,7 +304,9 @@ export default function EditClassPage() {
                     <li>
                       • <span className="font-medium">Status:</span>{" "}
                       {selectedYear.isActive ? (
-                        <span className="text-green-600 font-semibold">Aktif</span>
+                        <span className="text-green-600 font-semibold">
+                          Aktif
+                        </span>
                       ) : (
                         <span className="text-gray-600">Tidak Aktif</span>
                       )}
@@ -260,32 +314,6 @@ export default function EditClassPage() {
                   </ul>
                 </div>
               )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium">Wali Kelas</label>
-              <Select
-                value={form.homeroomTeacherId || "none"}
-                onValueChange={(val) => handleSelect("homeroomTeacherId", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Wali Kelas (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">- Tidak ada wali kelas -</SelectItem>
-                  {tutors.length ? (
-                    tutors.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.label}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      Tidak ada data tutor
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="flex gap-4 pt-2">

@@ -8,6 +8,9 @@ import "../../globals.css";
 import { AppSidebar } from "@/components/partials/AppSidebar";
 import AuthGuard from "@/components/auth/AuthGuard";
 
+import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -21,6 +24,19 @@ const geistMono = Geist_Mono({
 export default function HomeroomLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        await api.get("/homeroom/dashboard/overview");
+      } catch (error) {
+        // Jika gagal (misal 404 karena tidak punya kelas), redirect ke dashboard tutor
+        router.replace("/tutor/dashboard");
+      }
+    };
+    checkAccess();
+  }, []);
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -61,19 +77,19 @@ export default function HomeroomLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           > */}
-            <div className="flex min-h-screen bg-background">
-              <AppSidebar
-                role="homeroom"
-                isOpen={isSidebarOpen}
-                onToggleSidebar={toggleSidebar}
-                isMobile={isMobile}
-                onClose={() => setIsSidebarOpen(false)}
-              />
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <AppHeader role="tutor" onMenuClick={toggleSidebar} />
-                <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
-              </div>
+          <div className="flex min-h-screen bg-background">
+            <AppSidebar
+              role="homeroom"
+              isOpen={isSidebarOpen}
+              onToggleSidebar={toggleSidebar}
+              isMobile={isMobile}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <AppHeader role="tutor" onMenuClick={toggleSidebar} />
+              <div className="flex-1 overflow-auto p-4 md:p-6 mt-10 pt-20">{children}</div>
             </div>
+          </div>
           {/* </ThemeProvider> */}
         </AuthGuard>
       </body>

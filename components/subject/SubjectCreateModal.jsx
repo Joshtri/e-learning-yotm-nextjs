@@ -79,11 +79,9 @@ export default function SubjectCreateModal({
       />
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium">
-          Paket/Program (opsional)
-        </label>
+        <label className="block text-sm font-medium">Paket/Program</label>
         <select
-          {...register("programId")}
+          {...register("programId", { required: "Program wajib dipilih" })}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <option value="">-- Pilih Program --</option>
@@ -93,6 +91,9 @@ export default function SubjectCreateModal({
             </option>
           ))}
         </select>
+        {errors.programId && (
+          <p className="text-xs text-red-500">{errors.programId.message}</p>
+        )}
         <p className="text-xs text-muted-foreground">
           Pilih paket/program dimana mata pelajaran ini tersedia
         </p>

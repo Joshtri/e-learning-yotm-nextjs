@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
 import StudentForm from "@/components/students/StudentForm";
+import { Button } from "@/components/ui/button";
 
 export default function StudentEditPage() {
   const [student, setStudent] = useState(null);
@@ -47,6 +49,18 @@ export default function StudentEditPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Apakah Anda yakin ingin menghapus siswa ini?")) return;
+    try {
+      await api.delete(`/students/${id}`);
+      toast.success("Siswa berhasil dihapus");
+      router.push("/admin/students");
+    } catch (error) {
+      console.error("Failed to delete student:", error);
+      toast.error("Gagal menghapus siswa");
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto py-10">
       <PageHeader
@@ -56,6 +70,12 @@ export default function StudentEditPage() {
           { label: "Siswa", href: "/admin/students" },
           { label: "Edit Siswa" },
         ]}
+        actions={
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hapus Siswa
+          </Button>
+        }
       />
       {!loading && student && (
         <StudentForm

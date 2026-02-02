@@ -1,8 +1,6 @@
-// File: app/admin/classes/page.jsx
 "use client";
-
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -17,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { DataExport } from "@/components/ui/data-export";
+import { EntityActions } from "@/components/ui/entity-actions";
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState([]);
@@ -38,6 +37,29 @@ export default function ClassesPage() {
   useEffect(() => {
     fetchClasses();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus kelas ini?")) return;
+    try {
+      await api.delete(`/classes/${id}`);
+      toast.success("Kelas berhasil dihapus");
+      fetchClasses();
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menghapus kelas");
+    }
+  };
+
+  const handleSync = async () => {
+    if (!confirm("Sinkronisasi data siswa dari semester Ganjil ke Genap?"))
+      return;
+    try {
+      // Implement logic here or call API
+      toast.info("Fitur sinkronisasi belum tersedia (Stub)");
+    } catch (error) {
+      toast.error("Gagal sinkronisasi");
+    }
+  };
 
   const groupedByYear = classes.reduce((acc, cls) => {
     const ay = cls.academicYear;
@@ -91,23 +113,12 @@ export default function ClassesPage() {
       header: "Aksi",
       className: "w-[120px]",
       cell: (row) => (
-        <>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/admin/classes/${row.id}/edit`)}
-          >
-            Edit
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/admin/classes/${row.id}`)}
-          >
-            Detail
-          </Button>
-        </>
+        <EntityActions
+          entityId={row.id}
+          viewPath={`/admin/classes/${row.id}`}
+          editPath={`/admin/classes/${row.id}/edit`}
+          onDelete={() => handleDelete(row.id)}
+        />
       ),
     },
   ];
@@ -120,6 +131,10 @@ export default function ClassesPage() {
             title="Manajemen Kelas"
             actions={
               <>
+                <Button variant="outline" onClick={handleSync}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sinkronisasi
+                </Button>
                 <DataExport
                   data={classes}
                   filename="kelas.csv"

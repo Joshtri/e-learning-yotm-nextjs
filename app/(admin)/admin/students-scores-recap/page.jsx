@@ -69,6 +69,18 @@ export default function NilaiSiswaPage() {
 
   const { students, quizzes, assignments, filterOptions } = data;
 
+  // Get selected class to filter subjects by program
+  const selectedClass = filterOptions.classes.find(
+    (cls) => cls.id === filters.classId
+  );
+
+  // Filter subjects based on selected class's program
+  const filteredSubjects = filters.classId
+    ? filterOptions.subjects.filter(
+        (s) => s.programId === selectedClass?.programId
+      )
+    : [];
+
   // Group quizzes and assignments by subject when no subject filter is applied
   const groupedQuizzes = filters.subjectId
     ? quizzes
@@ -167,18 +179,19 @@ export default function NilaiSiswaPage() {
         <div className="flex flex-wrap gap-4 mb-6">
           <div className="w-full md:w-auto">
             <Select
-              value={filters.subjectId}
+              value={filters.classId}
               onValueChange={(value) =>
-                setFilters({ ...filters, subjectId: value })
+                setFilters({ ...filters, classId: value, subjectId: "" })
               }
             >
               <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Pilih Mata Pelajaran" />
+                <SelectValue placeholder="Pilih Kelas" />
               </SelectTrigger>
               <SelectContent>
-                {filterOptions.subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id}>
-                    {subject.namaMapel}
+                {filterOptions.classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.namaKelas} - {cls.program?.namaPaket || "Tanpa Program"} ({cls.academicYear.tahunMulai}/
+                    {cls.academicYear.tahunSelesai} - {cls.academicYear.semester})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -187,19 +200,25 @@ export default function NilaiSiswaPage() {
 
           <div className="w-full md:w-auto">
             <Select
-              value={filters.classId}
+              value={filters.subjectId}
               onValueChange={(value) =>
-                setFilters({ ...filters, classId: value })
+                setFilters({ ...filters, subjectId: value })
               }
+              disabled={!filters.classId}
             >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Pilih Kelas" />
+              <SelectTrigger className="w-[250px]">
+                <SelectValue
+                  placeholder={
+                    filters.classId
+                      ? "Pilih Mata Pelajaran"
+                      : "Pilih Kelas terlebih dahulu"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {filterOptions.classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.namaKelas} ({cls.academicYear.tahunMulai}/
-                    {cls.academicYear.tahunSelesai} - {cls.academicYear.semester})
+                {filteredSubjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.namaMapel}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -230,9 +249,9 @@ export default function NilaiSiswaPage() {
             variant="outline"
             onClick={() =>
               setFilters({
-                subjectId: undefined,
-                classId: undefined,
-                academicYearId: undefined,
+                subjectId: "",
+                classId: "",
+                academicYearId: "",
               })
             }
           >

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -14,6 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 export default function TutorEditPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -26,6 +35,7 @@ export default function TutorEditPage() {
     pendidikan: "",
     pengalaman: "",
     bio: "",
+    status: "ACTIVE",
   });
 
   useEffect(() => {
@@ -39,8 +49,9 @@ export default function TutorEditPage() {
           pendidikan: tutor.pendidikan || "",
           pengalaman: tutor.pengalaman || "",
           bio: tutor.bio || "",
+          status: tutor.status || "ACTIVE",
         });
-      } catch (error) {
+      } catch {
         toast.error("Gagal memuat data tutor");
         router.push("/admin/tutors");
       } finally {
@@ -55,6 +66,10 @@ export default function TutorEditPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleStatusChange = (value) => {
+    setForm((prev) => ({ ...prev, status: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -67,6 +82,18 @@ export default function TutorEditPage() {
       toast.error("Gagal memperbarui data tutor");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Apakah Anda yakin ingin menghapus tutor ini?")) return;
+    try {
+      await api.delete(`/tutors/${id}`);
+      toast.success("Tutor berhasil dihapus");
+      router.push("/admin/tutors");
+    } catch (error) {
+      console.error("Failed to delete tutor:", error);
+      toast.error("Gagal menghapus tutor");
     }
   };
 
@@ -93,6 +120,12 @@ export default function TutorEditPage() {
           { label: "Tutor", href: "/admin/tutors" },
           { label: "Edit Tutor" },
         ]}
+        actions={
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hapus Tutor
+          </Button>
+        }
       />
 
       <form onSubmit={handleSubmit}>
@@ -138,6 +171,21 @@ export default function TutorEditPage() {
                   value={form.pengalaman}
                   onChange={handleChange}
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status Keaktifan</Label>
+                <Select value={form.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Aktif</SelectItem>
+                    <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

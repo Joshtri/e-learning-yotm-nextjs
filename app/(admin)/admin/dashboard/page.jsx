@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BarChart3,
   BookOpen,
   Calendar,
   CheckCircle,
@@ -63,7 +62,6 @@ export default function AdminDashboard() {
     overview,
     classes,
     programs,
-    submissionStats,
     monthlyStats,
     recentUsers,
     subjects,
@@ -203,7 +201,6 @@ export default function AdminDashboard() {
 
   if (
     !overview ||
-    !submissionStats ||
     !monthlyStats ||
     !recentUsers ||
     !subjects ||
@@ -217,8 +214,7 @@ export default function AdminDashboard() {
     <div className="container mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Admin</h1>
-        <div className="flex gap-2">
-        </div>
+        <div className="flex gap-2"></div>
       </div>
 
       {overview.currentAcademicYear && (
@@ -307,20 +303,16 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <CardTitle className="text-sm font-medium">
-                  Tingkat Kelulusan
+                  Total User
                 </CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <User className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {Math.round(
-                    (submissionStats.graded / (submissionStats.total || 1)) *
-                      100
-                  )}
-                  %
+                  {overview.totalUsers || 0}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Rata-rata nilai: {submissionStats.averageScore.toFixed(1)}
+                  Total pengguna terdaftar
                 </p>
               </CardContent>
             </Card>
@@ -498,100 +490,6 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Submission Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistik Pengumpulan</CardTitle>
-              <CardDescription>
-                Ringkasan status pengumpulan tugas dan kuis
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Dikumpulkan</span>
-                    <span className="text-sm font-medium">
-                      {submissionStats.submitted} / {submissionStats.total}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (submissionStats.submitted /
-                        (submissionStats.total || 1)) *
-                      100
-                    }
-                    className="h-2 bg-blue-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Dinilai</span>
-                    <span className="text-sm font-medium">
-                      {submissionStats.graded} / {submissionStats.total}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (submissionStats.graded / (submissionStats.total || 1)) *
-                      100
-                    }
-                    className="h-2 bg-green-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Terlambat</span>
-                    <span className="text-sm font-medium">
-                      {submissionStats.late} / {submissionStats.total}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (submissionStats.late / (submissionStats.total || 1)) *
-                      100
-                    }
-                    className="h-2 bg-amber-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">
-                      Sedang Dikerjakan
-                    </span>
-                    <span className="text-sm font-medium">
-                      {submissionStats.inProgress} / {submissionStats.total}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (submissionStats.inProgress /
-                        (submissionStats.total || 1)) *
-                      100
-                    }
-                    className="h-2 bg-purple-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium">Belum Mulai</span>
-                    <span className="text-sm font-medium">
-                      {submissionStats.notStarted} / {submissionStats.total}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (submissionStats.notStarted /
-                        (submissionStats.total || 1)) *
-                      100
-                    }
-                    className="h-2 bg-gray-100"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* ANALYTICS TAB */}
@@ -662,7 +560,7 @@ export default function AdminDashboard() {
                             height: `${
                               (month.students /
                                 Math.max(
-                                  ...monthlyStats.map((m) => m.students || 1)
+                                  ...monthlyStats.map((m) => m.students || 1),
                                 )) *
                               200
                             }px`,
@@ -676,7 +574,7 @@ export default function AdminDashboard() {
                               (month.tutors /
                                 Math.max(
                                   ...monthlyStats.map((m) => m.tutors || 1),
-                                  1
+                                  1,
                                 )) *
                               200
                             }px`,
@@ -690,7 +588,7 @@ export default function AdminDashboard() {
                               (month.submitted /
                                 Math.max(
                                   ...monthlyStats.map((m) => m.submitted || 1),
-                                  1
+                                  1,
                                 )) *
                               200
                             }px`,
@@ -704,7 +602,7 @@ export default function AdminDashboard() {
                               (month.graded /
                                 Math.max(
                                   ...monthlyStats.map((m) => m.graded || 1),
-                                  1
+                                  1,
                                 )) *
                               200
                             }px`,
@@ -742,7 +640,7 @@ export default function AdminDashboard() {
                           (program.totalStudents /
                             Math.max(
                               ...programs.map((p) => p.totalStudents),
-                              1
+                              1,
                             )) *
                           100
                         }
@@ -784,7 +682,7 @@ export default function AdminDashboard() {
                             (subject.totalStudents /
                               Math.max(
                                 ...subjects.map((s) => s.totalStudents),
-                                1
+                                1,
                               )) *
                             100
                           }
@@ -942,7 +840,7 @@ export default function AdminDashboard() {
                             height: `${
                               (month.students /
                                 Math.max(
-                                  ...monthlyStats.map((m) => m.students || 1)
+                                  ...monthlyStats.map((m) => m.students || 1),
                                 )) *
                               150
                             }px`,
@@ -1118,7 +1016,7 @@ export default function AdminDashboard() {
                             (program.totalStudents /
                               Math.max(
                                 ...programs.map((p) => p.totalStudents),
-                                1
+                                1,
                               )) *
                             100
                           }
@@ -1154,7 +1052,7 @@ export default function AdminDashboard() {
                             (subject.totalStudents /
                               Math.max(
                                 ...subjects.map((s) => s.totalStudents),
-                                1
+                                1,
                               )) *
                             100
                           }

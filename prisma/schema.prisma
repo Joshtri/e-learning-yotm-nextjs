@@ -58,6 +58,7 @@ enum QuestionType {
 
 enum StudentStatus {
   ACTIVE // Masih aktif belajar
+  INACTIVE // Tidak aktif (Cuti / Non-aktif sementara)
   GRADUATED // Sudah lulus
   TRANSFERRED // Pindah sekolah
   DROPPED_OUT // Mengundurkan diri

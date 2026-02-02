@@ -66,7 +66,9 @@ export default function HomeroomManagementPage() {
       fetchClassesAndTutors(); // Refresh
     } catch (error) {
       console.error(error);
-      toast.error("Gagal menetapkan wali kelas");
+      const errorMessage =
+        error?.response?.data?.message || "Gagal menetapkan wali kelas";
+      toast.error(errorMessage);
     }
   };
 

@@ -20,6 +20,7 @@ export default function DailyExamsPage() {
   const [data, setData] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
+  const [studentProgramId, setStudentProgramId] = useState(null);
 
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -39,11 +40,24 @@ export default function DailyExamsPage() {
         params.semester = selectedSemester;
       }
 
-      const [examRes, subjectRes, yearRes] = await Promise.all([
+      // Fetch student's class to get programId
+      const [examRes, subjectRes, yearRes, authRes] = await Promise.all([
         api.get("/student/daily-exams", { params }),
         api.get("/subjects"),
         api.get("/academic-years"),
+        api.get("/auth/me"),
       ]);
+
+      // Get student's class programId
+      const studentClassId = authRes.data.user?.student?.classId;
+      if (studentClassId) {
+        try {
+          const classRes = await api.get(`/classes/${studentClassId}`);
+          setStudentProgramId(classRes.data.data?.programId || null);
+        } catch (err) {
+          console.error("Error fetching class:", err);
+        }
+      }
 
       setData(examRes.data.data || []);
       setSubjects(subjectRes.data.data.subjects || []);
@@ -55,6 +69,11 @@ export default function DailyExamsPage() {
       setIsLoading(false);
     }
   };
+
+  // Filter subjects berdasarkan program siswa
+  const filteredSubjects = studentProgramId
+    ? subjects.filter((s) => s.programId === studentProgramId)
+    : subjects;
 
   useEffect(() => {
     fetchData();
@@ -221,7 +240,7 @@ export default function DailyExamsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
-                        {subjects.map((s) => (
+                        {filteredSubjects.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.namaMapel}
                           </SelectItem>

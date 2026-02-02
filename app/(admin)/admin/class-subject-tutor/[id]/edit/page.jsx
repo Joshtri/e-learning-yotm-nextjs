@@ -15,14 +15,31 @@ export default function EditClassSubjectTutorPage() {
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [tutors, setTutors] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialData, setInitialData] = useState(null);
 
   const {
     control,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      classId: "",
+      subjectId: "",
+      tutorId: "",
+    },
+  });
+
+  const selectedClassId = watch("classId");
+
+  // Filter subjects berdasarkan program kelas yang dipilih
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const filteredSubjects = selectedClassId
+    ? subjects.filter((s) => s.programId === selectedClass?.programId)
+    : [];
 
   useEffect(() => {
     fetchAll();
@@ -30,6 +47,7 @@ export default function EditClassSubjectTutorPage() {
 
   const fetchAll = async () => {
     try {
+      setIsLoading(true);
       const [res, clsRes, subRes, tutRes] = await Promise.all([
         api.get(`/class-subject-tutors/${id}`),
         api.get("/classes"),
@@ -37,20 +55,37 @@ export default function EditClassSubjectTutorPage() {
         api.get("/tutors"),
       ]);
 
-      const data = res.data.data;
-      reset({
-        classId: data.classId,
-        subjectId: data.subjectId,
-        tutorId: data.tutorId,
-      });
+      const classesData = clsRes.data.data.classes || [];
+      const subjectsData = subRes.data.data.subjects || [];
+      const tutorsData = tutRes.data.data.tutors || [];
 
-      setClasses(clsRes.data.data.classes || []);
-      setSubjects(subRes.data.data.subjects || []);
-      setTutors(tutRes.data.data.tutors || []);
+      setClasses(classesData);
+      setSubjects(subjectsData);
+      setTutors(tutorsData);
+
+      const data = res.data.data;
+      setInitialData(data);
+
+      // Reset form setelah semua data loaded
+      reset({
+        classId: data.classId || data.class?.id || "",
+        subjectId: data.subjectId || data.subject?.id || "",
+        tutorId: data.tutorId || data.tutor?.id || "",
+      });
     } catch (err) {
+      console.error("Error fetching data:", err);
       toast.error("Gagal memuat data");
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Reset subjectId ketika classId berubah (kecuali saat initial load)
+  useEffect(() => {
+    if (!isLoading && initialData && selectedClassId !== initialData.classId) {
+      setValue("subjectId", "");
+    }
+  }, [selectedClassId, isLoading, initialData, setValue]);
 
   const onSubmit = async (values) => {
     try {
@@ -62,17 +97,25 @@ export default function EditClassSubjectTutorPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <div className="flex-1">
         <main className="p-6 space-y-6">
           <PageHeader
-            title="Edit Pembagian Jadwal Belajar"
+            title="Edit Penugasan Tutor"
             description="Perbarui data kelas, mata pelajaran, dan tutor."
             breadcrumbs={[
               { label: "Dashboard", href: "/admin/dashboard" },
               {
-                label: "Pembagian Jadwal Belajar",
+                label: "Penugasan Tutor",
                 href: "/admin/class-subject-tutor",
               },
               { label: "Edit" },
@@ -91,7 +134,7 @@ export default function EditClassSubjectTutorPage() {
               placeholder="Pilih Kelas"
               options={classes.map((cls) => ({
                 value: cls.id,
-                label: cls.namaKelas,
+                label: `${cls.namaKelas} - ${cls.program?.namaPaket || "Tanpa Program"}`,
               }))}
               rules={{ required: "Kelas wajib diisi" }}
               error={errors.classId?.message}
@@ -102,8 +145,9 @@ export default function EditClassSubjectTutorPage() {
               label="Mata Pelajaran"
               name="subjectId"
               control={control}
-              placeholder="Pilih Mapel"
-              options={subjects.map((sub) => ({
+              placeholder={selectedClassId ? "Pilih Mata Pelajaran" : "Pilih Kelas terlebih dahulu"}
+              disabled={!selectedClassId}
+              options={filteredSubjects.map((sub) => ({
                 value: sub.id,
                 label: sub.namaMapel,
               }))}
