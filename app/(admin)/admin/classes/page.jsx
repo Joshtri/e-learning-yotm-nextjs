@@ -131,10 +131,10 @@ export default function ClassesPage() {
             title="Manajemen Kelas"
             actions={
               <>
-                <Button variant="outline" onClick={handleSync}>
+                {/* <Button variant="outline" onClick={handleSync}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Sinkronisasi
-                </Button>
+                </Button> */}
                 <DataExport
                   data={classes}
                   filename="kelas.csv"
