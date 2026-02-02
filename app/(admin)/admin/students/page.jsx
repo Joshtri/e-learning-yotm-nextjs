@@ -1,7 +1,7 @@
 "use client";
 
 import api from "@/lib/axios";
-import { UserPlus, Info, CheckCircle, AlertCircle } from "lucide-react";
+import { UserPlus, Info, CheckCircle, AlertCircle, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -218,6 +218,24 @@ export default function StudentsPage() {
     }
   };
 
+  const handleDelete = async (studentId) => {
+    if (
+      !window.confirm(
+        "Apakah Anda yakin ingin menghapus siswa ini? Data yang dihapus tidak dapat dikembalikan.",
+      )
+    )
+      return;
+
+    try {
+      await api.delete(`/students/${studentId}`);
+      toast.success("Siswa berhasil dihapus");
+      fetchStudents();
+    } catch (err) {
+      console.error("Error deleting student:", err);
+      toast.error("Gagal menghapus siswa");
+    }
+  };
+
   const columns = [
     {
       header: "No",
@@ -317,7 +335,7 @@ export default function StudentsPage() {
     {
       header: "Aksi",
       cell: (student) => (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           {student.class?.id ? (
             <Button
               size="sm"
@@ -335,6 +353,14 @@ export default function StudentsPage() {
               Tambah Kelas
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDelete(student.id)}
+            title="Hapus Siswa"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
         </div>
       ),
       className: "text-right",

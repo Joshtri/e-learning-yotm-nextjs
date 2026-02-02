@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -62,6 +62,19 @@ export default function TutorPage() {
     });
   }, [tutors, searchQuery]);
 
+  const handleDeleteTutor = async (tutorId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus tutor ini?")) return;
+
+    try {
+      await api.delete(`/tutors/${tutorId}`);
+      toast.success("Tutor berhasil dihapus");
+      fetchTutors();
+    } catch (err) {
+      console.error("Gagal menghapus tutor:", err);
+      toast.error("Gagal menghapus tutor");
+    }
+  };
+
   const columns = [
     {
       header: "No",
@@ -100,20 +113,31 @@ export default function TutorPage() {
           {tutor.status === "ACTIVE"
             ? "Aktif"
             : tutor.status === "INACTIVE"
-            ? "Nonaktif"
-            : "Menunggu"}
+              ? "Nonaktif"
+              : "Menunggu"}
         </span>
       ),
     },
     {
       header: "Aksi",
       cell: (tutor) => (
-        <EntityActions
-          entityId={tutor.id}
-          viewPath={`/admin/tutors/${tutor.id}`}
-          editPath={`/admin/tutors/${tutor.id}/edit`}
-          // onDelete={() => handleDeleteUser(tutor.id)}
-        />
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => router.push(`/admin/tutors/${tutor.id}/edit`)}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDeleteTutor(tutor.id)}
+            title="Hapus Tutor"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
       ),
       className: "text-right",
     },

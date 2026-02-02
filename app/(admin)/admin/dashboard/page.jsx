@@ -514,109 +514,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Monthly Stats Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tren Bulanan</CardTitle>
-              <CardDescription>
-                Statistik pendaftaran dan pengumpulan tugas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex flex-col">
-                <div className="flex justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span className="text-sm">Siswa Baru</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-sm">Tutor Baru</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <span className="text-sm">Tugas Dikumpulkan</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                    <span className="text-sm">Tugas Dinilai</span>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex items-end">
-                  <div className="w-full flex h-[300px]">
-                    {monthlyStats.map((month, index) => (
-                      <div
-                        key={index}
-                        className="flex-1 flex flex-col justify-end items-center gap-1"
-                      >
-                        <div className="text-xs text-gray-500 mb-2">
-                          {month.label}
-                        </div>
-
-                        <div
-                          className="w-4 bg-blue-500 rounded-t"
-                          style={{
-                            height: `${
-                              (month.students /
-                                Math.max(
-                                  ...monthlyStats.map((m) => m.students || 1),
-                                )) *
-                              200
-                            }px`,
-                          }}
-                        ></div>
-
-                        <div
-                          className="w-4 bg-green-500 rounded-t"
-                          style={{
-                            height: `${
-                              (month.tutors /
-                                Math.max(
-                                  ...monthlyStats.map((m) => m.tutors || 1),
-                                  1,
-                                )) *
-                              200
-                            }px`,
-                          }}
-                        ></div>
-
-                        <div
-                          className="w-4 bg-purple-500 rounded-t"
-                          style={{
-                            height: `${
-                              (month.submitted /
-                                Math.max(
-                                  ...monthlyStats.map((m) => m.submitted || 1),
-                                  1,
-                                )) *
-                              200
-                            }px`,
-                          }}
-                        ></div>
-
-                        <div
-                          className="w-4 bg-amber-500 rounded-t"
-                          style={{
-                            height: `${
-                              (month.graded /
-                                Math.max(
-                                  ...monthlyStats.map((m) => m.graded || 1),
-                                  1,
-                                )) *
-                              200
-                            }px`,
-                          }}
-                        ></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Program and Subject Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -657,31 +554,31 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Statistik Mata Pelajaran</CardTitle>
+                <CardTitle>Statistik Kelas</CardTitle>
                 <CardDescription>
-                  Mata pelajaran dengan siswa terbanyak
+                  Kelas dengan jumlah siswa terbanyak
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {subjects
-                    .sort((a, b) => b.totalStudents - a.totalStudents)
-                    .slice(0, 5)
-                    .map((subject) => (
-                      <div key={subject.id} className="space-y-2">
+                  {classes
+                    .sort((a, b) => b.studentCount - a.studentCount)
+                    .slice(0, 10)
+                    .map((cls) => (
+                      <div key={cls.id} className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm font-medium">
-                            {subject.name}
+                            {cls.name}
                           </span>
                           <span className="text-sm font-medium">
-                            {subject.totalStudents} Siswa
+                            {cls.studentCount} Siswa
                           </span>
                         </div>
                         <Progress
                           value={
-                            (subject.totalStudents /
+                            (cls.studentCount /
                               Math.max(
-                                ...subjects.map((s) => s.totalStudents),
+                                ...classes.map((c) => c.studentCount),
                                 1,
                               )) *
                             100
@@ -689,7 +586,8 @@ export default function AdminDashboard() {
                           className="h-2"
                         />
                         <p className="text-xs text-gray-500">
-                          {subject.totalClasses} Kelas
+                          {cls.program} •{" "}
+                          {cls.homeroomTeacher || "Belum ada wali kelas"}
                         </p>
                       </div>
                     ))}
