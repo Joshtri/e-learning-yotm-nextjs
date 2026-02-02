@@ -215,17 +215,17 @@ export default function EditClassPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Suffix (A, B, C...)
+                  Nama Kelas (A, B, C...)
                 </label>
                 <Select
                   value={form.classSuffix}
                   onValueChange={(val) => handleSelect("classSuffix", val)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Suffix" />
+                    <SelectValue placeholder="Nama Kelas" />
                   </SelectTrigger>
                   <SelectContent>
-                    {["A", "B", "C", "D", "E", "F"].map((s) => (
+                    {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"].map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>
