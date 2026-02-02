@@ -127,11 +127,6 @@ export default function ClassCreatePage() {
                 required
                 rules={{ required: "Tingkat kelas wajib dipilih" }}
                 options={[
-                  { value: "Kelas 1", label: "Kelas 1" },
-                  { value: "Kelas 2", label: "Kelas 2" },
-                  { value: "Kelas 3", label: "Kelas 3" },
-                  { value: "Kelas 4", label: "Kelas 4" },
-                  { value: "Kelas 5", label: "Kelas 5" },
                   { value: "Kelas 6", label: "Kelas 6" },
                   { value: "Kelas 7", label: "Kelas 7" },
                   { value: "Kelas 8", label: "Kelas 8" },
@@ -145,7 +140,7 @@ export default function ClassCreatePage() {
               <FormField
                 control={form.control}
                 name="classSuffix"
-                label="Nama Kelas / Peminatan"
+                label="Nama Kelas"
                 type="select"
                 placeholder="Pilih kelas (A, B, C...)"
                 required
@@ -157,6 +152,26 @@ export default function ClassCreatePage() {
                   { value: "D", label: "D" },
                   { value: "E", label: "E" },
                   { value: "F", label: "F" },
+                  { value: "G", label: "G" },
+                  { value: "H", label: "H" },
+                  { value: "I", label: "I" },
+                  { value: "J", label: "J" },
+                  { value: "K", label: "K" },
+                  { value: "L", label: "L" },
+                  { value: "M", label: "M" },
+                  { value: "N", label: "N" },
+                  { value: "O", label: "O" },
+                  { value: "P", label: "P" },
+                  { value: "Q", label: "Q" },
+                  { value: "R", label: "R" },
+                  { value: "S", label: "S" },
+                  { value: "T", label: "T" },
+                  { value: "U", label: "U" },
+                  { value: "V", label: "V" },
+                  { value: "W", label: "W" },
+                  { value: "X", label: "X" },
+                  { value: "Y", label: "Y" },
+                  { value: "Z", label: "Z" },
                 ]}
               />
             </div>
