@@ -121,8 +121,8 @@ export default function SubmissionReviewPage() {
           data.assignment?.judul
             ? `Tugas: ${data.assignment.judul}`
             : data.quiz?.judul
-            ? `Kuis: ${data.quiz.judul}`
-            : "Review Submission"
+              ? `Kuis: ${data.quiz.judul}`
+              : "Review Submission"
         }
         actions={
           <Button onClick={() => router.back()} variant="outline">
@@ -179,10 +179,10 @@ export default function SubmissionReviewPage() {
                         <EnhancedPDFViewer
                           pdfData={data.answerPdf}
                           title={`Jawaban PDF - ${data.student?.namaLengkap || data.student?.user?.nama}`}
-                          downloadFileName={`jawaban_${(data.student?.namaLengkap || data.student?.user?.nama)?.replace(
-                            /\s+/g,
-                            "_"
-                          )}.pdf`}
+                          downloadFileName={`jawaban_${(
+                            data.student?.namaLengkap ||
+                            data.student?.user?.nama
+                          )?.replace(/\s+/g, "_")}.pdf`}
                         >
                           <Button variant="outline" size="sm">
                             <FileText className="w-4 h-4 mr-2" />
@@ -199,7 +199,7 @@ export default function SubmissionReviewPage() {
                               let base64Data = data.answerPdf;
                               if (
                                 data.answerPdf.startsWith(
-                                  "data:application/pdf;base64,"
+                                  "data:application/pdf;base64,",
                                 )
                               ) {
                                 base64Data = data.answerPdf.split(",")[1];
@@ -207,7 +207,7 @@ export default function SubmissionReviewPage() {
 
                               const byteCharacters = atob(base64Data);
                               const byteNumbers = new Array(
-                                byteCharacters.length
+                                byteCharacters.length,
                               );
                               for (let i = 0; i < byteCharacters.length; i++) {
                                 byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -219,10 +219,10 @@ export default function SubmissionReviewPage() {
                               const url = URL.createObjectURL(blob);
                               const link = document.createElement("a");
                               link.href = url;
-                              link.download = `jawaban_${(data.student?.namaLengkap || data.student?.user?.nama)?.replace(
-                                /\s+/g,
-                                "_"
-                              )}.pdf`;
+                              link.download = `jawaban_${(
+                                data.student?.namaLengkap ||
+                                data.student?.user?.nama
+                              )?.replace(/\s+/g, "_")}.pdf`;
                               document.body.appendChild(link);
                               link.click();
                               document.body.removeChild(link);
@@ -251,15 +251,25 @@ export default function SubmissionReviewPage() {
                             Soal {i + 1}
                           </Badge>
                           {ans.question?.jenis && (
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:text-blue-400">
-                              {ans.question.jenis === 'TRUE_FALSE' ? 'Benar/Salah' :
-                               ans.question.jenis === 'ESSAY' ? 'Essay' :
-                               ans.question.jenis === 'MULTIPLE_CHOICE' ? 'Pilihan Ganda' :
-                               ans.question.jenis}Nilai: 
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-100 text-blue-800 dark:text-blue-400"
+                            >
+                              {ans.question.jenis === "TRUE_FALSE"
+                                ? "Benar/Salah"
+                                : ans.question.jenis === "ESSAY"
+                                  ? "Essay"
+                                  : ans.question.jenis === "MULTIPLE_CHOICE"
+                                    ? "Pilihan Ganda"
+                                    : ans.question.jenis}
+                              Nilai:
                             </Badge>
                           )}
                           {ans.question?.poin && (
-                            <Badge variant="outline" className="bg-purple-100 text-purple-800  dark:text-purple-400">
+                            <Badge
+                              variant="outline"
+                              className="bg-purple-100 text-purple-800  dark:text-purple-400"
+                            >
                               {ans.question.poin} poin
                             </Badge>
                           )}
@@ -302,7 +312,9 @@ export default function SubmissionReviewPage() {
                             <p className="font-medium text-sm mb-1 text-blue-800 dark:text-blue-400">
                               Feedback:
                             </p>
-                            <p className="text-sm text-blue-700 dark:text-blue-300">{ans.feedback}</p>
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                              {ans.feedback}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -335,16 +347,16 @@ export default function SubmissionReviewPage() {
                           <div>
                             <h3 className="font-medium">Waktu Mulai</h3>
                             <p className="text-sm">
-                              {new Date(data.assignment.waktuMulai).toLocaleString(
-                                "id-ID"
-                              )}
+                              {new Date(
+                                data.assignment.waktuMulai,
+                              ).toLocaleString("id-ID")}
                             </p>
                           </div>
                           <div>
                             <h3 className="font-medium">Waktu Selesai</h3>
                             <p className="text-sm">
                               {new Date(
-                                data.assignment.waktuSelesai
+                                data.assignment.waktuSelesai,
                               ).toLocaleString("id-ID")}
                             </p>
                           </div>
@@ -367,22 +379,24 @@ export default function SubmissionReviewPage() {
                             <h3 className="font-medium">Waktu Mulai</h3>
                             <p className="text-sm">
                               {new Date(data.quiz.waktuMulai).toLocaleString(
-                                "id-ID"
+                                "id-ID",
                               )}
                             </p>
                           </div>
                           <div>
                             <h3 className="font-medium">Waktu Selesai</h3>
                             <p className="text-sm">
-                              {new Date(
-                                data.quiz.waktuSelesai
-                              ).toLocaleString("id-ID")}
+                              {new Date(data.quiz.waktuSelesai).toLocaleString(
+                                "id-ID",
+                              )}
                             </p>
                           </div>
                         </div>
                       </>
                     ) : (
-                      <p className="text-muted-foreground">Tidak ada detail tugas/kuis</p>
+                      <p className="text-muted-foreground">
+                        Tidak ada detail tugas/kuis
+                      </p>
                     )}
                   </div>
                 </TabsContent>
@@ -404,11 +418,15 @@ export default function SubmissionReviewPage() {
                     alt={data.student?.namaLengkap || data.student?.user?.nama}
                   />
                   <AvatarFallback>
-                    {(data.student?.namaLengkap || data.student?.user?.nama)?.charAt(0) || "S"}
+                    {(
+                      data.student?.namaLengkap || data.student?.user?.nama
+                    )?.charAt(0) || "S"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{data.student?.namaLengkap || data.student?.user?.nama}</p>
+                  <p className="font-medium">
+                    {data.student?.namaLengkap || data.student?.user?.nama}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {data.student?.user?.email || data.student?.email}
                   </p>
@@ -425,14 +443,20 @@ export default function SubmissionReviewPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Jenis Kelamin:</span>
-                  <span>{data.student?.jenisKelamin === 'MALE' ? 'Laki-laki' : data.student?.jenisKelamin === 'FEMALE' ? 'Perempuan' : '-'}</span>
+                  <span>
+                    {data.student?.jenisKelamin === "MALE"
+                      ? "Laki-laki"
+                      : data.student?.jenisKelamin === "FEMALE"
+                        ? "Perempuan"
+                        : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Kelas:</span>
                   <span>
                     {data.assignment?.classSubjectTutor?.class?.namaKelas ||
-                     data.quiz?.classSubjectTutor?.class?.namaKelas ||
-                     data.student?.class?.namaKelas ||
+                      data.quiz?.classSubjectTutor?.class?.namaKelas ||
+                      data.student?.class?.namaKelas ||
                       "-"}
                   </span>
                 </div>
@@ -440,9 +464,10 @@ export default function SubmissionReviewPage() {
                   <span className="text-muted-foreground">Mata Pelajaran:</span>
                   <span>
                     {data.assignment?.classSubjectTutor?.subject?.namaMapel ||
-                     data.quiz?.classSubjectTutor?.subject?.namaMapel ||
-                     data.student?.classSubjectTutor?.subject?.namaMapel ||
-                     data.answers?.[0]?.question?.quiz?.classSubjectTutor?.subject?.namaMapel ||
+                      data.quiz?.classSubjectTutor?.subject?.namaMapel ||
+                      data.student?.classSubjectTutor?.subject?.namaMapel ||
+                      data.answers?.[0]?.question?.quiz?.classSubjectTutor
+                        ?.subject?.namaMapel ||
                       "-"}
                   </span>
                 </div>
@@ -464,7 +489,7 @@ export default function SubmissionReviewPage() {
                 </p>
                 <Input
                   type="number"
-                  value={nilai.toFixed(2) || ""}
+                  value={nilai}
                   min={0}
                   max={100}
                   onChange={(e) => setNilai(e.target.value)}

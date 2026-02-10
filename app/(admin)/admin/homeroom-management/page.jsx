@@ -36,6 +36,12 @@ export default function HomeroomManagementPage() {
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // State for Dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [targetClass, setTargetClass] = useState(null);
+  const [selectedTutorId, setSelectedTutorId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const fetchClassesAndTutors = async () => {
     try {
       setIsLoading(true);
@@ -57,18 +63,50 @@ export default function HomeroomManagementPage() {
     fetchClassesAndTutors();
   }, []);
 
-  const handleAssignHomeroom = async (classId, tutorId) => {
+  const handleOpenDialog = (kelas) => {
+    setTargetClass(kelas);
+    setSelectedTutorId(kelas.homeroomTeacher?.id || "");
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setTargetClass(null);
+    setSelectedTutorId("");
+  };
+
+  const handleSaveHomeroom = async () => {
+    if (!targetClass || !selectedTutorId) return;
+
     try {
-      await api.patch(`/classes/${classId}/homeroom`, {
-        homeroomTeacherId: tutorId,
+      setIsSubmitting(true);
+      await api.patch(`/classes/${targetClass.id}/homeroom`, {
+        homeroomTeacherId: selectedTutorId,
       });
       toast.success("Berhasil menetapkan wali kelas");
-      fetchClassesAndTutors(); // Refresh
+      fetchClassesAndTutors();
+      handleCloseDialog();
     } catch (error) {
       console.error(error);
       const errorMessage =
         error?.response?.data?.message || "Gagal menetapkan wali kelas";
       toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveHomeroom = async (classId) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus wali kelas ini?")) return;
+    try {
+      await api.patch(`/classes/${classId}/homeroom`, {
+        homeroomTeacherId: null,
+      });
+      toast.success("Wali kelas berhasil dihapus");
+      fetchClassesAndTutors();
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menghapus wali kelas");
     }
   };
 
@@ -139,36 +177,24 @@ export default function HomeroomManagementPage() {
     {
       header: "Aksi",
       cell: (row) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              {row.homeroomTeacher ? "Ganti Wali Kelas" : "Pilih Wali Kelas"}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenDialog(row)}
+          >
+            {row.homeroomTeacher ? "Ganti" : "Pilih Wali Kelas"}
+          </Button>
+          {row.homeroomTeacher && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => handleRemoveHomeroom(row.id)}
+            >
+              Hapus
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Pilih Wali Kelas untuk {row.namaKelas}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Select
-                onValueChange={(tutorId) =>
-                  handleAssignHomeroom(row.id, tutorId)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Tutor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tutors.map((tutor) => (
-                    <SelectItem key={tutor.id} value={tutor.id}>
-                      {tutor.namaLengkap}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </DialogContent>
-        </Dialog>
+          )}
+        </div>
       ),
     },
   ];
@@ -213,6 +239,59 @@ export default function HomeroomManagementPage() {
           icon={<GraduationCap className="h-8 w-8 text-muted-foreground" />}
         />
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Pilih Wali Kelas untuk {targetClass?.namaKelas}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Wali Kelas <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={selectedTutorId}
+                onValueChange={setSelectedTutorId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Tutor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {tutors.map((tutor) => (
+                    <SelectItem key={tutor.id} value={tutor.id}>
+                      {tutor.namaLengkap}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedTutorId && (
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Wajib memilih salah satu tutor.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={isSubmitting}
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleSaveHomeroom}
+                disabled={!selectedTutorId || isSubmitting}
+              >
+                {isSubmitting ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

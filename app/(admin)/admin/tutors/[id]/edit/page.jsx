@@ -136,11 +136,14 @@ export default function TutorEditPage() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Nama Lengkap</Label>
+                <Label>
+                  Nama Lengkap <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   name="namaLengkap"
                   value={form.namaLengkap}
                   onChange={handleChange}
+                  required
                 />
               </div>
               <div>
@@ -176,8 +179,14 @@ export default function TutorEditPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Status Keaktifan</Label>
-                <Select value={form.status} onValueChange={handleStatusChange}>
+                <Label>
+                  Status Keaktifan <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={form.status}
+                  onValueChange={handleStatusChange}
+                  required
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>

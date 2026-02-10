@@ -63,20 +63,20 @@ export async function GET(request, { params }) {
 
     const classData = student.class
       ? {
-          id: student.class.id,
-          namaKelas: student.class.namaKelas,
-          program: student.class.program,
-          academicYear: student.class.academicYear,
-          subjects: student.class.classSubjectTutors.map((cst) => ({
-            id: cst.subject.id,
-            namaMapel: cst.subject.namaMapel,
-            deskripsi: cst.subject.deskripsi,
-            tutor: {
-              id: cst.tutor.id,
-              nama: cst.tutor.user.nama,
-            },
-          })),
-        }
+        id: student.class.id,
+        namaKelas: student.class.namaKelas,
+        program: student.class.program,
+        academicYear: student.class.academicYear,
+        subjects: student.class.classSubjectTutors.map((cst) => ({
+          id: cst.subject.id,
+          namaMapel: cst.subject.namaMapel,
+          deskripsi: cst.subject.deskripsi,
+          tutor: {
+            id: cst.tutor.id,
+            nama: cst.tutor.user.nama,
+          },
+        })),
+      }
       : null;
 
     return new Response(
@@ -94,7 +94,7 @@ export async function GET(request, { params }) {
             tanggalLahir: student.tanggalLahir,
             alamat: student.alamat,
             fotoUrl: student.fotoUrl,
-            user: student.user,  
+            user: student.user,
             classId: student.classId, // ⬅️ ini penting!
 
           },
@@ -152,6 +152,63 @@ export async function PATCH(req, { params }) {
     console.error("Gagal update siswa:", error);
     return new Response(
       JSON.stringify({ success: false, message: "Gagal update siswa", error: error.message }),
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = params;
+
+    // Cek existensi student
+    const student = await prisma.student.findUnique({
+      where: { id },
+    });
+
+    if (!student) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Siswa tidak ditemukan" }),
+        { status: 404 }
+      );
+    }
+
+    // Gunakan transaction untuk menghapus student dan user terkait
+    await prisma.$transaction(async (tx) => {
+      // 1. Hapus data student
+      // Catatan: Jika ada relasi lain (Submission, Attendance dll) yang tidak ON DELETE CASCADE,
+      // ini mungkin akan error. Idealnya schema.prisma di-set CASCADE atau hapus manual child-nya.
+      // Untuk sekarang kita asumsikan bisa dihapus atau Prisma akan melempar error jika ada FK violation.
+
+      // Kita coba hapus student dulu
+      await tx.student.delete({
+        where: { id },
+      });
+
+      // 2. Hapus user login-nya
+      if (student.userId) {
+        await tx.user.delete({
+          where: { id: student.userId },
+        });
+      }
+    });
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Siswa berhasil dihapus" }),
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error("Gagal hapus siswa:", error);
+    // Cek constraint error code Prisma (P2003 = FK violation)
+    if (error.code === 'P2003') {
+      return new Response(
+        JSON.stringify({ success: false, message: "Gagal menghapus: Siswa memiliki data terkait (Nilai, Absensi, dll)." }),
+        { status: 400 }
+      );
+    }
+    return new Response(
+      JSON.stringify({ success: false, message: "Gagal menghapus siswa", error: error.message }),
       { status: 500 }
     );
   }

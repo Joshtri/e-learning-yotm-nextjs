@@ -45,7 +45,15 @@ export default function StudentEditPage() {
       toast.success("Siswa berhasil diperbarui");
       router.push("/admin/students");
     } catch (err) {
-      toast.error("Gagal memperbarui siswa");
+      const msg = err.response?.data?.message || err.message || "";
+      if (
+        msg.toLowerCase().includes("unique") ||
+        msg.toLowerCase().includes("exist")
+      ) {
+        toast.error("NIS atau NISN sudah digunakan oleh siswa lain.");
+      } else {
+        toast.error("Gagal memperbarui siswa");
+      }
     }
   };
 

@@ -5,11 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, CheckCircle } from "lucide-react";
+import { Eye, CheckCircle } from "lucide-react";
 
 export default function AssignmentSubmissionsPage() {
   const { id } = useParams(); // assignmentId
@@ -94,22 +94,16 @@ export default function AssignmentSubmissionsPage() {
       cell: (row) => {
         return (
           <div className="flex gap-2 flex-wrap">
-            {/* Tombol Edit/Input Jawaban - selalu ada */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/tutor/assignments/${id}/input-answer/${row.studentId}`)}
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              {row.status === "NOT_STARTED" ? "Input Jawaban" : "Edit Jawaban"}
-            </Button>
-
             {/* Tombol Lihat Jawaban - hanya jika sudah ada submission */}
             {row.status !== "NOT_STARTED" && row.submissionId && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push(`/tutor/assignments/${id}/student-answers/${row.submissionId}/view`)}
+                onClick={() =>
+                  router.push(
+                    `/tutor/assignments/${id}/student-answers/${row.submissionId}/view`,
+                  )
+                }
               >
                 <Eye className="h-4 w-4 mr-1" />
                 Lihat Jawaban
@@ -117,16 +111,22 @@ export default function AssignmentSubmissionsPage() {
             )}
 
             {/* Tombol Beri Nilai - hanya jika sudah ada submission tapi belum dinilai */}
-            {row.status !== "NOT_STARTED" && row.submissionId && row.nilai == null && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => router.push(`/tutor/assignments/${id}/student-answers/${row.submissionId}/grade`)}
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Beri Nilai
-              </Button>
-            )}
+            {row.status !== "NOT_STARTED" &&
+              row.submissionId &&
+              row.nilai == null && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() =>
+                    router.push(
+                      `/tutor/assignments/${id}/student-answers/${row.submissionId}/grade`,
+                    )
+                  }
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Beri Nilai
+                </Button>
+              )}
           </div>
         );
       },

@@ -292,8 +292,16 @@ export default function UsersPage() {
       return { success: true, data: response.data.data };
     } catch (error) {
       console.error("Error creating user:", error);
-      const errorMessage =
-        error.response?.data?.error || "Gagal membuat pengguna";
+      let errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Gagal membuat pengguna";
+      if (
+        errorMessage.toLowerCase().includes("unique") ||
+        errorMessage.toLowerCase().includes("exist")
+      ) {
+        errorMessage = "Username atau Email sudah digunakan.";
+      }
       throw new Error(errorMessage);
     }
   };

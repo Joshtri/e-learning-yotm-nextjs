@@ -111,19 +111,39 @@ export async function POST(req, { params }) {
     const studentId = student.id;
     const waktuKumpul = new Date();
 
-    const existing = await prisma.submission.findFirst({
+    const submissions = await prisma.submission.findMany({
       where: {
         assignmentId,
         studentId,
-        status: "SUBMITTED",
+        status: { in: ["SUBMITTED", "GRADED"] }
       },
+      orderBy: { createdAt: "desc" }
     });
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ message: "Anda sudah mengerjakan ujian ini." }),
-        { status: 400 }
-      );
+    const assignmentData = await prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      select: { nilaiMaksimal: true } // This acts as KKM
+    });
+    const kkm = assignmentData?.nilaiMaksimal || 75;
+
+    // Logic Remedial
+    if (submissions.length > 0) {
+      const latestSubmission = submissions[0];
+
+      if (latestSubmission.nilai >= kkm) {
+        return new Response(
+          JSON.stringify({ message: "Anda sudah lulus KKM pada ujian ini." }),
+          { status: 400 }
+        );
+      }
+
+      // Max 3x attempts logic
+      if (submissions.length >= 3) {
+        return new Response(
+          JSON.stringify({ message: "Batas kesempatan remedial (3x) telah habis." }),
+          { status: 400 }
+        );
+      }
     }
 
     const questions = await prisma.question.findMany({

@@ -59,7 +59,7 @@ export default function ExamCreatePage() {
 
         // ✅ Sesuaikan: akses tahun ajaran aktif dari item.class.academicYear
         const filtered = items.filter(
-          (item) => item.class?.academicYear?.isActive
+          (item) => item.class?.academicYear?.isActive,
         );
 
         const mapped = filtered.map((item) => ({
@@ -87,7 +87,14 @@ export default function ExamCreatePage() {
       const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
 
       if (selesai > mulai) {
-        const durasi = Math.floor((selesai - mulai) / 1000 / 60);
+        let durasi = Math.floor((selesai - mulai) / 1000 / 60);
+
+        // Validasi maks 24 jam (1440 menit)
+        if (durasi > 1440) {
+          durasi = 1440;
+          // toast.warning("Durasi maksimal dibatasi 24 jam. Waktu selesai disesuaikan.");
+          // Kita validasi di onSubmit untuk error lebih jelas
+        }
         setValue("durasiMenit", durasi);
       } else {
         setValue("durasiMenit", 0);
@@ -128,6 +135,16 @@ export default function ExamCreatePage() {
 
     if (selesai <= mulai) {
       toast.error("Waktu selesai harus lebih besar dari waktu mulai");
+      return;
+    }
+
+    const durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
+
+    // Validasi maksimal 24 jam
+    if (durasiMenit > 1440) {
+      toast.error(
+        "Durasi ujian maksimal 24 jam. Harap sesuaikan waktu selesai.",
+      );
       return;
     }
 
@@ -237,12 +254,17 @@ export default function ExamCreatePage() {
                   const selectedDate = new Date(value);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-                }
+                  return (
+                    selectedDate >= today ||
+                    "Tanggal tidak boleh sebelum hari ini"
+                  );
+                },
               })}
             />
             {errors.tanggalMulai && (
-              <p className="text-sm text-red-500">{errors.tanggalMulai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.tanggalMulai.message}
+              </p>
             )}
           </div>
           <div>
@@ -269,22 +291,31 @@ export default function ExamCreatePage() {
                   const selectedDate = new Date(value);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-                }
+                  return (
+                    selectedDate >= today ||
+                    "Tanggal tidak boleh sebelum hari ini"
+                  );
+                },
               })}
             />
             {errors.tanggalSelesai && (
-              <p className="text-sm text-red-500">{errors.tanggalSelesai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.tanggalSelesai.message}
+              </p>
             )}
           </div>
           <div>
             <Label>Jam Selesai</Label>
             <Input
               type="time"
-              {...register("jamSelesai", { required: "Jam selesai wajib diisi" })}
+              {...register("jamSelesai", {
+                required: "Jam selesai wajib diisi",
+              })}
             />
             {errors.jamSelesai && (
-              <p className="text-sm text-red-500">{errors.jamSelesai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.jamSelesai.message}
+              </p>
             )}
           </div>
         </div>
@@ -313,14 +344,18 @@ export default function ExamCreatePage() {
             )}
           </div>
           <div>
-            <Label>Nilai Maksimal</Label>
+            <Label>KKM (Kriteria Ketuntasan Minimal)</Label>
             <Input
               type="number"
               {...register("nilaiMaksimal", {
-                required: "Nilai maksimal wajib diisi",
+                required: "KKM wajib diisi",
                 min: { value: 1, message: "Nilai minimal adalah 1" },
               })}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Batas pengerjaan ulang (remedial) otomatis: 3 kali jika nilai di
+              bawah KKM.
+            </p>
             {errors.nilaiMaksimal && (
               <p className="text-sm text-red-500">
                 {errors.nilaiMaksimal.message}
@@ -347,19 +382,28 @@ export default function ExamCreatePage() {
           </div>
         </div>
 
-        {tanggalMulai && jamMulai && tanggalSelesai && jamSelesai && durasiMenit <= 0 && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">
-              ⚠️ Waktu selesai harus lebih besar dari waktu mulai untuk
-              mendapatkan durasi yang valid.
-            </p>
-          </div>
-        )}
+        {tanggalMulai &&
+          jamMulai &&
+          tanggalSelesai &&
+          jamSelesai &&
+          durasiMenit <= 0 && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">
+                ⚠️ Waktu selesai harus lebih besar dari waktu mulai untuk
+                mendapatkan durasi yang valid.
+              </p>
+            </div>
+          )}
 
         <Button
           type="submit"
           disabled={
-            loading || !tanggalMulai || !jamMulai || !tanggalSelesai || !jamSelesai || durasiMenit <= 0
+            loading ||
+            !tanggalMulai ||
+            !jamMulai ||
+            !tanggalSelesai ||
+            !jamSelesai ||
+            durasiMenit <= 0
           }
         >
           {loading ? "Menyimpan..." : "Simpan & Lanjut Tambah Soal"}

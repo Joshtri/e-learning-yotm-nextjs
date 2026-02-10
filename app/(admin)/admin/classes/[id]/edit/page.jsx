@@ -140,8 +140,9 @@ export default function EditClassPage() {
 
     try {
       const payload = {
-        ...form,
         namaKelas: `${form.classLevel} ${form.classSuffix}`.trim(),
+        programId: form.programId,
+        academicYearId: form.academicYearId,
       };
 
       const res = await updateClass(id, payload);
@@ -225,7 +226,34 @@ export default function EditClassPage() {
                     <SelectValue placeholder="Nama Kelas" />
                   </SelectTrigger>
                   <SelectContent>
-                    {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"].map((s) => (
+                    {[
+                      "A",
+                      "B",
+                      "C",
+                      "D",
+                      "E",
+                      "F",
+                      "G",
+                      "H",
+                      "I",
+                      "J",
+                      "K",
+                      "L",
+                      "M",
+                      "N",
+                      "O",
+                      "P",
+                      "Q",
+                      "R",
+                      "S",
+                      "T",
+                      "U",
+                      "V",
+                      "W",
+                      "X",
+                      "Y",
+                      "Z",
+                    ].map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>

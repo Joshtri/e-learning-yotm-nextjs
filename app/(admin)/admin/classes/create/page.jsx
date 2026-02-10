@@ -61,10 +61,17 @@ export default function ClassCreatePage() {
     fetchOptions();
   }, []);
 
+  const onInvalid = (errors) => {
+    console.log("Validation errors:", errors);
+    toast.error(
+      "Harap lengkapi semua field yang wajib diisi (bertanda merah).",
+    );
+  };
+
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
-
+      // ... (rest of onSubmit)
       const payload = {
         namaKelas: `${data.classLevel} ${data.classSuffix}`.trim(),
         programId: data.programId,
@@ -111,7 +118,10 @@ export default function ClassCreatePage() {
         ]}
       />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+        className="space-y-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>Data Kelas</CardTitle>

@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, XCircle, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PDFViewerButton } from "@/components/ui/pdf-viewer";
 
 export default function ViewSubmissionPage() {
@@ -22,6 +24,11 @@ export default function ViewSubmissionPage() {
   const [assignment, setAssignment] = useState(null);
   const [student, setStudent] = useState(null);
 
+  // Grading State
+  const [inputNilai, setInputNilai] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, [submissionId]);
@@ -33,6 +40,12 @@ export default function ViewSubmissionPage() {
       setSubmission(res.data.data.submission);
       setAssignment(res.data.data.submission.assignment);
       setStudent(res.data.data.submission.student);
+
+      // Initialize grading form
+      if (res.data.data.submission) {
+        setInputNilai(res.data.data.submission.nilai ?? "");
+        setFeedback(res.data.data.submission.feedback ?? "");
+      }
     } catch (error) {
       console.error("Error fetching submission:", error);
       toast.error("Gagal memuat data jawaban");
@@ -57,7 +70,8 @@ export default function ViewSubmissionPage() {
   };
 
   const renderAnswerResult = (answer, question) => {
-    if (!answer) return <span className="text-muted-foreground">Tidak dijawab</span>;
+    if (!answer)
+      return <span className="text-muted-foreground">Tidak dijawab</span>;
 
     const isCorrect = answer.adalahBenar;
     const hasGrade = answer.nilai != null;
@@ -92,6 +106,33 @@ export default function ViewSubmissionPage() {
     );
   };
 
+  const handleGrade = async () => {
+    if (inputNilai === "" || inputNilai === null) {
+      toast.error("Nilai wajib diisi");
+      return;
+    }
+
+    const nilaiFinal = Math.max(
+      0,
+      Math.min(100, Number.parseFloat(inputNilai)),
+    );
+    setSubmitting(true);
+
+    try {
+      await api.patch(`/tutor/submissions/${submissionId}`, {
+        nilai: nilaiFinal,
+        feedback,
+      });
+      toast.success("Penilaian berhasil disimpan");
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan penilaian");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
@@ -103,7 +144,9 @@ export default function ViewSubmissionPage() {
   if (!submission) {
     return (
       <div className="p-6">
-        <div className="text-center text-muted-foreground">Data tidak ditemukan</div>
+        <div className="text-center text-muted-foreground">
+          Data tidak ditemukan
+        </div>
       </div>
     );
   }
@@ -125,7 +168,9 @@ export default function ViewSubmissionPage() {
         actions={
           <Button
             variant="outline"
-            onClick={() => router.push(`/tutor/assignments/${assignmentId}/student-answers`)}
+            onClick={() =>
+              router.push(`/tutor/assignments/${assignmentId}/student-answers`)
+            }
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Kembali
@@ -172,8 +217,11 @@ export default function ViewSubmissionPage() {
             <div>
               <Label className="text-muted-foreground">Nilai</Label>
               <p className="font-bold text-lg">
-                {submission.nilai != null ? Number(submission.nilai).toFixed(2) : "-"}
-                {assignment?.nilaiMaksimal && ` / ${Number(assignment.nilaiMaksimal).toFixed(2)}`}
+                {submission.nilai != null
+                  ? Number(submission.nilai).toFixed(2)
+                  : "-"}
+                {assignment?.nilaiMaksimal &&
+                  ` / ${Number(assignment.nilaiMaksimal).toFixed(2)}`}
               </p>
             </div>
           </div>
@@ -204,7 +252,7 @@ export default function ViewSubmissionPage() {
         <div className="space-y-4">
           {assignment?.questions?.map((question, index) => {
             const answer = submission.answers?.find(
-              (ans) => ans.questionId === question.id
+              (ans) => ans.questionId === question.id,
             );
 
             return (
@@ -232,7 +280,9 @@ export default function ViewSubmissionPage() {
                         {question.options.map((option) => (
                           <div key={option.id} className="text-sm">
                             {option.kode && (
-                              <span className="font-medium mr-2">{option.kode}.</span>
+                              <span className="font-medium mr-2">
+                                {option.kode}.
+                              </span>
                             )}
                             {option.teks}
                             {option.adalahBenar && (
@@ -246,8 +296,12 @@ export default function ViewSubmissionPage() {
                     )}
 
                   <div>
-                    <Label className="text-muted-foreground">Jawaban Siswa:</Label>
-                    <div className="mt-2">{renderAnswerResult(answer, question)}</div>
+                    <Label className="text-muted-foreground">
+                      Jawaban Siswa:
+                    </Label>
+                    <div className="mt-2">
+                      {renderAnswerResult(answer, question)}
+                    </div>
                   </div>
 
                   {question.pembahasan && (
@@ -267,20 +321,45 @@ export default function ViewSubmissionPage() {
         </div>
       )}
 
-      <div className="flex justify-end gap-3">
-        {submission.nilai == null && (
-          <Button
-            onClick={() =>
-              router.push(
-                `/tutor/assignments/${assignmentId}/student-answers/${submissionId}/grade`
-              )
-            }
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Beri Nilai
-          </Button>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Penilaian</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="mb-2 block">
+                Nilai <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                value={inputNilai}
+                onChange={(e) => setInputNilai(e.target.value)}
+                placeholder="0-100"
+                min={0}
+                max={100}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Masukkan nilai antara 0 - 100
+              </p>
+            </div>
+            <div>
+              <Label className="mb-2 block">Feedback</Label>
+              <Textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Berikan feedback untuk siswa..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleGrade} disabled={submitting}>
+              {submitting ? "Menyimpan..." : "Simpan Penilaian"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

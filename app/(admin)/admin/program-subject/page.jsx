@@ -134,8 +134,17 @@ export default function ProgramSubjectPage() {
   };
 
   // Helper untuk kelompokkan data per program
+  const filteredData = data.filter((item) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (item.program?.namaPaket || "").toLowerCase().includes(q) ||
+      (item.subject?.namaMapel || "").toLowerCase().includes(q)
+    );
+  });
+
   const grouped = Object.entries(
-    data.reduce((acc, item) => {
+    filteredData.reduce((acc, item) => {
       const programName = item.program?.namaPaket || "Tanpa Program";
       if (!acc[programName]) acc[programName] = [];
       acc[programName].push(item);

@@ -90,9 +90,29 @@ export default function StudentCreatePage() {
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error(
-        error.response?.data?.message || error.message || "Terjadi kesalahan",
-      );
+      const errorMsg = error.response?.data?.message || error.message || "";
+
+      if (
+        errorMsg.toLowerCase().includes("unique") ||
+        errorMsg.toLowerCase().includes("exist")
+      ) {
+        if (
+          errorMsg.toLowerCase().includes("user") ||
+          errorMsg.toLowerCase().includes("account")
+        ) {
+          toast.error(
+            "Username atau Email akun ini sudah digunakan oleh siswa lain.",
+          );
+        } else if (errorMsg.toLowerCase().includes("nis")) {
+          toast.error("NIS atau NISN sudah terdaftar.");
+        } else {
+          toast.error(
+            "Data dengan Username/Email atau NISN tersebut sudah digunakan.",
+          );
+        }
+      } else {
+        toast.error(errorMsg || "Terjadi kesalahan");
+      }
     } finally {
       setSubmitting(false);
     }

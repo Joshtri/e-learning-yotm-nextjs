@@ -60,7 +60,20 @@ export default function QuizCreatePage() {
       const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
 
       if (selesai > mulai) {
-        const durasi = Math.floor((selesai - mulai) / 1000 / 60);
+        let durasi = Math.floor((selesai - mulai) / 1000 / 60);
+
+        // Batasi maksimal 24 jam (1440 menit)
+        if (durasi > 1440) {
+          durasi = 1440;
+          toast.warning(
+            "Durasi maksimal dibatasi 24 jam. Waktu selesai disesuaikan.",
+          );
+          // Opsional: kita bisa tidak mengubah durasi tapi memberi error,
+          // tapi "di set untuk 24 jam saja" bisa berarti auto-limit atau validasi.
+          // Mari kita validasi saja di onSubmit agar user sadar.
+          // Tapi instruksinya "di set untuk 24 jam saja".
+          // Mari kita set durasi jadi 1440 max di sini untuk preview, tapi validasi di onSubmit lebih kuat.
+        }
         setValue("durasiMenit", durasi);
       } else {
         setValue("durasiMenit", 0);
@@ -82,7 +95,15 @@ export default function QuizCreatePage() {
       return;
     }
 
-    const durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
+    let durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
+
+    // Validasi maksimal 24 jam
+    if (durasiMenit > 1440) {
+      toast.error(
+        "Durasi kuis maksimal 24 jam. Harap sesuaikan waktu selesai.",
+      );
+      return;
+    }
 
     const payload = {
       ...data,
@@ -190,12 +211,17 @@ export default function QuizCreatePage() {
                   const selectedDate = new Date(value);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-                }
+                  return (
+                    selectedDate >= today ||
+                    "Tanggal tidak boleh sebelum hari ini"
+                  );
+                },
               })}
             />
             {errors.tanggalMulai && (
-              <p className="text-sm text-red-500">{errors.tanggalMulai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.tanggalMulai.message}
+              </p>
             )}
           </div>
 
@@ -231,12 +257,17 @@ export default function QuizCreatePage() {
                   const selectedDate = new Date(value);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
-                  return selectedDate >= today || "Tanggal tidak boleh sebelum hari ini";
-                }
+                  return (
+                    selectedDate >= today ||
+                    "Tanggal tidak boleh sebelum hari ini"
+                  );
+                },
               })}
             />
             {errors.tanggalSelesai && (
-              <p className="text-sm text-red-500">{errors.tanggalSelesai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.tanggalSelesai.message}
+              </p>
             )}
           </div>
 
@@ -248,10 +279,14 @@ export default function QuizCreatePage() {
               type="time"
               id="jamSelesai"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              {...register("jamSelesai", { required: "Jam selesai wajib diisi" })}
+              {...register("jamSelesai", {
+                required: "Jam selesai wajib diisi",
+              })}
             />
             {errors.jamSelesai && (
-              <p className="text-sm text-red-500">{errors.jamSelesai.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.jamSelesai.message}
+              </p>
             )}
           </div>
         </div>
@@ -270,20 +305,25 @@ export default function QuizCreatePage() {
               {...register("durasiMenit", { valueAsNumber: true })}
             />
             {durasiText && (
-              <p className="text-sm text-muted-foreground italic">{durasiText}</p>
+              <p className="text-sm text-muted-foreground italic">
+                {durasiText}
+              </p>
             )}
             {errors.durasiMenit && (
-              <p className="text-sm text-red-500">{errors.durasiMenit.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.durasiMenit.message}
+              </p>
             )}
           </div>
 
           <FormField
-            label="Nilai Maksimal"
+            label="KKM (Kriteria Ketuntasan Minimal)"
             name="nilaiMaksimal"
             control={control}
-            placeholder="Nilai maksimal kuis"
+            placeholder="Nilai KKM"
             type="number"
             {...register("nilaiMaksimal", { valueAsNumber: true })}
+            description="Batas remedial: 3x jika nilai < KKM"
           />
         </div>
 

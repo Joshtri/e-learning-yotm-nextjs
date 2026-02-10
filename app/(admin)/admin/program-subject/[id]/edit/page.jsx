@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { PageHeader } from '@/components/ui/page-header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import api from '@/lib/axios';
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import api from "@/lib/axios";
 
 export default function EditProgramSubjectPage() {
   const { id } = useParams();
   const router = useRouter();
 
   const [form, setForm] = useState({
-    programId: '',
-    subjectId: '',
+    programId: "",
+    subjectId: "",
   });
 
   const [programs, setPrograms] = useState([]);
@@ -27,8 +33,8 @@ export default function EditProgramSubjectPage() {
     try {
       setIsLoading(true);
       const [programRes, subjectRes, detailRes] = await Promise.all([
-        api.get('/programs'),
-        api.get('/subjects'),
+        api.get("/programs"),
+        api.get("/subjects"),
         api.get(`/program-subjects/${id}`),
       ]);
 
@@ -40,13 +46,13 @@ export default function EditProgramSubjectPage() {
 
       // Set form after subjects are loaded
       setForm({
-        programId: item.programId ?? item.program?.id ?? '',
-        subjectId: item.subjectId ?? item.subject?.id ?? '',
+        programId: item.programId ?? item.program?.id ?? "",
+        subjectId: item.subjectId ?? item.subject?.id ?? "",
       });
     } catch (err) {
-      console.error('Error fetching data:', err);
-      toast.error('Gagal memuat data');
-      router.push('/admin/program-subject');
+      console.error("Error fetching data:", err);
+      toast.error("Gagal memuat data");
+      router.push("/admin/program-subject");
     } finally {
       setIsLoading(false);
     }
@@ -57,9 +63,9 @@ export default function EditProgramSubjectPage() {
   }, [id]);
 
   const handleChange = (key, value) => {
-    if (key === 'programId') {
+    if (key === "programId") {
       // Reset subjectId when program changes
-      setForm((prev) => ({ ...prev, programId: value, subjectId: '' }));
+      setForm((prev) => ({ ...prev, programId: value, subjectId: "" }));
     } else {
       setForm((prev) => ({ ...prev, [key]: value }));
     }
@@ -76,10 +82,10 @@ export default function EditProgramSubjectPage() {
 
     try {
       await api.put(`/program-subjects/${id}`, form);
-      toast.success('Berhasil memperbarui data');
-      router.push('/admin/program-subjects');
+      toast.success("Berhasil memperbarui data");
+      router.push("/admin/program-subject");
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Gagal memperbarui');
+      toast.error(err.response?.data?.message || "Gagal memperbarui");
     } finally {
       setIsSubmitting(false);
     }
@@ -100,9 +106,9 @@ export default function EditProgramSubjectPage() {
           <PageHeader
             title="Edit Mapel Program"
             breadcrumbs={[
-              { label: 'Dashboard', href: '/admin/dashboard' },
-              { label: 'Program Mapel', href: '/admin/program-subject' },
-              { label: 'Edit' },
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "Program Mapel", href: "/admin/program-subject" },
+              { label: "Edit" },
             ]}
           />
 
@@ -111,7 +117,7 @@ export default function EditProgramSubjectPage() {
               <label className="text-sm font-medium">Program</label>
               <Select
                 value={form.programId}
-                onValueChange={(val) => handleChange('programId', val)}
+                onValueChange={(val) => handleChange("programId", val)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih program" />
@@ -130,7 +136,7 @@ export default function EditProgramSubjectPage() {
               <label className="text-sm font-medium">Mata Pelajaran</label>
               <Select
                 value={form.subjectId}
-                onValueChange={(val) => handleChange('subjectId', val)}
+                onValueChange={(val) => handleChange("subjectId", val)}
                 disabled={!form.programId}
               >
                 <SelectTrigger>
@@ -154,12 +160,12 @@ export default function EditProgramSubjectPage() {
 
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                {isSubmitting ? "Menyimpan..." : "Simpan"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push('/admin/program-subject')}
+                onClick={() => router.push("/admin/program-subject")}
               >
                 Batal
               </Button>

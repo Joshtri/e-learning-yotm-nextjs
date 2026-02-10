@@ -108,19 +108,41 @@ export async function POST(req, { params }) {
     const studentId = student.id;
     const waktuKumpul = new Date();
 
-    const existing = await prisma.submission.findFirst({
+    const submissions = await prisma.submission.findMany({
       where: {
         quizId,
         studentId,
-        status: "SUBMITTED",
+        status: { in: ["SUBMITTED", "GRADED"] }
       },
+      orderBy: { createdAt: "desc" }
     });
 
-    if (existing) {
-      return new Response(
-        JSON.stringify({ message: "Anda sudah mengerjakan kuis ini." }),
-        { status: 400 }
-      );
+    const quizData = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      select: { nilaiMaksimal: true } // This acts as KKM
+    });
+    const kkm = quizData?.nilaiMaksimal || 75; // Default KKM if missing
+
+    // Logic Remedial
+    if (submissions.length > 0) {
+      const latestSubmission = submissions[0];
+
+      // Jika sudah lulus KKM
+      if (latestSubmission.nilai >= kkm) {
+        return new Response(
+          JSON.stringify({ message: "Anda sudah lulus KKM pada kuis ini." }),
+          { status: 400 }
+        );
+      }
+
+      // Jika belum lulus, cek batas percobaan (max 3x remedial + 1x fresh = 4 total attempts allowed? Or just 3 attempts total?)
+      // User request: "batas pengerjaan adalah 3 kali" (total attempts presumably)
+      if (submissions.length >= 3) {
+        return new Response(
+          JSON.stringify({ message: "Batas kesempatan remedial (3x) telah habis." }),
+          { status: 400 }
+        );
+      }
     }
 
     const questions = await prisma.question.findMany({
