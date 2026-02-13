@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getUserFromCookie } from "@/utils/auth";
 
 export async function POST(req) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== "TUTOR") {
+        const user = await getUserFromCookie();
+        if (!user || user.role !== "TUTOR") {
             return NextResponse.json(
                 { success: false, message: "Unauthorized" },
                 { status: 401 }
