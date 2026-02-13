@@ -191,16 +191,63 @@ export default function StudentQuizListPage() {
                     {new Date(quiz.waktuSelesai).toLocaleString("id-ID")}
                   </div>
 
+                  {/* KKM Info */}
+                  <div className="text-sm font-medium text-blue-600">
+                    📊 KKM: {quiz.nilaiMaksimal || 75}
+                  </div>
+
                   {/* Status waktu */}
                   <div>{renderStatusLabel(status)}</div>
 
                   {/* Tombol */}
                   <div className="pt-2">
                     {quiz.sudahDikerjakan ? (
-                      <span className="text-sm text-green-600 font-medium">
-                        ✅ Sudah dikerjakan (Nilai :{" "}
-                        {quiz.submissions[0]?.nilai ?? 0})
-                      </span>
+                      <>
+                        {quiz.submissions && quiz.submissions.length > 0 ? (
+                          <>
+                            {quiz.submissions[0]?.nilai >=
+                            (quiz.nilaiMaksimal || 75) ? (
+                              <span className="text-sm text-green-600 font-medium">
+                                ✅ Sudah dikerjakan (Nilai:{" "}
+                                {quiz.submissions[0]?.nilai ?? 0})
+                              </span>
+                            ) : (
+                              <div className="space-y-2">
+                                <span className="text-sm text-orange-600 font-medium">
+                                  ⚠️ Belum lulus KKM (Nilai:{" "}
+                                  {quiz.submissions[0]?.nilai ?? 0})
+                                </span>
+                                {quiz.submissions.length < 3 &&
+                                status === "active" ? (
+                                  <div>
+                                    <Link
+                                      href={`/siswa/quizzes/${quiz.id}/start`}
+                                    >
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                                      >
+                                        🔄 Remedial (
+                                        {3 - quiz.submissions.length}x
+                                        kesempatan)
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                ) : quiz.submissions.length >= 3 ? (
+                                  <span className="text-xs text-red-600">
+                                    Kesempatan remedial habis
+                                  </span>
+                                ) : null}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✅ Sudah dikerjakan
+                          </span>
+                        )}
+                      </>
                     ) : status === "active" ? (
                       <Link href={`/siswa/quizzes/${quiz.id}/start`}>
                         <Button size="sm">Mulai Kuis</Button>

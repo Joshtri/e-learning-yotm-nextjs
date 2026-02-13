@@ -55,6 +55,7 @@ import {
   MoreHorizontal,
   Pencil,
   CheckCircle,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -105,6 +106,17 @@ export default function HomeroomAttendancePage() {
   const [deleteSessionId, setDeleteSessionId] = useState(null);
   const [isDeletingSession, setIsDeletingSession] = useState(false);
 
+  // Create Session State
+  const [createSessionDialog, setCreateSessionDialog] = useState({
+    open: false,
+    subjectId: "",
+    tanggal: "",
+    startTime: "",
+    endTime: "",
+    meetingNumber: 1,
+  });
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
   useEffect(() => {
     fetchAcademicYears();
   }, []);
@@ -143,7 +155,7 @@ export default function HomeroomAttendancePage() {
     try {
       setIsLoading(true);
       const res = await api.get(
-        `/homeroom/attendance?academicYearId=${selectedAcademicYearId}`
+        `/homeroom/attendance?academicYearId=${selectedAcademicYearId}`,
       );
       if (res.data.success) {
         setSessions(res.data.data.sessions || []);
@@ -164,7 +176,7 @@ export default function HomeroomAttendancePage() {
     try {
       setIsLoadingSubjects(true);
       const res = await api.get(
-        `/homeroom/subjects?academicYearId=${selectedAcademicYearId}`
+        `/homeroom/subjects?academicYearId=${selectedAcademicYearId}`,
       );
       if (res.data.success) {
         setSubjects(res.data.data);
@@ -264,7 +276,7 @@ export default function HomeroomAttendancePage() {
 
       const res = await api.patch(
         `/homeroom/attendance/${editDialog.id}`,
-        payload
+        payload,
       );
 
       if (res.data.success) {
@@ -308,7 +320,7 @@ export default function HomeroomAttendancePage() {
     try {
       setIsDeleting(true);
       await api.delete(
-        `/homeroom/attendance?subjectId=${deleteSubjectId}&academicYearId=${selectedAcademicYearId}`
+        `/homeroom/attendance?subjectId=${deleteSubjectId}&academicYearId=${selectedAcademicYearId}`,
       );
       toast.success("Semua sesi untuk mata pelajaran ini berhasil dihapus.");
       fetchSessions();
@@ -334,6 +346,61 @@ export default function HomeroomAttendancePage() {
     } finally {
       setIsDeletingSession(false);
       setDeleteSessionId(null);
+    }
+  };
+
+  const openCreateSessionDialog = (subjectId) => {
+    setCreateSessionDialog({
+      open: true,
+      subjectId: subjectId,
+      tanggal: "",
+      startTime: "",
+      endTime: "",
+      meetingNumber: 1,
+    });
+  };
+
+  const handleCreateSession = async () => {
+    const { subjectId, tanggal, startTime, endTime, meetingNumber } =
+      createSessionDialog;
+
+    if (!subjectId || !tanggal || !startTime || !endTime || !meetingNumber) {
+      toast.error("Semua field wajib diisi");
+      return;
+    }
+
+    try {
+      setIsCreatingSession(true);
+
+      const toIso = (timeStr) => {
+        if (!timeStr) return undefined;
+        return dayjs(`${tanggal} ${timeStr}`).toISOString();
+      };
+
+      const payload = {
+        classSubjectTutorId: subjectId,
+        tanggal: dayjs(tanggal).toISOString(),
+        startTime: toIso(startTime),
+        endTime: toIso(endTime),
+        meetingNumber: parseInt(meetingNumber),
+        academicYearId: selectedAcademicYearId,
+      };
+
+      const res = await api.post(
+        "/homeroom/attendance/create-session",
+        payload,
+      );
+
+      if (res.data.success) {
+        toast.success("Sesi berhasil ditambahkan");
+        setCreateSessionDialog((prev) => ({ ...prev, open: false }));
+        fetchSessions();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Gagal menambahkan sesi");
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
@@ -589,7 +656,7 @@ export default function HomeroomAttendancePage() {
                 {selectedSubjectId &&
                   (() => {
                     const sub = subjects.find(
-                      (s) => s.id === selectedSubjectId
+                      (s) => s.id === selectedSubjectId,
                     );
                     if (sub?.scheduleDays?.length > 0) {
                       const days = [
@@ -645,7 +712,7 @@ export default function HomeroomAttendancePage() {
                     disabled={(date) => {
                       if (!selectedSubjectId) return false;
                       const sub = subjects.find(
-                        (s) => s.id === selectedSubjectId
+                        (s) => s.id === selectedSubjectId,
                       );
                       if (
                         !sub ||
@@ -732,7 +799,7 @@ export default function HomeroomAttendancePage() {
                 }
                 acc[key].sessions.push(session);
                 return acc;
-              }, {})
+              }, {}),
             ).map((group) => (
               <AccordionItem
                 key={group.subjectId}
@@ -758,6 +825,18 @@ export default function HomeroomAttendancePage() {
                     </div>
                   </AccordionTrigger>
                   <div className="flex items-center gap-2 pl-4 border-l ml-4 h-full">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCreateSessionDialog(group.subjectId);
+                      }}
+                      title="Tambah Sesi"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -821,39 +900,44 @@ export default function HomeroomAttendancePage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setTimeout(
-                                        () => openStatusDialog(session),
-                                        100
-                                      );
-                                    }}
-                                  >
-                                    <CheckCircle className="mr-2 h-4 w-4" />{" "}
-                                    Ubah Status
-                                  </DropdownMenuItem>
+                                  {session.status !== "SELESAI" && (
+                                    <>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setTimeout(
+                                            () => openStatusDialog(session),
+                                            100,
+                                          );
+                                        }}
+                                      >
+                                        <CheckCircle className="mr-2 h-4 w-4" />{" "}
+                                        Ubah Status
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setTimeout(
+                                            () => openEditDialog(session),
+                                            100,
+                                          );
+                                        }}
+                                      >
+                                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                                        Sesi
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                    </>
+                                  )}
                                   <DropdownMenuItem
                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                     onClick={() => {
                                       setTimeout(
                                         () => setDeleteSessionId(session.id),
-                                        100
+                                        100,
                                       );
                                     }}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                    Sesi
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setTimeout(
-                                        () => openEditDialog(session),
-                                        100
-                                      );
-                                    }}
-                                  >
-                                    <Pencil className="mr-2 h-4 w-4" /> Edit
                                     Sesi
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -873,29 +957,44 @@ export default function HomeroomAttendancePage() {
                             </div>
                           </div>
 
-                          <div className="mt-auto pt-3 border-t border-gray-100">
-                            <Link
-                              href={`/homeroom/attendance/${session.id}`}
-                              className="block w-full"
-                            >
+                          <div className="mt-auto pt-3 border-t border-gray-100 space-y-2">
+                            {session.status === "TERJADWALKAN" ? (
                               <Button
                                 size="sm"
-                                variant={
-                                  session.status === "SELESAI"
-                                    ? "outline"
-                                    : "default"
-                                }
-                                className={`w-full h-9 text-xs font-semibold ${
-                                  session.status === "DIMULAI"
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : ""
-                                }`}
+                                variant="default"
+                                className="w-full h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700"
+                                onClick={() => {
+                                  setSelectedSessionForStatus(session);
+                                  setNewStatus("DIMULAI");
+                                  setStatusDialogOpen(true);
+                                }}
                               >
-                                {session.status === "SELESAI"
-                                  ? "Lihat Rekap"
-                                  : "Kelola Sesi"}
+                                Mulai Sesi
                               </Button>
-                            </Link>
+                            ) : (
+                              <Link
+                                href={`/homeroom/attendance/${session.id}`}
+                                className="block w-full"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    session.status === "SELESAI"
+                                      ? "outline"
+                                      : "default"
+                                  }
+                                  className={`w-full h-9 text-xs font-semibold ${
+                                    session.status === "DIMULAI"
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : ""
+                                  }`}
+                                >
+                                  {session.status === "SELESAI"
+                                    ? "Lihat Rekap"
+                                    : "Kelola Sesi"}
+                                </Button>
+                              </Link>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1037,6 +1136,105 @@ export default function HomeroomAttendancePage() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Simpan
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create Session Dialog */}
+          <Dialog
+            open={createSessionDialog.open}
+            onOpenChange={(v) =>
+              setCreateSessionDialog((prev) => ({ ...prev, open: v }))
+            }
+            modal={true}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Tambah Sesi Baru</DialogTitle>
+                <DialogDescription>
+                  Tambahkan sesi presensi baru untuk mata pelajaran ini.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Nomor Pertemuan</Label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={createSessionDialog.meetingNumber}
+                    onChange={(e) =>
+                      setCreateSessionDialog({
+                        ...createSessionDialog,
+                        meetingNumber: e.target.value,
+                      })
+                    }
+                    placeholder="Contoh: 1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tanggal</Label>
+                  <input
+                    type="date"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={createSessionDialog.tanggal}
+                    onChange={(e) =>
+                      setCreateSessionDialog({
+                        ...createSessionDialog,
+                        tanggal: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Jam Mulai</Label>
+                    <input
+                      type="time"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={createSessionDialog.startTime}
+                      onChange={(e) =>
+                        setCreateSessionDialog({
+                          ...createSessionDialog,
+                          startTime: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jam Selesai</Label>
+                    <input
+                      type="time"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={createSessionDialog.endTime}
+                      onChange={(e) =>
+                        setCreateSessionDialog({
+                          ...createSessionDialog,
+                          endTime: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setCreateSessionDialog((prev) => ({ ...prev, open: false }))
+                  }
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleCreateSession}
+                  disabled={isCreatingSession}
+                >
+                  {isCreatingSession && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Tambah Sesi
                 </Button>
               </DialogFooter>
             </DialogContent>

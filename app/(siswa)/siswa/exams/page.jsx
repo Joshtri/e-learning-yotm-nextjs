@@ -89,7 +89,7 @@ export default function StudentExamsPage() {
       console.error("Error response:", err.response?.data);
       toast.error(
         err.response?.data?.message ||
-          "Gagal memuat ujian. Cek console untuk detail."
+          "Gagal memuat ujian. Cek console untuk detail.",
       );
       setExams([]);
     } finally {
@@ -236,14 +236,55 @@ export default function StudentExamsPage() {
 
           {/* Action Button */}
           <div className="pt-2">
+            {/* KKM Info */}
+            <div className="text-sm font-medium text-blue-600 mb-2">
+              📊 KKM: {exam.nilaiMaksimal || 75}
+            </div>
+
             {exam.submission?.status === "GRADED" && (
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium">Nilai Anda:</span>
-                <span className="text-xl font-bold text-green-700">
-                  {exam.submission.nilai?.toFixed(2) || 0}/
-                  {exam.nilaiMaksimal}
-                </span>
-              </div>
+              <>
+                {exam.submission.nilai >= (exam.nilaiMaksimal || 75) ? (
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <span className="text-sm font-medium">
+                      ✅ Lulus - Nilai Anda:
+                    </span>
+                    <span className="text-xl font-bold text-green-700">
+                      {exam.submission.nilai?.toFixed(2) || 0}/
+                      {exam.nilaiMaksimal}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                      <span className="text-sm font-medium">
+                        ⚠️ Belum Lulus KKM - Nilai:
+                      </span>
+                      <span className="text-xl font-bold text-orange-700">
+                        {exam.submission.nilai?.toFixed(2) || 0}/
+                        {exam.nilaiMaksimal}
+                      </span>
+                    </div>
+                    {exam.submissionCount < 3 && exam.canStart ? (
+                      <Button
+                        onClick={() =>
+                          router.push(`/siswa/exams/${exam.id}/start`)
+                        }
+                        variant="outline"
+                        className="w-full text-orange-600 border-orange-600 hover:bg-orange-50"
+                      >
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        🔄 Remedial ({3 - exam.submissionCount}x kesempatan)
+                      </Button>
+                    ) : exam.submissionCount >= 3 ? (
+                      <div className="p-3 bg-red-50 rounded-lg text-center">
+                        <span className="text-sm text-red-600">
+                          Kesempatan remedial habis
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </>
             )}
             {exam.submission?.status === "SUBMITTED" && (
               <div className="p-3 bg-blue-50 rounded-lg text-center">
@@ -356,11 +397,16 @@ export default function StudentExamsPage() {
               className="space-y-4"
             >
               {/* UTS Section */}
-              <AccordionItem value="item-1" className="border rounded-lg overflow-hidden">
+              <AccordionItem
+                value="item-1"
+                className="border rounded-lg overflow-hidden"
+              >
                 <AccordionTrigger className="px-4 py-3 hover:no-underline bg-slate-50 dark:bg-slate-800/50">
                   <div className="flex items-center gap-2 text-left">
                     <FileText className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">Ujian Tengah Semester (UTS)</span>
+                    <span className="font-semibold">
+                      Ujian Tengah Semester (UTS)
+                    </span>
                     <Badge variant="secondary" className="ml-2">
                       {groupedExams.MIDTERM.length}
                     </Badge>
@@ -382,11 +428,16 @@ export default function StudentExamsPage() {
               </AccordionItem>
 
               {/* UAS Section */}
-              <AccordionItem value="item-2" className="border rounded-lg overflow-hidden">
+              <AccordionItem
+                value="item-2"
+                className="border rounded-lg overflow-hidden"
+              >
                 <AccordionTrigger className="px-4 py-3 hover:no-underline bg-slate-50 dark:bg-slate-800/50">
                   <div className="flex items-center gap-2 text-left">
                     <FileText className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">Ujian Akhir Semester (UAS)</span>
+                    <span className="font-semibold">
+                      Ujian Akhir Semester (UAS)
+                    </span>
                     <Badge variant="secondary" className="ml-2">
                       {groupedExams.FINAL_EXAM.length}
                     </Badge>

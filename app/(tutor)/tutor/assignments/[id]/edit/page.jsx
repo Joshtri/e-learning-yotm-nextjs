@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import api from "@/lib/axios";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ export default function AssignmentEditPage() {
     formState: { errors },
   } = useForm();
 
-  const fetchAssignmentData = async () => {
+  const fetchAssignmentData = useCallback(async () => {
     try {
       setIsFetching(true);
       const res = await api.get(`/tutor/assignments/${assignmentId}`);
@@ -53,30 +53,32 @@ export default function AssignmentEditPage() {
       if (assignment.TanggalMulai) {
         setValue(
           "tanggalMulai",
-          format(new Date(assignment.TanggalMulai), "yyyy-MM-dd")
+          format(new Date(assignment.TanggalMulai), "yyyy-MM-dd"),
         );
       }
       if (assignment.TanggalSelesai) {
         setValue(
           "tanggalSelesai",
-          format(new Date(assignment.TanggalSelesai), "yyyy-MM-dd")
+          format(new Date(assignment.TanggalSelesai), "yyyy-MM-dd"),
         );
       }
-    } catch (error) {
-      console.error("Gagal memuat data tugas:", error);
+    } catch {
       toast.error("Gagal memuat data tugas");
       router.push("/tutor/assignments");
     } finally {
       setIsFetching(false);
     }
-  };
+  }, [assignmentId, setValue, router]);
 
   const fetchClassOptions = async () => {
     try {
       const res = await api.get("/tutor/my-classes");
       const all = res.data.data || [];
       const filtered = all.filter(
-        (item) => item.class.academicYear?.isActive === true
+        (item) =>
+          item?.class?.academicYear?.isActive === true &&
+          item?.class &&
+          item?.subject,
       );
       setClassOptions(filtered);
     } catch {
@@ -87,7 +89,7 @@ export default function AssignmentEditPage() {
   useEffect(() => {
     fetchClassOptions();
     fetchAssignmentData();
-  }, [assignmentId]);
+  }, [fetchAssignmentData]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -112,8 +114,7 @@ export default function AssignmentEditPage() {
 
       toast.success("Tugas berhasil diperbarui");
       router.push("/tutor/assignments");
-    } catch (error) {
-      console.error("Gagal memperbarui tugas:", error);
+    } catch {
       toast.error("Gagal memperbarui tugas");
     } finally {
       setIsLoading(false);
@@ -212,9 +213,10 @@ export default function AssignmentEditPage() {
             <SelectContent>
               {classOptions.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
-                  {item.class.namaKelas} - {item.subject.namaMapel} (
-                  {item.class.academicYear.tahunMulai}/
-                  {item.class.academicYear.tahunSelesai})
+                  {item.class?.namaKelas || "Kelas"} -{" "}
+                  {item.subject?.namaMapel || "Mapel"} (
+                  {item.class?.academicYear?.tahunMulai}/
+                  {item.class?.academicYear?.tahunSelesai})
                 </SelectItem>
               ))}
             </SelectContent>

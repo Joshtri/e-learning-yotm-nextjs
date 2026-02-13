@@ -207,13 +207,38 @@ export async function POST(req, { params }) {
       data: {
         nilai: totalNilai,
         waktuDinilai: new Date(),
+        status: "GRADED", // ✅ Update status to GRADED after auto-grading
       },
     });
 
+    // Check if student passed KKM
+    const passedKKM = totalNilai >= kkm;
+    const attemptNumber = submissions.length + 1; // Current attempt
+    const remainingAttempts = 3 - attemptNumber;
+
+    let message = "";
+    let needsRemedial = false;
+
+    if (passedKKM) {
+      message = `Selamat! Anda lulus dengan nilai ${totalNilai}. KKM: ${kkm}`;
+    } else {
+      needsRemedial = true;
+      if (remainingAttempts > 0) {
+        message = `Nilai Anda ${totalNilai} belum mencapai KKM (${kkm}). Anda masih memiliki ${remainingAttempts} kesempatan remedial.`;
+      } else {
+        message = `Nilai Anda ${totalNilai} belum mencapai KKM (${kkm}). Kesempatan remedial Anda telah habis.`;
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Ujian berhasil disubmit",
+      message,
       totalNilai,
+      kkm,
+      passedKKM,
+      needsRemedial,
+      attemptNumber,
+      remainingAttempts: Math.max(0, remainingAttempts),
     });
   } catch (error) {
     console.error("Gagal auto-grading ujian:", error);

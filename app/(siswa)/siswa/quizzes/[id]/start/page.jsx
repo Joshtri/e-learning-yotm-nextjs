@@ -117,14 +117,49 @@ export default function QuizStartPage() {
 
     try {
       setIsSubmitting(true);
-      await api.post(`/student/quizzes/${id}/submit`, {
+      const response = await api.post(`/student/quizzes/${id}/submit`, {
         answers,
         answerImages,
       });
-      toast.success("Jawaban berhasil dikirim");
-      router.push("/siswa/quizzes");
-    } catch {
-      toast.error("Gagal mengirim jawaban");
+
+      const {
+        message,
+        totalNilai,
+        kkm,
+        passedKKM,
+        needsRemedial,
+        attemptNumber,
+        remainingAttempts,
+      } = response.data;
+
+      // Show detailed feedback based on KKM result
+      if (passedKKM) {
+        toast.success(message, {
+          description: `Nilai Anda: ${totalNilai} | KKM: ${kkm}`,
+          duration: 5000,
+        });
+      } else {
+        if (remainingAttempts > 0) {
+          toast.warning(message, {
+            description: `Percobaan ke-${attemptNumber} | Sisa kesempatan: ${remainingAttempts}x`,
+            duration: 6000,
+          });
+        } else {
+          toast.error(message, {
+            description: `Percobaan ke-${attemptNumber} | Tidak ada kesempatan lagi`,
+            duration: 6000,
+          });
+        }
+      }
+
+      // Redirect after showing message
+      setTimeout(() => {
+        router.push("/siswa/quizzes");
+      }, 2000);
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Gagal mengirim jawaban";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -243,8 +278,8 @@ export default function QuizStartPage() {
                       currentQuestionIndex === index
                         ? "border-primary bg-primary text-primary-foreground"
                         : isQuestionAnswered(question.id)
-                        ? "border-green-500 bg-green-100 text-green-700"
-                        : "border-gray-300 bg-background"
+                          ? "border-green-500 bg-green-100 text-green-700"
+                          : "border-gray-300 bg-background"
                     }`}
                     aria-label={`Soal ${index + 1}`}
                   >

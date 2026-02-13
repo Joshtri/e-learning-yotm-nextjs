@@ -80,6 +80,29 @@ export async function PATCH(req, { params }) {
         const body = await req.json();
         const { status, tanggal, startTime, endTime, keterangan } = body;
 
+        // Get current session to check status
+        const currentSession = await prisma.attendanceSession.findUnique({
+            where: { id: sessionId },
+        });
+
+        if (!currentSession) {
+            return NextResponse.json({ message: "Sesi tidak ditemukan" }, { status: 404 });
+        }
+
+        // Prevent editing SELESAI sessions
+        if (currentSession.status === "SELESAI") {
+            // Only allow viewing, not editing
+            if (status || tanggal || startTime || endTime) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message: "Sesi yang sudah selesai tidak dapat diubah. Hanya dapat dilihat detail dan presensinya."
+                    },
+                    { status: 400 }
+                );
+            }
+        }
+
         const updateData = {};
 
         // Status Update
