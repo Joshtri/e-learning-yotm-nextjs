@@ -125,21 +125,48 @@ export async function PATCH(req, { params }) {
     const { id } = params;
     const data = await req.json();
 
-    // Validasi da3n prepare payload
-    const updatePayload = {
-      namaLengkap: data.namaLengkap,
-      nisn: data.nisn,
-      noTelepon: data.noTelepon,
-      nis: data.nis,
-      jenisKelamin: data.jenisKelamin,
-      tempatLahir: data.tempatLahir,
-      tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : null,
-      alamat: data.alamat,
-    };
+    // ── Cek duplikat NISN (hanya jika NISN diisi dan bukan milik siswa ini) ──
+    if (data.nisn && data.nisn.trim() !== "") {
+      const existing = await prisma.student.findFirst({
+        where: {
+          nisn: data.nisn.trim(),
+          id: { not: id }, // exclude diri sendiri
+        },
+      });
+      if (existing) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `NISN "${data.nisn}" sudah digunakan oleh siswa lain.`,
+          }),
+          { status: 409 }
+        );
+      }
+    }
 
-    // Tambahkan classId jika ada dan tidak kosong
-    if (data.classId) {
-      updatePayload.classId = data.classId;
+    // ── Build payload hanya dengan field yang dikirim ──
+    const updatePayload = {};
+
+    if (data.namaLengkap !== undefined) updatePayload.namaLengkap = data.namaLengkap;
+    if (data.noTelepon !== undefined) updatePayload.noTelepon = data.noTelepon || null;
+    if (data.jenisKelamin !== undefined) updatePayload.jenisKelamin = data.jenisKelamin || null;
+    if (data.tempatLahir !== undefined) updatePayload.tempatLahir = data.tempatLahir || null;
+    if (data.alamat !== undefined) updatePayload.alamat = data.alamat || null;
+    if (data.tanggalLahir !== undefined) {
+      updatePayload.tanggalLahir = data.tanggalLahir ? new Date(data.tanggalLahir) : null;
+    }
+
+    // NISN & NIS: set null jika kosong, set value jika diisi
+    if (data.nisn !== undefined) {
+      updatePayload.nisn = data.nisn && data.nisn.trim() !== "" ? data.nisn.trim() : null;
+    }
+    if (data.nis !== undefined) {
+      updatePayload.nis = data.nis && data.nis.trim() !== "" ? data.nis.trim() : null;
+    }
+
+    // classId: hanya update jika dikirim
+    if (data.classId !== undefined) {
+      updatePayload.classId = data.classId || null;
     }
 
     const updated = await prisma.student.update({
@@ -150,12 +177,31 @@ export async function PATCH(req, { params }) {
     return Response.json({ success: true, data: updated });
   } catch (error) {
     console.error("Gagal update siswa:", error);
+
+    // Handle Prisma unique constraint violation (P2002)
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.join(", ") || "field";
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Data duplikat: nilai pada ${field} sudah digunakan oleh siswa lain.`,
+          error: error.message,
+        }),
+        { status: 409 }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: false, message: "Gagal update siswa", error: error.message }),
+      JSON.stringify({
+        success: false,
+        message: "Gagal update siswa",
+        error: error.message,
+      }),
       { status: 500 }
     );
   }
 }
+
 
 export async function DELETE(request, { params }) {
   try {

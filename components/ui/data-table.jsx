@@ -11,14 +11,89 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// ─── Pagination Controls ───────────────────────────────────────────────────
+function PaginationControls({ pagination }) {
+  if (!pagination) return null;
+
+  const { currentPage, totalPages, onPageChange, totalItems, itemsPerPage } =
+    pagination;
+
+  if (!totalPages || totalPages <= 1) return null;
+
+  const from = (currentPage - 1) * itemsPerPage + 1;
+  const to = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex items-center justify-between px-2 py-3 border-t text-sm text-muted-foreground">
+      <span>
+        Menampilkan {from}–{to} dari {totalItems} data
+      </span>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage <= 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        {/* Page number pills */}
+        {Array.from({ length: totalPages }, (_, i) => i + 1)
+          .filter(
+            (p) =>
+              p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1,
+          )
+          .reduce((acc, p, idx, arr) => {
+            if (idx > 0 && p - arr[idx - 1] > 1) {
+              acc.push("...");
+            }
+            acc.push(p);
+            return acc;
+          }, [])
+          .map((p, idx) =>
+            p === "..." ? (
+              <span key={`ellipsis-${idx}`} className="px-1">
+                …
+              </span>
+            ) : (
+              <Button
+                key={p}
+                variant={p === currentPage ? "default" : "outline"}
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onPageChange(p)}
+              >
+                {p}
+              </Button>
+            ),
+          )}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage >= totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function DataTable({
   data,
   columns,
   isLoading = false,
+  // eslint-disable-next-line no-unused-vars
   loadingMessage = "Loading data...",
   emptyMessage = "No data found",
   keyExtractor,
+  pagination,
 }) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -71,8 +146,8 @@ export function DataTable({
                   const value = column.cell
                     ? column.cell(item, index)
                     : column.accessorKey
-                    ? item[column.accessorKey]
-                    : null;
+                      ? item[column.accessorKey]
+                      : null;
 
                   // Skip rendering if value is null/undefined and not a React element
                   if (value === null || value === undefined) return null;
@@ -90,6 +165,7 @@ export function DataTable({
             </Card>
           ))
         )}
+        <PaginationControls pagination={pagination} />
       </div>
     );
   }
@@ -110,44 +186,44 @@ export function DataTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading
-                ? Array.from({ length: 10 }).map((_, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                      {columns.map((column, cellIndex) => (
-                        <TableCell key={cellIndex} className={column.className}>
-                          <Skeleton className="h-5 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                : data.length === 0
-                ? <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-center py-10 text-muted-foreground"
-                    >
-                      {emptyMessage}
-                    </TableCell>
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {columns.map((column, cellIndex) => (
+                      <TableCell key={cellIndex} className={column.className}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    ))}
                   </TableRow>
-                : data.map((item, index) => (
-                    <TableRow key={keyExtractor ? keyExtractor(item) : index}>
-                      {columns.map((column, columnIndex) => (
-                        <TableCell
-                          key={columnIndex}
-                          className={column.className}
-                        >
-                          {column.cell
-                            ? column.cell(item, index)
-                            : column.accessorKey
+                ))
+              ) : data.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-center py-10 text-muted-foreground"
+                  >
+                    {emptyMessage}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((item, index) => (
+                  <TableRow key={keyExtractor ? keyExtractor(item) : index}>
+                    {columns.map((column, columnIndex) => (
+                      <TableCell key={columnIndex} className={column.className}>
+                        {column.cell
+                          ? column.cell(item, index)
+                          : column.accessorKey
                             ? item[column.accessorKey]
                             : null}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+        <PaginationControls pagination={pagination} />
       </CardContent>
     </Card>
   );

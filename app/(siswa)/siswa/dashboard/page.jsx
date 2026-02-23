@@ -27,6 +27,8 @@ import {
   Play,
   Download,
   ExternalLink,
+  LogOut,
+  GraduationCap,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -41,6 +43,21 @@ export default function StudentDashboardPage() {
   } = useStudentDashboard();
   const router = useRouter();
   const [profileCheck, setProfileCheck] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      router.replace("/auth/login");
+    }
+  };
 
   // Check profile completeness
   useEffect(() => {
@@ -105,14 +122,59 @@ export default function StudentDashboardPage() {
     return <StudentDashboardSkeleton />;
   }
 
+  // Deteksi error 404: siswa belum terdaftar di kelas aktif
+  const is404Error = error?.response?.status === 404;
+  const errorMessage =
+    error?.response?.data?.message ||
+    error?.message ||
+    "Terjadi kesalahan saat memuat dashboard.";
+
+  if (error && is404Error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+        <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full text-center space-y-6">
+          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-amber-100 mx-auto">
+            <GraduationCap className="h-10 w-10 text-amber-600" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Belum Terdaftar di Kelas Aktif
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              {errorMessage}
+            </p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 text-left">
+            <p className="font-semibold mb-1">💡 Apa yang harus dilakukan?</p>
+            <ul className="list-disc list-inside space-y-1 text-amber-700">
+              <li>
+                Hubungi Admin untuk memastikan kamu sudah didaftarkan ke kelas.
+              </li>
+              <li>Pastikan tahun ajaran saat ini sudah aktif.</li>
+              <li>Jika sudah terdaftar, coba login ulang.</li>
+            </ul>
+          </div>
+          <Button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            {isLoggingOut ? "Sedang Keluar..." : "Keluar / Logout"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
         <h2 className="text-xl font-bold mb-2">Error Loading Dashboard</h2>
-        <p className="text-gray-600">{error}</p>
+        <p className="text-gray-600">{errorMessage}</p>
         <Button onClick={() => window.location.reload()} className="mt-4">
-          Try Again
+          Coba Lagi
         </Button>
       </div>
     );

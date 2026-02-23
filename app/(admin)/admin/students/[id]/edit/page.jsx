@@ -45,14 +45,21 @@ export default function StudentEditPage() {
       toast.success("Siswa berhasil diperbarui");
       router.push("/admin/students");
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || "";
-      if (
-        msg.toLowerCase().includes("unique") ||
-        msg.toLowerCase().includes("exist")
-      ) {
-        toast.error("NIS atau NISN sudah digunakan oleh siswa lain.");
+      // Ambil pesan langsung dari API response
+      const apiMessage = err.response?.data?.message;
+      const httpStatus = err.response?.status;
+
+      if (apiMessage) {
+        // Tampilkan pesan dari server apa adanya (sudah jelas dari backend)
+        toast.error(apiMessage);
+      } else if (httpStatus === 409) {
+        toast.error(
+          "Data duplikat: NIS atau NISN sudah digunakan oleh siswa lain.",
+        );
+      } else if (httpStatus === 404) {
+        toast.error("Siswa tidak ditemukan.");
       } else {
-        toast.error("Gagal memperbarui siswa");
+        toast.error("Gagal memperbarui data siswa. Silakan coba lagi.");
       }
     }
   };
