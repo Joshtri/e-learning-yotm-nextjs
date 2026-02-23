@@ -22,6 +22,9 @@ export async function GET(request, { params }) {
         nisn: true,
         nis: true,
         status: true,
+        jenisKelamin: true,
+        tempatLahir: true,
+        tanggalLahir: true,
         user: {
           select: { email: true },
         },
@@ -31,6 +34,7 @@ export async function GET(request, { params }) {
             program: { select: { namaPaket: true } },
           },
         },
+        // Riwayat kelas per tahun ajaran
         StudentClassHistory: {
           include: {
             class: {
@@ -48,11 +52,8 @@ export async function GET(request, { params }) {
               },
             },
           },
-          orderBy: [
-            { academicYear: { tahunMulai: "asc" } },
-            { academicYear: { semester: "asc" } },
-          ],
         },
+        // Nilai akhir per mata pelajaran per tahun ajaran
         FinalScore: {
           include: {
             subject: {
@@ -68,6 +69,7 @@ export async function GET(request, { params }) {
             },
           },
         },
+        // Nilai sikap & kehadiran per tahun ajaran
         BehaviorScore: {
           include: {
             academicYear: {
@@ -76,6 +78,12 @@ export async function GET(request, { params }) {
                 tahunMulai: true,
                 tahunSelesai: true,
                 semester: true,
+              },
+            },
+            class: {
+              select: {
+                namaKelas: true,
+                program: { select: { namaPaket: true } },
               },
             },
           },
@@ -90,42 +98,93 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Merge FinalScore and BehaviorScore into each history entry
-    const history = student.StudentClassHistory.map((entry) => {
-      const ayId = entry.academicYearId;
+    // ── Kumpulkan SEMUA academicYearId dari ketiga sumber ─────────────────
+    // Ini memastikan semester yang hanya punya FinalScore atau BehaviorScore
+    // (tanpa StudentClassHistory) tetap muncul di riwayat.
+    const allAcademicYearIds = new Set([
+      ...student.StudentClassHistory.map((h) => h.academicYearId),
+      ...student.FinalScore.map((fs) => fs.tahunAjaranId),
+      ...student.BehaviorScore.map((bs) => bs.academicYearId),
+    ]);
 
-      const finalScores = student.FinalScore.filter(
-        (fs) => fs.tahunAjaranId === ayId
-      ).map((fs) => ({
+    // ── Index masing-masing sumber berdasarkan academicYearId ─────────────
+    const historyMap = {};
+    const finalScoreMap = {};
+    const behaviorMap = {};
+
+    for (const h of student.StudentClassHistory) {
+      historyMap[h.academicYearId] = h;
+    }
+
+    for (const fs of student.FinalScore) {
+      const ayId = fs.tahunAjaranId;
+      if (!finalScoreMap[ayId]) finalScoreMap[ayId] = [];
+      finalScoreMap[ayId].push({
         namaMapel: fs.subject.namaMapel,
         kodeMapel: fs.subject.kodeMapel,
         nilaiAkhir: fs.nilaiAkhir,
-      }));
+      });
+    }
 
-      const behaviorScore = student.BehaviorScore.find(
-        (bs) => bs.academicYearId === ayId
-      );
+    for (const bs of student.BehaviorScore) {
+      behaviorMap[bs.academicYearId] = bs;
+    }
 
-      return {
-        academicYearId: ayId,
-        academicYear: entry.academicYear,
-        class: {
-          namaKelas: entry.class.namaKelas,
-          namaPaket: entry.class.program?.namaPaket || null,
-        },
-        naikKelas: entry.naikKelas,
-        nilaiAkhir: entry.nilaiAkhir ?? null,
-        finalScores,
-        behaviorScore: behaviorScore
-          ? {
-              spiritual: behaviorScore.spiritual,
-              sosial: behaviorScore.sosial,
-              kehadiran: behaviorScore.kehadiran,
-              catatan: behaviorScore.catatan ?? null,
+    // ── Build history final (union semua sumber) ──────────────────────────
+    const history = Array.from(allAcademicYearIds)
+      .map((ayId) => {
+        const histEntry = historyMap[ayId];
+        const bsEntry = behaviorMap[ayId];
+        const fsFirst = student.FinalScore.find(
+          (fs) => fs.tahunAjaranId === ayId
+        );
+
+        // Ambil academicYear dari sumber mana pun yang tersedia
+        const academicYear =
+          histEntry?.academicYear ||
+          bsEntry?.academicYear ||
+          fsFirst?.academicYear ||
+          null;
+
+        // Ambil data kelas dari sumber mana pun yang tersedia
+        const rawClass =
+          histEntry?.class || bsEntry?.class || null;
+
+        return {
+          academicYearId: ayId,
+          academicYear,
+          class: rawClass
+            ? {
+              namaKelas: rawClass.namaKelas,
+              namaPaket: rawClass.program?.namaPaket || null,
             }
-          : null,
-      };
-    });
+            : null,
+          naikKelas: histEntry?.naikKelas ?? null,
+          nilaiAkhir: histEntry?.nilaiAkhir ?? null,
+          finalScores: finalScoreMap[ayId] || [],
+          behaviorScore: bsEntry
+            ? {
+              spiritual: bsEntry.spiritual,
+              sosial: bsEntry.sosial,
+              kehadiran: bsEntry.kehadiran,
+              catatan: bsEntry.catatan ?? null,
+            }
+            : null,
+        };
+      })
+      // Filter yang tidak punya info tahun ajaran, lalu urutkan
+      .filter((h) => h.academicYear !== null)
+      .sort((a, b) => {
+        const yearDiff =
+          a.academicYear.tahunMulai - b.academicYear.tahunMulai;
+        if (yearDiff !== 0) return yearDiff;
+        // GANJIL sebelum GENAP
+        const semOrder = { GANJIL: 1, GENAP: 2 };
+        return (
+          (semOrder[a.academicYear.semester] || 0) -
+          (semOrder[b.academicYear.semester] || 0)
+        );
+      });
 
     return NextResponse.json({
       success: true,
@@ -136,12 +195,15 @@ export async function GET(request, { params }) {
           nisn: student.nisn,
           nis: student.nis,
           status: student.status,
+          jenisKelamin: student.jenisKelamin ?? null,
+          tempatLahir: student.tempatLahir ?? null,
+          tanggalLahir: student.tanggalLahir ?? null,
           email: student.user?.email ?? null,
           currentClass: student.class
             ? {
-                namaKelas: student.class.namaKelas,
-                namaPaket: student.class.program?.namaPaket ?? null,
-              }
+              namaKelas: student.class.namaKelas,
+              namaPaket: student.class.program?.namaPaket ?? null,
+            }
             : null,
         },
         history,
@@ -150,7 +212,11 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("[ERROR GET STUDENT GRADE HISTORY DETAIL]", error);
     return NextResponse.json(
-      { success: false, message: "Internal Server Error", error: error.message },
+      {
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      },
       { status: 500 }
     );
   }

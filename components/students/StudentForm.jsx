@@ -88,12 +88,18 @@ export default function StudentForm({
         label="NIS"
         name="nis"
         control={control}
-        placeholder="Contoh: 1234567890"
+        placeholder="Contoh: 289"
         error={errors.nis?.message}
+        maxLength={3}
+        onKeyDown={(e) => {
+          if (!/[0-9]|Backspace|Delete|Tab|ArrowLeft|ArrowRight/.test(e.key)) {
+            e.preventDefault();
+          }
+        }}
         rules={{
           pattern: {
-            value: /^[0-9]{10}$/,
-            message: "NIS harus 10 digit angka",
+            value: /^[0-9]{1,3}$/,
+            message: "NIS harus berupa angka, maksimal 3 digit",
           },
         }}
       />

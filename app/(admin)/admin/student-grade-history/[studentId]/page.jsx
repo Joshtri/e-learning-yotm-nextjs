@@ -140,9 +140,7 @@ async function downloadRaporPDF(student, entry) {
   } else {
     autoTable(doc, {
       startY: y,
-      head: [
-        ["No", "Mata Pelajaran", "Kode", "Nilai Akhir", "Huruf", "Predikat"],
-      ],
+      head: [["No", "Mata Pelajaran", "Nilai Akhir", "Huruf", "Predikat"]],
       body: finalScores.map((fs, idx) => {
         const nilai = fs.nilaiAkhir;
         const huruf =
@@ -168,7 +166,6 @@ async function downloadRaporPDF(student, entry) {
         return [
           idx + 1,
           fs.namaMapel || "-",
-          fs.kodeMapel || "-",
           nilai != null ? nilai.toFixed(2) : "-",
           huruf,
           predikat,
@@ -183,9 +180,9 @@ async function downloadRaporPDF(student, entry) {
       alternateRowStyles: { fillColor: [239, 246, 255] },
       columnStyles: {
         0: { cellWidth: 10, halign: "center" },
+        2: { halign: "center" },
         3: { halign: "center" },
         4: { halign: "center" },
-        5: { halign: "center" },
       },
       margin: { left: 14, right: 14 },
     });
@@ -309,14 +306,14 @@ export default function StudentGradeHistoryDetailPage() {
       header: "Mata Pelajaran",
       cell: (row) => <div className="font-medium">{row.namaMapel}</div>,
     },
-    {
-      header: "Kode",
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">
-          {row.kodeMapel || "-"}
-        </span>
-      ),
-    },
+    // {
+    //   header: "Kode",
+    //   cell: (row) => (
+    //     <span className="text-sm text-muted-foreground">
+    //       {row.kodeMapel || "-"}
+    //     </span>
+    //   ),
+    // },
     {
       header: "Nilai Akhir",
       cell: (row) => (
@@ -420,12 +417,23 @@ export default function StudentGradeHistoryDetailPage() {
             const {
               academicYear,
               class: kelas,
-              naikKelas,
               nilaiAkhir,
               finalScores,
               behaviorScore,
             } = entry;
-            const label = `${kelas.namaKelas} | ${academicYear.tahunMulai}/${academicYear.tahunSelesai} ${academicYear.semester}${nilaiAkhir != null ? ` | Rata-rata: ${nilaiAkhir.toFixed(2)}` : ""}`;
+
+            // Gunakan nilaiAkhir dari history, atau hitung sendiri dari finalScores
+            const rataRata =
+              nilaiAkhir != null
+                ? nilaiAkhir
+                : finalScores.length > 0
+                  ? finalScores.reduce(
+                      (sum, fs) => sum + (fs.nilaiAkhir ?? 0),
+                      0,
+                    ) / finalScores.length
+                  : null;
+
+            const label = `${kelas?.namaKelas ?? "-"} | ${academicYear.tahunMulai}/${academicYear.tahunSelesai} ${academicYear.semester}${rataRata != null ? ` | Rata-rata: ${rataRata.toFixed(2)}` : ""}`;
 
             return (
               <AccordionItem
@@ -456,19 +464,8 @@ export default function StudentGradeHistoryDetailPage() {
                     <div>
                       <span className="text-muted-foreground">Program: </span>
                       <span className="font-medium">
-                        {kelas.namaPaket || "-"}
+                        {kelas?.namaPaket || "-"}
                       </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Status Kenaikan:{" "}
-                      </span>
-                      <Badge
-                        variant={naikKelas ? "default" : "destructive"}
-                        className="ml-1"
-                      >
-                        {naikKelas ? "Naik Kelas" : "Mengulang"}
-                      </Badge>
                     </div>
                   </div>
 
