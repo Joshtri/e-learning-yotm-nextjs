@@ -14,6 +14,18 @@ export async function PATCH(req, { params }) {
     const body = await req.json();
     const { homeroomTeacherId } = body;
 
+    // Jika null → hapus wali kelas
+    if (homeroomTeacherId === null) {
+      await prisma.class.update({
+        where: { id: classId },
+        data: { homeroomTeacherId: null },
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Wali kelas berhasil dihapus",
+      });
+    }
+
     if (!homeroomTeacherId) {
       return NextResponse.json(
         { message: "ID Wali Kelas wajib diisi" },

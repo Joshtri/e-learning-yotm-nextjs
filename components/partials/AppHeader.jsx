@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
-import { ArrowUp, Loader2, Menu } from "lucide-react";
+import { ArrowUp, ChevronDown, GraduationCap, Loader2, Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -21,6 +21,7 @@ import { NotificationDropdown } from "../ui/notification-dropdown";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
 import useScrollTop from "@/hooks/useScrollTop";
 import { CommandMenu } from "@/components/command-menu";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 export default function AppHeader({ onMenuClick, role }) {
   const router = useRouter();
@@ -29,6 +30,10 @@ export default function AppHeader({ onMenuClick, role }) {
   const [isSwitching, setIsSwitching] = useState(false);
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+
+  // Class context — safe defaults jika dipakai di luar HomeroomClassProvider
+  const { classes: homeroomClasses, selectedClass, selectClass } = useHomeroomClass();
 
   // Show scroll button after scrolling 200px
   const scrolled = useScrollTop(200);
@@ -153,6 +158,59 @@ export default function AppHeader({ onMenuClick, role }) {
           <div className="hidden md:block">
             <CommandMenu role={role} />
           </div>
+
+          {/* ── Class Selector (hanya di homeroom mode dengan >1 kelas) ── */}
+          {mode === "homeroom" && homeroomClasses.length > 1 && (
+            <DropdownMenu open={isClassDropdownOpen} onOpenChange={setIsClassDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden md:flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-full px-3 h-8 max-w-[200px]"
+                >
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate text-xs font-medium">
+                    {selectedClass?.namaKelas ?? "Pilih Kelas"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 shrink-0 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                  Kelas yang Anda ampu sebagai Wali
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {homeroomClasses.map((kelas) => (
+                  <DropdownMenuItem
+                    key={kelas.id}
+                    onClick={() => {
+                      selectClass(kelas.id);
+                      setIsClassDropdownOpen(false);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex flex-col gap-0.5 w-full">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{kelas.namaKelas}</span>
+                        {kelas.id === selectedClass?.id && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-semibold">
+                            Aktif
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {kelas.program?.namaPaket || "-"} &middot;{" "}
+                        {kelas.academicYear
+                          ? `${kelas.academicYear.tahunMulai}/${kelas.academicYear.tahunSelesai} ${kelas.academicYear.semester}`
+                          : "-"}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <div className="hidden md:flex relative">
             <span className="sr-only">Notifikasi</span>
             {user && <NotificationDropdown userId={user.id} />}

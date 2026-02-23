@@ -294,11 +294,15 @@ export const useAdminDashboard = () => {
 };
 
 // ============ HOMEROOM DASHBOARD QUERIES ============
-export const useHomeroomDashboardOverview = () => {
+export const useHomeroomDashboardOverview = (classId) => {
   return useQuery({
-    queryKey: ["homeroom-dashboard-overview"],
+    // classId masuk ke queryKey agar react-query refetch saat kelas berganti
+    queryKey: ["homeroom-dashboard-overview", classId ?? "auto"],
     queryFn: async () => {
-      const res = await axios.get("/api/homeroom/dashboard/overview");
+      const url = classId
+        ? `/api/homeroom/dashboard/overview?classId=${classId}`
+        : "/api/homeroom/dashboard/overview";
+      const res = await axios.get(url);
       return res.data;
     },
     ...CACHE_CONFIG,
@@ -339,8 +343,8 @@ export const useHomeroomDashboardStudents = () => {
 };
 
 // Combined hook for homeroom dashboard
-export const useHomeroomDashboard = () => {
-  const overview = useHomeroomDashboardOverview();
+export const useHomeroomDashboard = (classId) => {
+  const overview = useHomeroomDashboardOverview(classId);
   const classes = useHomeroomDashboardClasses();
   const stats = useHomeroomDashboardStats();
   const students = useHomeroomDashboardStudents();

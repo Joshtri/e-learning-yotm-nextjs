@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request) {
   try {
     const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -24,11 +24,16 @@ export async function GET() {
       );
     }
 
+    // classId dari context (dikirim oleh frontend via query param)
+    const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
+
     // 🔥 Cari kelas yang dipegang sebagai wali kelas
-    // Prioritas: tahun akademik terbaru, yang punya siswa aktif
     const allClasses = await prisma.class.findMany({
       where: {
         homeroomTeacherId: tutor.id,
+        // Jika classId disediakan, langsung filter ke kelas itu saja
+        ...(classId && { id: classId }),
       },
       include: {
         students: {
@@ -53,13 +58,11 @@ export async function GET() {
       );
     }
 
-    // Pilih kelas yang punya siswa aktif, jika tidak ada ambil yang terbaru
-    let kelas = allClasses.find((cls) => cls.students.length > 0);
-
-    // Jika tidak ada kelas dengan siswa aktif, ambil kelas terbaru
-    if (!kelas) {
-      kelas = allClasses[0];
-    }
+    // Jika classId sudah difilter → pakai kelas pertama (sudah spesifik)
+    // Jika tidak → auto-pick: kelas dengan siswa aktif, atau terbaru
+    let kelas = classId
+      ? allClasses[0]
+      : allClasses.find((cls) => cls.students.length > 0) ?? allClasses[0];
 
     const { students } = kelas;
 

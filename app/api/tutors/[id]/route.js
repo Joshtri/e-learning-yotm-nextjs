@@ -113,4 +113,60 @@ export async function PUT(request, { params }) {
   return NextResponse.json({ success: true, data: updated });
 }
 
+// DELETE /api/tutors/[id]
+// Hanya hapus profil Tutor, akun User TIDAK dihapus
+export async function DELETE(request, { params }) {
+  const { id } = params;
+
+  try {
+    const { user, error, status } = await getAuthUser(request);
+    if (error) {
+      return NextResponse.json({ success: false, message: error }, { status });
+    }
+
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
+    const tutor = await prisma.tutor.findUnique({ where: { id } });
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Tutor tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Lepas assignment wali kelas di semua kelas
+      await tx.class.updateMany({
+        where: { homeroomTeacherId: id },
+        data: { homeroomTeacherId: null },
+      });
+
+      // Hapus data sesi absensi (cascade ke Attendance)
+      await tx.attendanceSession.deleteMany({ where: { tutorId: id } });
+
+      // Hapus penugasan mengajar (cascade ke Schedule)
+      await tx.classSubjectTutor.deleteMany({ where: { tutorId: id } });
+
+      // Hapus profil tutor — akun User TIDAK dihapus
+      await tx.tutor.delete({ where: { id } });
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Profil tutor berhasil dihapus",
+    });
+  } catch (error) {
+    console.error("Gagal menghapus tutor:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus tutor" },
+      { status: 500 }
+    );
+  }
+}
+
 

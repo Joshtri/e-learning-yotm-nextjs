@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useHomeroomDashboard } from "@/hooks/useDashboardQueries";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 export default function HomeroomDashboardPage() {
   const router = useRouter();
+  const { selectedClassId } = useHomeroomClass();
   const {
     overview,
     classes,
@@ -19,7 +21,7 @@ export default function HomeroomDashboardPage() {
     students,
     isLoading,
     error,
-  } = useHomeroomDashboard();
+  } = useHomeroomDashboard(selectedClassId);
 
   const stats = {
     totalStudents: overview?.totalStudents || 0,

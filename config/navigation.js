@@ -148,6 +148,11 @@ export const navByRole = {
           href: "/admin/students-scores-recap",
           icon: <ChartBar className="h-4 w-4" />,
         },
+        {
+          title: "Riwayat Rapor Siswa",
+          href: "/admin/student-grade-history",
+          icon: <FileSearch className="h-4 w-4" />,
+        },
         // {
         //   title: "Presensi Seluruh Siswa",
         //   href: "/admin/attendances",
