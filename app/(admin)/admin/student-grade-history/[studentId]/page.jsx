@@ -26,7 +26,6 @@ async function downloadRaporPDF(student, entry) {
   const {
     academicYear,
     class: kelas,
-    naikKelas,
     nilaiAkhir,
     finalScores,
     behaviorScore,
@@ -107,13 +106,6 @@ async function downloadRaporPDF(student, entry) {
   y += 2;
   doc.setLineWidth(0.3);
   doc.line(14, y, pageW - 14, y);
-  y += 5;
-
-  // ── Status Kenaikan ──────────────────────────────────────────────────
-  doc.setFont("helvetica", "bold");
-  doc.text("Status Kenaikan Kelas:", 14, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(naikKelas ? "Naik Kelas" : "Mengulang", 65, y);
   y += 5;
 
   if (nilaiAkhir != null) {

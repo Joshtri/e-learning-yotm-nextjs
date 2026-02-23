@@ -205,7 +205,7 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Cek existensi student
     const student = await prisma.student.findUnique({
@@ -219,23 +219,45 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Gunakan transaction untuk menghapus student dan user terkait
+    // Hapus semua child records dulu (karena tidak ada onDelete: Cascade di schema),
+    // baru hapus Student dan User-nya dalam satu transaksi.
     await prisma.$transaction(async (tx) => {
-      // 1. Hapus data student
-      // Catatan: Jika ada relasi lain (Submission, Attendance dll) yang tidak ON DELETE CASCADE,
-      // ini mungkin akan error. Idealnya schema.prisma di-set CASCADE atau hapus manual child-nya.
-      // Untuk sekarang kita asumsikan bisa dihapus atau Prisma akan melempar error jika ada FK violation.
-
-      // Kita coba hapus student dulu
-      await tx.student.delete({
-        where: { id },
+      // 1. Hapus Answer (child dari Submission)
+      const submissions = await tx.submission.findMany({
+        where: { studentId: id },
+        select: { id: true },
       });
-
-      // 2. Hapus user login-nya
-      if (student.userId) {
-        await tx.user.delete({
-          where: { id: student.userId },
+      if (submissions.length > 0) {
+        const submissionIds = submissions.map((s) => s.id);
+        await tx.answer.deleteMany({
+          where: { submissionId: { in: submissionIds } },
         });
+      }
+
+      // 2. Hapus Submission
+      await tx.submission.deleteMany({ where: { studentId: id } });
+
+      // 3. Hapus Attendance
+      await tx.attendance.deleteMany({ where: { studentId: id } });
+
+      // 4. Hapus SkillScore
+      await tx.skillScore.deleteMany({ where: { studentId: id } });
+
+      // 5. Hapus BehaviorScore
+      await tx.behaviorScore.deleteMany({ where: { studentId: id } });
+
+      // 6. Hapus FinalScore
+      await tx.finalScore.deleteMany({ where: { studentId: id } });
+
+      // 7. Hapus StudentClassHistory
+      await tx.studentClassHistory.deleteMany({ where: { studentId: id } });
+
+      // 8. Hapus Student
+      await tx.student.delete({ where: { id } });
+
+      // 9. Hapus User login terkait
+      if (student.userId) {
+        await tx.user.delete({ where: { id: student.userId } });
       }
     });
 
@@ -243,18 +265,14 @@ export async function DELETE(request, { params }) {
       JSON.stringify({ success: true, message: "Siswa berhasil dihapus" }),
       { status: 200 }
     );
-
   } catch (error) {
     console.error("Gagal hapus siswa:", error);
-    // Cek constraint error code Prisma (P2003 = FK violation)
-    if (error.code === 'P2003') {
-      return new Response(
-        JSON.stringify({ success: false, message: "Gagal menghapus: Siswa memiliki data terkait (Nilai, Absensi, dll)." }),
-        { status: 400 }
-      );
-    }
     return new Response(
-      JSON.stringify({ success: false, message: "Gagal menghapus siswa", error: error.message }),
+      JSON.stringify({
+        success: false,
+        message: "Gagal menghapus siswa",
+        error: error.message,
+      }),
       { status: 500 }
     );
   }
