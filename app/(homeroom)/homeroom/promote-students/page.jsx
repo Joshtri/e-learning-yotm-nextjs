@@ -8,7 +8,15 @@ import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, InfoIcon, CalendarCheck, Eye, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  AlertCircle,
+  InfoIcon,
+  CalendarCheck,
+  Eye,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -53,7 +61,8 @@ export default function PromoteStudentsPage() {
       setIsLoading(true);
       setAccessDenied(false);
       const res = await api.get("/homeroom/my-students-for-promotion");
-      const { students, academicYear, className, program } = res.data.data || {};
+      const { students, academicYear, className, program } =
+        res.data.data || {};
       setStudents(students || []);
       setAcademicYear(academicYear || null);
       setClassName(className || "");
@@ -76,7 +85,9 @@ export default function PromoteStudentsPage() {
 
   const fetchAvailableAcademicYears = async () => {
     try {
-      const res = await api.get("/homeroom/available-academic-years-for-promotion");
+      const res = await api.get(
+        "/homeroom/available-academic-years-for-promotion",
+      );
       setAvailableAcademicYears(res.data.data || []);
 
       // Log info tahun ajaran saat ini
@@ -103,7 +114,9 @@ export default function PromoteStudentsPage() {
 
     try {
       setIsLoadingClasses(true);
-      const res = await api.get(`/homeroom/available-classes?academicYearId=${academicYearId}`);
+      const res = await api.get(
+        `/homeroom/available-classes?academicYearId=${academicYearId}`,
+      );
       setAvailableClasses(res.data.data || []);
 
       // Log info kelas saat ini
@@ -130,19 +143,17 @@ export default function PromoteStudentsPage() {
 
   const handleSwitchChange = (studentId, checked) => {
     setStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, naikKelas: checked } : s))
+      prev.map((s) => (s.id === studentId ? { ...s, naikKelas: checked } : s)),
     );
   };
 
   // Toggle semua siswa naik kelas
   const handleToggleAll = (status) => {
-    setStudents((prev) =>
-      prev.map((s) => ({ ...s, naikKelas: status }))
-    );
+    setStudents((prev) => prev.map((s) => ({ ...s, naikKelas: status })));
     toast.success(
       status
         ? `✅ Semua ${students.length} siswa ditandai NAIK KELAS`
-        : `❌ Semua ${students.length} siswa ditandai TIDAK NAIK`
+        : `❌ Semua ${students.length} siswa ditandai TIDAK NAIK`,
     );
   };
 
@@ -160,7 +171,8 @@ export default function PromoteStudentsPage() {
         const kehadiran = s.attendanceSummary?.persen || 0;
 
         // Auto naik jika nilai >= 65 DAN kehadiran >= 75%
-        const shouldPass = nilai >= PASSING_GRADE && kehadiran >= MIN_ATTENDANCE;
+        const shouldPass =
+          nilai >= PASSING_GRADE && kehadiran >= MIN_ATTENDANCE;
 
         if (shouldPass) {
           passedCount++;
@@ -169,18 +181,20 @@ export default function PromoteStudentsPage() {
         }
 
         return { ...s, naikKelas: shouldPass };
-      })
+      }),
     );
 
     toast.success(
       `🤖 Smart Toggle: ${passedCount} siswa naik (nilai ≥${PASSING_GRADE} & kehadiran ≥${MIN_ATTENDANCE}%), ${failedCount} siswa tidak naik`,
-      { duration: 5000 }
+      { duration: 5000 },
     );
   };
 
   const handlePromote = async () => {
     if (!targetAcademicYearId || !targetClassIdForPassed) {
-      toast.error("Mohon pilih tahun ajaran dan kelas tujuan untuk siswa yang naik");
+      toast.error(
+        "Mohon pilih tahun ajaran dan kelas tujuan untuk siswa yang naik",
+      );
       return;
     }
 
@@ -188,7 +202,7 @@ export default function PromoteStudentsPage() {
     const hasFailedStudents = students.some((s) => !s.naikKelas);
     if (hasFailedStudents && !targetClassIdForFailed) {
       const confirm = window.confirm(
-        "Ada siswa yang tidak naik kelas tetapi Anda belum memilih kelas mengulang. Siswa tersebut akan tetap di kelas lama. Lanjutkan?"
+        "Ada siswa yang tidak naik kelas tetapi Anda belum memilih kelas mengulang. Siswa tersebut akan tetap di kelas lama. Lanjutkan?",
       );
       if (!confirm) return;
     }
@@ -206,6 +220,8 @@ export default function PromoteStudentsPage() {
 
       toast.success(res.data.message || "Berhasil memproses kenaikan kelas");
 
+      localStorage.removeItem("selectedHomeroomClassId"); // Hapus cached class agart context fallback ke kelas yang baru dibuat (kelas di tahun ajaran yg baru)
+
       // Reload data
       fetchStudents();
     } catch (error) {
@@ -218,7 +234,7 @@ export default function PromoteStudentsPage() {
         toast.error(`Gagal: \n${invalidList}`);
       } else {
         toast.error(
-          error.response?.data?.message || "Gagal memproses kenaikan kelas"
+          error.response?.data?.message || "Gagal memproses kenaikan kelas",
         );
       }
     }
@@ -231,8 +247,10 @@ export default function PromoteStudentsPage() {
 
   const getTrendIcon = (ganjil, genap) => {
     if (!ganjil || !genap) return <Minus className="h-4 w-4 text-gray-400" />;
-    if (genap > ganjil) return <TrendingUp className="h-4 w-4 text-green-600" />;
-    if (genap < ganjil) return <TrendingDown className="h-4 w-4 text-red-600" />;
+    if (genap > ganjil)
+      return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (genap < ganjil)
+      return <TrendingDown className="h-4 w-4 text-red-600" />;
     return <Minus className="h-4 w-4 text-gray-400" />;
   };
 
@@ -294,11 +312,13 @@ export default function PromoteStudentsPage() {
               </p>
               <ul className="list-disc list-inside text-sm mt-1 space-y-1">
                 <li>
-                  Kenaikan kelas menghitung <strong>total nilai</strong> dari Semester
-                  GANJIL dan GENAP tahun ini ({academicYear.tahunMulai}/{academicYear.tahunSelesai})
+                  Kenaikan kelas menghitung <strong>total nilai</strong> dari
+                  Semester GANJIL dan GENAP tahun ini ({academicYear.tahunMulai}
+                  /{academicYear.tahunSelesai})
                 </li>
                 <li>
-                  Siswa akan naik ke <strong>Tahun Ajaran Baru</strong> dengan semester <strong>GANJIL</strong>
+                  Siswa akan naik ke <strong>Tahun Ajaran Baru</strong> dengan
+                  semester <strong>GANJIL</strong>
                 </li>
                 <li>
                   Pastikan admin sudah membuat kelas tujuan di tahun ajaran baru
@@ -318,7 +338,8 @@ export default function PromoteStudentsPage() {
           <div className="space-y-4 p-4 border rounded-lg bg-slate-50">
             <div className="space-y-2">
               <Label htmlFor="targetYear">
-                1. Pilih Target Tahun Ajaran <span className="text-red-500">*</span>
+                1. Pilih Target Tahun Ajaran{" "}
+                <span className="text-red-500">*</span>
               </Label>
               <select
                 id="targetYear"
@@ -329,14 +350,22 @@ export default function PromoteStudentsPage() {
                 <option value="">-- Pilih Tahun Ajaran --</option>
                 {availableAcademicYears.map((year) => (
                   <option key={year.id} value={year.id}>
-                    {year.tahunMulai}/{year.tahunSelesai} - Semester {year.semester}
+                    {year.tahunMulai}/{year.tahunSelesai} - Semester{" "}
+                    {year.semester}
                     {year.isActive && " (Aktif)"}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200 mt-1">
-                💡 <strong>Contoh:</strong> Kelas saat ini di tahun <strong>{academicYear?.tahunMulai}/{academicYear?.tahunSelesai} GENAP</strong>,
-                maka pilih tahun ajaran <strong>{academicYear ? academicYear.tahunSelesai : "20XX"}/{academicYear ? academicYear.tahunSelesai + 1 : "20XX"} GANJIL</strong>
+                💡 <strong>Contoh:</strong> Kelas saat ini di tahun{" "}
+                <strong>
+                  {academicYear?.tahunMulai}/{academicYear?.tahunSelesai} GENAP
+                </strong>
+                , maka pilih tahun ajaran{" "}
+                <strong>
+                  {academicYear ? academicYear.tahunSelesai : "20XX"}/
+                  {academicYear ? academicYear.tahunSelesai + 1 : "20XX"} GANJIL
+                </strong>
               </p>
             </div>
 
@@ -350,11 +379,14 @@ export default function PromoteStudentsPage() {
                   {isLoadingClasses ? (
                     <div className="text-sm text-gray-500">Memuat kelas...</div>
                   ) : availableClasses.length === 0 ? (
-                    <Alert variant="destructive" className="border-red-200 bg-red-50">
+                    <Alert
+                      variant="destructive"
+                      className="border-red-200 bg-red-50"
+                    >
                       <AlertCircle className="h-4 w-4 text-red-600" />
                       <AlertDescription className="text-red-700">
-                        Belum ada kelas yang dibuat admin untuk tahun ajaran ini.
-                        Hubungi admin untuk membuat kelas terlebih dahulu.
+                        Belum ada kelas yang dibuat admin untuk tahun ajaran
+                        ini. Hubungi admin untuk membuat kelas terlebih dahulu.
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -362,22 +394,27 @@ export default function PromoteStudentsPage() {
                       <select
                         id="targetClassPassed"
                         value={targetClassIdForPassed}
-                        onChange={(e) => setTargetClassIdForPassed(e.target.value)}
+                        onChange={(e) =>
+                          setTargetClassIdForPassed(e.target.value)
+                        }
                         className="w-full px-3 py-2 border rounded-md"
                       >
                         <option value="">-- Pilih Kelas Tujuan --</option>
                         {availableClasses.map((kelas) => (
                           <option key={kelas.id} value={kelas.id}>
-                            {kelas.namaKelas} - {kelas.program} ({kelas.studentCount}{" "}
-                            siswa)
+                            {kelas.namaKelas} - {kelas.program} (
+                            {kelas.studentCount} siswa)
                             {kelas.homeroomTeacher &&
                               ` - Wali: ${kelas.homeroomTeacher.nama}`}
                           </option>
                         ))}
                       </select>
                       <p className="text-xs text-green-600 bg-green-50 p-2 rounded border border-green-200 mt-1">
-                        ✅ <strong>Contoh:</strong> Siswa dari kelas <strong>{className}</strong> ({program})
-                        tahun {academicYear?.tahunMulai}/{academicYear?.tahunSelesai} akan naik ke kelas <strong>tingkat lebih tinggi</strong> di tahun ajaran baru
+                        ✅ <strong>Contoh:</strong> Siswa dari kelas{" "}
+                        <strong>{className}</strong> ({program}) tahun{" "}
+                        {academicYear?.tahunMulai}/{academicYear?.tahunSelesai}{" "}
+                        akan naik ke kelas <strong>tingkat lebih tinggi</strong>{" "}
+                        di tahun ajaran baru
                       </p>
                     </>
                   )}
@@ -395,22 +432,28 @@ export default function PromoteStudentsPage() {
                       <select
                         id="targetClassFailed"
                         value={targetClassIdForFailed}
-                        onChange={(e) => setTargetClassIdForFailed(e.target.value)}
+                        onChange={(e) =>
+                          setTargetClassIdForFailed(e.target.value)
+                        }
                         className="w-full px-3 py-2 border rounded-md"
                       >
-                        <option value="">-- Pilih Kelas Mengulang (Opsional) --</option>
+                        <option value="">
+                          -- Pilih Kelas Mengulang (Opsional) --
+                        </option>
                         {availableClasses.map((kelas) => (
                           <option key={kelas.id} value={kelas.id}>
-                            {kelas.namaKelas} - {kelas.program} ({kelas.studentCount}{" "}
-                            siswa)
+                            {kelas.namaKelas} - {kelas.program} (
+                            {kelas.studentCount} siswa)
                             {kelas.homeroomTeacher &&
                               ` - Wali: ${kelas.homeroomTeacher.nama}`}
                           </option>
                         ))}
                       </select>
                       <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200 mt-1">
-                        ⚠️ Siswa yang tidak naik akan <strong>mengulang di tingkat yang sama</strong> di tahun ajaran baru.
-                        Jika tidak dipilih kelas mengulang, siswa akan tetap di kelas lama (tahun ajaran non-aktif).
+                        ⚠️ Siswa yang tidak naik akan{" "}
+                        <strong>mengulang di tingkat yang sama</strong> di tahun
+                        ajaran baru. Jika tidak dipilih kelas mengulang, siswa
+                        akan tetap di kelas lama (tahun ajaran non-aktif).
                       </p>
                     </>
                   )}
@@ -429,7 +472,8 @@ export default function PromoteStudentsPage() {
                     Aksi Cepat untuk Semua Siswa
                   </p>
                   <p className="text-xs text-slate-600">
-                    Tandai status naik kelas untuk semua {students.length} siswa sekaligus
+                    Tandai status naik kelas untuk semua {students.length} siswa
+                    sekaligus
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -461,7 +505,8 @@ export default function PromoteStudentsPage() {
                       Smart Toggle (Otomatis berdasarkan Nilai & Kehadiran)
                     </p>
                     <p className="text-xs text-slate-600">
-                      Auto tandai naik jika: <strong>Nilai ≥ 65</strong> DAN <strong>Kehadiran ≥ 75%</strong>
+                      Auto tandai naik jika: <strong>Nilai ≥ 65</strong> DAN{" "}
+                      <strong>Kehadiran ≥ 75%</strong>
                     </p>
                   </div>
                   <Button
@@ -479,122 +524,145 @@ export default function PromoteStudentsPage() {
 
           <DataTable
             data={students}
-          columns={[
-            {
-              header: "No",
-              cell: (_, i) => i + 1,
-              className: "w-[50px]",
-            },
-            {
-              header: "Nama Siswa",
-              cell: (row) => (
-                <div>
-                  <p className="font-medium">{row.namaLengkap}</p>
-                  <p className="text-xs text-muted-foreground">NISN: {row.nisn || "-"}</p>
-                </div>
-              ),
-            },
-            {
-              header: "Nilai Sem. Ganjil",
-              cell: (row) => {
-                if (!row.nilaiSemesterGanjil) return <span className="text-red-500">-</span>;
-                return (
-                  <span className="font-semibold text-blue-700">
-                    {row.nilaiSemesterGanjil.toFixed(2)}
-                  </span>
-                );
+            columns={[
+              {
+                header: "No",
+                cell: (_, i) => i + 1,
+                className: "w-[50px]",
               },
-            },
-            {
-              header: "Nilai Sem. Genap",
-              cell: (row) => {
-                if (!row.nilaiSemesterGenap) return <span className="text-red-500">-</span>;
-                return (
-                  <span className="font-semibold text-purple-700">
-                    {row.nilaiSemesterGenap.toFixed(2)}
-                  </span>
-                );
+              {
+                header: "Nama Siswa",
+                cell: (row) => (
+                  <div>
+                    <p className="font-medium">{row.namaLengkap}</p>
+                    <p className="text-xs text-muted-foreground">
+                      NISN: {row.nisn || "-"}
+                    </p>
+                  </div>
+                ),
               },
-            },
-            {
-              header: "Trend",
-              cell: (row) => (
-                <div className="flex justify-center">
-                  {getTrendIcon(row.nilaiSemesterGanjil, row.nilaiSemesterGenap)}
-                </div>
-              ),
-              className: "w-[60px]",
-            },
-            {
-              header: "Nilai Total",
-              cell: (row) => {
-                if (!row.nilaiTotal) return <span className="text-red-500">-</span>;
-                return (
-                  <span className="font-bold text-green-700 text-base">
-                    {row.nilaiTotal.toFixed(2)}
-                  </span>
-                );
+              {
+                header: "Nilai Sem. Ganjil",
+                cell: (row) => {
+                  if (!row.nilaiSemesterGanjil)
+                    return <span className="text-red-500">-</span>;
+                  return (
+                    <span className="font-semibold text-blue-700">
+                      {row.nilaiSemesterGanjil.toFixed(2)}
+                    </span>
+                  );
+                },
               },
-            },
-            {
-              header: "Kehadiran (%)",
-              cell: (row) => {
-                const persen = row.attendanceSummary?.persen ?? 0;
-                const color = persen >= 80 ? "text-green-600" : persen >= 60 ? "text-yellow-600" : "text-red-600";
-                return (
-                  <span className={`font-semibold ${color}`}>
-                    {persen.toFixed(1)}%
-                  </span>
-                );
+              {
+                header: "Nilai Sem. Genap",
+                cell: (row) => {
+                  if (!row.nilaiSemesterGenap)
+                    return <span className="text-red-500">-</span>;
+                  return (
+                    <span className="font-semibold text-purple-700">
+                      {row.nilaiSemesterGenap.toFixed(2)}
+                    </span>
+                  );
+                },
               },
-            },
-            {
-              header: "H / S / I / A",
-              cell: (row) => (
-                <div className="text-xs">
-                  <span className="text-green-600 font-semibold">{row.attendanceSummary?.hadir ?? 0}</span>
-                  {" / "}
-                  <span className="text-yellow-600">{row.attendanceSummary?.sakit ?? 0}</span>
-                  {" / "}
-                  <span className="text-blue-600">{row.attendanceSummary?.izin ?? 0}</span>
-                  {" / "}
-                  <span className="text-red-600">{row.attendanceSummary?.alpa ?? 0}</span>
-                </div>
-              ),
-            },
-            {
-              header: "Detail",
-              cell: (row) => (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewDetail(row)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              ),
-              className: "w-[80px]",
-            },
-            {
-              header: "Status Naik",
-              cell: (row) => (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={!!row.naikKelas}
-                    onCheckedChange={(val) => handleSwitchChange(row.id, val)}
-                  />
-                  {row.naikKelas && (
-                    <span className="text-xs text-green-600 font-semibold">✓ Naik</span>
-                  )}
-                </div>
-              ),
-            },
-          ]}
-          isLoading={isLoading}
-          loadingMessage="Memuat data siswa..."
-          emptyMessage="Belum ada siswa"
-          keyExtractor={(s) => s.id}
-        />
+              {
+                header: "Trend",
+                cell: (row) => (
+                  <div className="flex justify-center">
+                    {getTrendIcon(
+                      row.nilaiSemesterGanjil,
+                      row.nilaiSemesterGenap,
+                    )}
+                  </div>
+                ),
+                className: "w-[60px]",
+              },
+              {
+                header: "Nilai Total",
+                cell: (row) => {
+                  if (!row.nilaiTotal)
+                    return <span className="text-red-500">-</span>;
+                  return (
+                    <span className="font-bold text-green-700 text-base">
+                      {row.nilaiTotal.toFixed(2)}
+                    </span>
+                  );
+                },
+              },
+              {
+                header: "Kehadiran (%)",
+                cell: (row) => {
+                  const persen = row.attendanceSummary?.persen ?? 0;
+                  const color =
+                    persen >= 80
+                      ? "text-green-600"
+                      : persen >= 60
+                        ? "text-yellow-600"
+                        : "text-red-600";
+                  return (
+                    <span className={`font-semibold ${color}`}>
+                      {persen.toFixed(1)}%
+                    </span>
+                  );
+                },
+              },
+              {
+                header: "H / S / I / A",
+                cell: (row) => (
+                  <div className="text-xs">
+                    <span className="text-green-600 font-semibold">
+                      {row.attendanceSummary?.hadir ?? 0}
+                    </span>
+                    {" / "}
+                    <span className="text-yellow-600">
+                      {row.attendanceSummary?.sakit ?? 0}
+                    </span>
+                    {" / "}
+                    <span className="text-blue-600">
+                      {row.attendanceSummary?.izin ?? 0}
+                    </span>
+                    {" / "}
+                    <span className="text-red-600">
+                      {row.attendanceSummary?.alpa ?? 0}
+                    </span>
+                  </div>
+                ),
+              },
+              {
+                header: "Detail",
+                cell: (row) => (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetail(row)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                ),
+                className: "w-[80px]",
+              },
+              {
+                header: "Status Naik",
+                cell: (row) => (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={!!row.naikKelas}
+                      onCheckedChange={(val) => handleSwitchChange(row.id, val)}
+                    />
+                    {row.naikKelas && (
+                      <span className="text-xs text-green-600 font-semibold">
+                        ✓ Naik
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+            isLoading={isLoading}
+            loadingMessage="Memuat data siswa..."
+            emptyMessage="Belum ada siswa"
+            keyExtractor={(s) => s.id}
+          />
 
           {/* Summary & Action */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -628,7 +696,12 @@ export default function PromoteStudentsPage() {
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span>Persentase Naik:</span>
                     <span className="font-semibold text-green-700">
-                      {((students.filter((s) => s.naikKelas).length / students.length) * 100).toFixed(1)}%
+                      {(
+                        (students.filter((s) => s.naikKelas).length /
+                          students.length) *
+                        100
+                      ).toFixed(1)}
+                      %
                     </span>
                   </div>
                 </div>
@@ -652,7 +725,8 @@ export default function PromoteStudentsPage() {
                   <span>Proses Kenaikan Kelas</span>
                   <span className="text-xs opacity-75">
                     {students.filter((s) => s.naikKelas).length} siswa naik,{" "}
-                    {students.filter((s) => !s.naikKelas).length} siswa tidak naik
+                    {students.filter((s) => !s.naikKelas).length} siswa tidak
+                    naik
                   </span>
                 </div>
               </Button>
@@ -693,7 +767,8 @@ export default function PromoteStudentsPage() {
                       {selectedStudent.nilaiSemesterGanjil?.toFixed(2) ?? "-"}
                     </p>
                     <p className="text-xs text-blue-600 mt-1">
-                      Dari {selectedStudent.detailNilaiGanjil?.length ?? 0} mata pelajaran
+                      Dari {selectedStudent.detailNilaiGanjil?.length ?? 0} mata
+                      pelajaran
                     </p>
                   </CardContent>
                 </Card>
@@ -709,7 +784,8 @@ export default function PromoteStudentsPage() {
                       {selectedStudent.nilaiSemesterGenap?.toFixed(2) ?? "-"}
                     </p>
                     <p className="text-xs text-purple-600 mt-1">
-                      Dari {selectedStudent.detailNilaiGenap?.length ?? 0} mata pelajaran
+                      Dari {selectedStudent.detailNilaiGenap?.length ?? 0} mata
+                      pelajaran
                     </p>
                   </CardContent>
                 </Card>
@@ -727,7 +803,7 @@ export default function PromoteStudentsPage() {
                     <div className="flex items-center gap-2 mt-1">
                       {getTrendIcon(
                         selectedStudent.nilaiSemesterGanjil,
-                        selectedStudent.nilaiSemesterGenap
+                        selectedStudent.nilaiSemesterGenap,
                       )}
                       <p className="text-xs text-green-600">
                         {selectedStudent.nilaiSemesterGanjil &&
@@ -767,20 +843,22 @@ export default function PromoteStudentsPage() {
                     {(() => {
                       const allSubjects = new Set([
                         ...(selectedStudent.detailNilaiGanjil?.map(
-                          (n) => n.subject
+                          (n) => n.subject,
                         ) ?? []),
                         ...(selectedStudent.detailNilaiGenap?.map(
-                          (n) => n.subject
+                          (n) => n.subject,
                         ) ?? []),
                       ]);
 
                       return Array.from(allSubjects).map((subject, idx) => {
-                        const ganjilNilai = selectedStudent.detailNilaiGanjil?.find(
-                          (n) => n.subject === subject
-                        )?.nilai;
-                        const genapNilai = selectedStudent.detailNilaiGenap?.find(
-                          (n) => n.subject === subject
-                        )?.nilai;
+                        const ganjilNilai =
+                          selectedStudent.detailNilaiGanjil?.find(
+                            (n) => n.subject === subject,
+                          )?.nilai;
+                        const genapNilai =
+                          selectedStudent.detailNilaiGenap?.find(
+                            (n) => n.subject === subject,
+                          )?.nilai;
 
                         const diff =
                           ganjilNilai && genapNilai
@@ -839,8 +917,8 @@ export default function PromoteStudentsPage() {
                                       diff && diff > 0
                                         ? "text-green-600"
                                         : diff && diff < 0
-                                        ? "text-red-600"
-                                        : "text-gray-400"
+                                          ? "text-red-600"
+                                          : "text-gray-400"
                                     }`}
                                   >
                                     {diff !== null
@@ -873,13 +951,17 @@ export default function PromoteStudentsPage() {
                       <p className="text-2xl font-bold text-green-700">
                         {selectedStudent.attendanceSummary?.hadir ?? 0}
                       </p>
-                      <p className="text-xs text-green-600 font-medium">Hadir</p>
+                      <p className="text-xs text-green-600 font-medium">
+                        Hadir
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <p className="text-2xl font-bold text-yellow-700">
                         {selectedStudent.attendanceSummary?.sakit ?? 0}
                       </p>
-                      <p className="text-xs text-yellow-600 font-medium">Sakit</p>
+                      <p className="text-xs text-yellow-600 font-medium">
+                        Sakit
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-2xl font-bold text-blue-700">
@@ -895,8 +977,9 @@ export default function PromoteStudentsPage() {
                     </div>
                     <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-200">
                       <p className="text-2xl font-bold text-slate-700">
-                        {selectedStudent.attendanceSummary?.persen?.toFixed(1) ??
-                          0}
+                        {selectedStudent.attendanceSummary?.persen?.toFixed(
+                          1,
+                        ) ?? 0}
                         %
                       </p>
                       <p className="text-xs text-slate-600 font-medium">

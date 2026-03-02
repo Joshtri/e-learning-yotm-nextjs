@@ -85,6 +85,13 @@ export async function GET(request) {
       })
     );
 
+    // Pastikan kelas dengan tahun akademik yang aktif berada di barisan teratas
+    enrichedClasses.sort((a, b) => {
+      const aActive = a.academicYear?.isActive ? 1 : 0;
+      const bActive = b.academicYear?.isActive ? 1 : 0;
+      return bActive - aActive;
+    });
+
     return NextResponse.json({
       success: true,
       data: enrichedClasses,

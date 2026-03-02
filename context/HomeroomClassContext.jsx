@@ -28,19 +28,22 @@ export function HomeroomClassProvider({ children }) {
         const classList = res.data.data || [];
         setClasses(classList);
 
-        // Restore from localStorage if the saved class is still valid
         const stored = localStorage.getItem("selectedHomeroomClassId");
+        const activeClass = classList.find((c) => c.academicYear?.isActive);
         const isValid = classList.some((c) => c.id === stored);
 
         if (isValid) {
           setSelectedClassId(stored);
-        } else if (classList.length === 1) {
-          // Auto-select when only one class — no dialog needed
+        } else if (activeClass) {
+          const autoId = activeClass.id;
+          setSelectedClassId(autoId);
+          localStorage.setItem("selectedHomeroomClassId", autoId);
+        } else if (classList.length > 0) {
+          // Fallback ke kelas pertama jika tidak ada yang aktif
           const autoId = classList[0].id;
           setSelectedClassId(autoId);
           localStorage.setItem("selectedHomeroomClassId", autoId);
         }
-        // If classList.length > 1 and no valid stored → needsSelection = true → dialog shown
       } catch (err) {
         console.error("[HomeroomClassContext] Failed to fetch classes:", err);
       } finally {

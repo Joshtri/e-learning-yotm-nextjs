@@ -66,7 +66,7 @@ export async function PATCH(req, { params }) {
         try {
             startDt = parseAndNormalizeTime(startTime);
             endDt = parseAndNormalizeTime(endTime);
-        } catch (e) {
+        } catch {
             return NextResponse.json({ success: false, message: "Invalid Time Format" }, { status: 400 });
         }
 
@@ -112,12 +112,15 @@ export async function PATCH(req, { params }) {
         if (conflict) {
             const conflictClass = conflict.classSubjectTutor.class.namaKelas;
             const conflictSubject = conflict.classSubjectTutor.subject.namaMapel;
-            const conflictStart = conflict.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const conflictEnd = conflict.endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
             return NextResponse.json({
                 success: false,
-                message: `Bentrok dengan jadwal TUGAS ANDA yang lain: ${conflictClass} - ${conflictSubject} (${conflictStart} - ${conflictEnd})`
+                message: `Bentrok dengan jadwal pengajar yang lain: ${conflictClass} - ${conflictSubject}`,
+                conflict: {
+                    className: conflictClass,
+                    subjectName: conflictSubject,
+                    startTime: conflict.startTime,
+                    endTime: conflict.endTime
+                }
             }, { status: 400 });
         }
 

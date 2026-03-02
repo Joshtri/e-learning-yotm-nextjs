@@ -91,7 +91,7 @@ export default function MoveSemesterPage() {
 
     if (!validation?.validation?.allValid) {
       toast.error(
-        "Tidak bisa memindahkan siswa karena ada nilai yang belum lengkap"
+        "Tidak bisa memindahkan siswa karena ada nilai yang belum lengkap",
       );
       return;
     }
@@ -108,6 +108,7 @@ export default function MoveSemesterPage() {
 
       toast.success(res.data.message);
       setShowConfirmDialog(false);
+      localStorage.removeItem("selectedHomeroomClassId"); // Hapus cached class agart context fallback ke kelas aktif baru
       router.push("/homeroom/dashboard");
     } catch (error) {
       console.error(error);
@@ -149,12 +150,12 @@ export default function MoveSemesterPage() {
   const allValid = validation?.validation?.allValid;
   const currentClass = validation?.classInfo;
   const selectedYear = academicYears.find(
-    (y) => y.id === selectedAcademicYearId
+    (y) => y.id === selectedAcademicYearId,
   );
 
   // Filter tahun akademik: hanya yang berbeda dari current
   const availableYears = academicYears.filter(
-    (y) => y.id !== currentClass?.academicYear?.id
+    (y) => y.id !== currentClass?.academicYear?.id,
   );
 
   return (
@@ -438,8 +439,8 @@ export default function MoveSemesterPage() {
                         </strong>{" "}
                         ke{" "}
                         <strong>
-                          {selectedYear.tahunMulai}/{selectedYear.tahunSelesai} -
-                          Semester {selectedYear.semester}
+                          {selectedYear.tahunMulai}/{selectedYear.tahunSelesai}{" "}
+                          - Semester {selectedYear.semester}
                         </strong>
                       </p>
                     </AlertDescription>

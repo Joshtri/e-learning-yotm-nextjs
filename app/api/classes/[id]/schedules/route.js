@@ -100,7 +100,7 @@ export async function POST(req, { params }) {
         try {
             startDt = parseAndNormalizeTime(startTime);
             endDt = parseAndNormalizeTime(endTime);
-        } catch (e) {
+        } catch {
             return NextResponse.json({ success: false, message: "Invalid Time Format" }, { status: 400 });
         }
 
@@ -156,12 +156,15 @@ export async function POST(req, { params }) {
             // If we use 'id-ID', it attempts to format using that locale on the server.
             // We should ideally return the raw time or format strictly. 
             // Let's stick to existing toLocaleTimeString but be aware it uses Server Timezone.
-            const conflictStart = conflict.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const conflictEnd = conflict.endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
             return NextResponse.json({
                 success: false,
-                message: `Bentrok dengan jadwal TUGAS ANDA yang lain: ${conflictClass} - ${conflictSubject} (${conflictStart} - ${conflictEnd})`
+                message: `Bentrok dengan jadwal pengajar yang lain: ${conflictClass} - ${conflictSubject}`,
+                conflict: {
+                    className: conflictClass,
+                    subjectName: conflictSubject,
+                    startTime: conflict.startTime,
+                    endTime: conflict.endTime
+                }
             }, { status: 400 });
         }
 

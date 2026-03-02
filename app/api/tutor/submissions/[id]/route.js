@@ -15,7 +15,7 @@ export async function GET(req, { params }) {
       );
     }
 
-    const submissionId = params.id;
+    const { id: submissionId } = await params;
 
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
@@ -47,7 +47,7 @@ export async function GET(req, { params }) {
               //   createdAt: "asc",
               // },
             },
-          },  
+          },
         },
         answers: {
           include: {
@@ -119,8 +119,8 @@ export async function GET(req, { params }) {
   }
 }
 
-// PUT: Update nilai dan feedback untuk submission
-export async function PUT(req, { params }) {
+// PATCH: Update nilai dan feedback untuk submission
+export async function PATCH(req, { params }) {
   try {
     const user = await getUserFromCookie();
     if (!user || user.role !== "TUTOR") {
@@ -130,7 +130,7 @@ export async function PUT(req, { params }) {
       );
     }
 
-    const submissionId = params.id;
+    const { id: submissionId } = await params;
     const body = await req.json();
     const { nilai, feedback, answers } = body;
 

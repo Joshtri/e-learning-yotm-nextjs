@@ -138,7 +138,7 @@ export default function ClassSchedulePage({ params }) {
       if (res.data.success) {
         setSubjects(res.data.data);
       }
-    } catch (err) {
+    } catch {
       // Ignore
     }
   }, [id]);
@@ -245,8 +245,15 @@ export default function ClassSchedulePage({ params }) {
       setEditId(null);
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.message || "Gagal menyimpan jadwal";
-      toast.error(msg);
+      const resData = error.response?.data;
+      if (resData?.conflict) {
+        const start = dayjs(resData.conflict.startTime).format("HH:mm");
+        const end = dayjs(resData.conflict.endTime).format("HH:mm");
+        toast.error(`${resData.message} (${start} - ${end})`);
+      } else {
+        const msg = error.response?.data?.message || "Gagal menyimpan jadwal";
+        toast.error(msg);
+      }
     } finally {
       setIsSaving(false);
     }

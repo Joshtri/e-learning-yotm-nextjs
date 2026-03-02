@@ -255,8 +255,21 @@ export async function DELETE(request, { params }) {
       // 8. Hapus Student
       await tx.student.delete({ where: { id } });
 
-      // 9. Hapus User login terkait
+      // 9. Hapus referensi dari model yang berhubungan dengan User sebelum menghapus User
       if (student.userId) {
+        // Hapus Log aktivitas
+        await tx.log.deleteMany({ where: { userId: student.userId } });
+
+        // Hapus Notification (sebagai pengirim maupun penerima)
+        await tx.notification.deleteMany({
+          where: { OR: [{ senderId: student.userId }, { receiverId: student.userId }] }
+        });
+
+        // Hapus pesan Chat dan Diskusi
+        await tx.chatMessage.deleteMany({ where: { senderId: student.userId } });
+        await tx.discussionMessage.deleteMany({ where: { senderId: student.userId } });
+
+        // Terakhir hapus User
         await tx.user.delete({ where: { id: student.userId } });
       }
     });
