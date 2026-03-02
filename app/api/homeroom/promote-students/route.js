@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
+export const duration = 60; // 1 minute timeout
 export async function PATCH(req) {
   try {
     const user = await getUserFromCookie();
@@ -10,17 +11,22 @@ export async function PATCH(req) {
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const body = await req.json();
-    const { promotions, targetAcademicYearId, targetClassIdForPassed, targetClassIdForFailed } = body;
+    const {
+      promotions,
+      targetAcademicYearId,
+      targetClassIdForPassed,
+      targetClassIdForFailed,
+    } = body;
 
     if (!Array.isArray(promotions)) {
       return new Response(
         JSON.stringify({ success: false, message: "Data tidak valid" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,9 +34,10 @@ export async function PATCH(req) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Target tahun ajaran dan kelas tujuan (naik kelas) harus diisi",
+          message:
+            "Target tahun ajaran dan kelas tujuan (naik kelas) harus diisi",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -42,7 +49,7 @@ export async function PATCH(req) {
     if (!tutor) {
       return new Response(
         JSON.stringify({ success: false, message: "Tutor tidak ditemukan" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -61,7 +68,7 @@ export async function PATCH(req) {
     if (!currentClass) {
       return new Response(
         JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -73,7 +80,7 @@ export async function PATCH(req) {
           message: "Kenaikan kelas hanya bisa dilakukan di semester GENAP",
           currentSemester: currentClass.academicYear.semester,
         }),
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -88,7 +95,7 @@ export async function PATCH(req) {
           success: false,
           message: "Tahun akademik tujuan tidak ditemukan",
         }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -97,9 +104,10 @@ export async function PATCH(req) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Kenaikan kelas harus ke semester GANJIL di tahun ajaran baru",
+          message:
+            "Kenaikan kelas harus ke semester GANJIL di tahun ajaran baru",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -122,9 +130,10 @@ export async function PATCH(req) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Kelas tujuan untuk siswa yang naik tidak ditemukan. Hubungi admin untuk membuat kelas terlebih dahulu.",
+          message:
+            "Kelas tujuan untuk siswa yang naik tidak ditemukan. Hubungi admin untuk membuat kelas terlebih dahulu.",
         }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -135,7 +144,7 @@ export async function PATCH(req) {
           success: false,
           message: "Kelas tujuan tidak sesuai dengan tahun ajaran yang dipilih",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -153,7 +162,7 @@ export async function PATCH(req) {
             success: false,
             message: "Kelas untuk siswa yang tidak naik tidak ditemukan",
           }),
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -162,9 +171,10 @@ export async function PATCH(req) {
         return new Response(
           JSON.stringify({
             success: false,
-            message: "Kelas mengulang tidak sesuai dengan tahun ajaran yang dipilih",
+            message:
+              "Kelas mengulang tidak sesuai dengan tahun ajaran yang dipilih",
           }),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -184,7 +194,7 @@ export async function PATCH(req) {
           success: false,
           message: "Tahun ajaran semester GANJIL tidak ditemukan",
         }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -212,7 +222,7 @@ export async function PATCH(req) {
 
       if (ganjilScoreCount < subjects.length) {
         issues.push(
-          `Nilai semester GANJIL belum lengkap (${ganjilScoreCount}/${subjects.length})`
+          `Nilai semester GANJIL belum lengkap (${ganjilScoreCount}/${subjects.length})`,
         );
       }
 
@@ -227,7 +237,7 @@ export async function PATCH(req) {
 
       if (genapScoreCount < subjects.length) {
         issues.push(
-          `Nilai semester GENAP belum lengkap (${genapScoreCount}/${subjects.length})`
+          `Nilai semester GENAP belum lengkap (${genapScoreCount}/${subjects.length})`,
         );
       }
 
@@ -251,7 +261,7 @@ export async function PATCH(req) {
             "Tidak bisa memproses kenaikan kelas karena ada nilai yang belum lengkap",
           invalidStudents,
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -363,14 +373,16 @@ export async function PATCH(req) {
             tahunAjaran: `${targetClassForPassed.academicYear.tahunMulai}/${targetClassForPassed.academicYear.tahunSelesai}`,
             semester: targetClassForPassed.academicYear.semester,
           },
-          targetClassForFailed: targetClassForFailed ? {
-            nama: targetClassForFailed.namaKelas,
-            tahunAjaran: `${targetClassForFailed.academicYear.tahunMulai}/${targetClassForFailed.academicYear.tahunSelesai}`,
-            semester: targetClassForFailed.academicYear.semester,
-          } : null,
+          targetClassForFailed: targetClassForFailed
+            ? {
+                nama: targetClassForFailed.namaKelas,
+                tahunAjaran: `${targetClassForFailed.academicYear.tahunMulai}/${targetClassForFailed.academicYear.tahunSelesai}`,
+                semester: targetClassForFailed.academicYear.semester,
+              }
+            : null,
         },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("[ERROR PROMOTE STUDENTS]", error);
@@ -380,7 +392,7 @@ export async function PATCH(req) {
         message: "Internal Server Error",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
