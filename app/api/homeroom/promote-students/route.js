@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 
-export const duration = 60; // 1 minute timeout
+export const maxDuration = 60; // 1 minute timeout
 export async function PATCH(req) {
   try {
     const user = await getUserFromCookie();
