@@ -232,7 +232,9 @@ export default function StudentsPage() {
       fetchStudents();
     } catch (err) {
       console.error("Error deleting student:", err);
-      toast.error("Gagal menghapus siswa");
+      const errorMessage =
+        err.response?.data?.message || "Gagal menghapus siswa";
+      toast.error(errorMessage);
     }
   };
 

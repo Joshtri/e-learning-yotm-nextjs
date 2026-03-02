@@ -207,15 +207,44 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
 
-    // Cek existensi student
+    // Cek existensi student beserta jumlah data terkait
     const student = await prisma.student.findUnique({
       where: { id },
+      include: {
+        _count: {
+          select: {
+            submissions: true,
+            Attendance: true,
+            SkillScore: true,
+            BehaviorScore: true,
+            FinalScore: true,
+          },
+        },
+      },
     });
 
     if (!student) {
       return new Response(
         JSON.stringify({ success: false, message: "Siswa tidak ditemukan" }),
         { status: 404 }
+      );
+    }
+
+    // Hindari penghapusan jika siswa sudah memiliki data riwayat masuk/ujian/nilai
+    const hasRelatedData =
+      student._count.submissions > 0 ||
+      student._count.Attendance > 0 ||
+      student._count.SkillScore > 0 ||
+      student._count.BehaviorScore > 0 ||
+      student._count.FinalScore > 0;
+
+    if (hasRelatedData) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Gagal menghapus: Siswa memiliki data terkait (Nilai, Absensi, dll).",
+        }),
+        { status: 400 }
       );
     }
 
