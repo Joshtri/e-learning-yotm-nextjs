@@ -138,16 +138,16 @@ export const navByRole = {
     {
       title: "Penilaian",
       items: [
-        {
-          title: "Naik Kelas",
-          href: "/admin/promote-students",
-          icon: <GraduationCap className="h-4 w-4" />,
-        },
-        {
-          title: "Rekapitulasi Nilai Siswa",
-          href: "/admin/students-scores-recap",
-          icon: <ChartBar className="h-4 w-4" />,
-        },
+        // {
+        //   title: "Naik Kelas",
+        //   href: "/admin/promote-students",
+        //   icon: <GraduationCap className="h-4 w-4" />,
+        // },
+        // {
+        //   title: "Rekapitulasi Nilai Siswa",
+        //   href: "/admin/students-scores-recap",
+        //   icon: <ChartBar className="h-4 w-4" />,
+        // },
         {
           title: "Riwayat Rapor Siswa",
           href: "/admin/student-grade-history",
@@ -446,7 +446,6 @@ export const navByRole = {
           href: "/homeroom/roster",
           icon: <Calendar className="h-4 w-4" />,
         },
-
       ],
     },
     {
