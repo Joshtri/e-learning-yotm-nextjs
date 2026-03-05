@@ -120,30 +120,12 @@ export async function POST(req, { params }) {
       orderBy: { createdAt: "desc" }
     });
 
-    const assignmentData = await prisma.assignment.findUnique({
-      where: { id: assignmentId },
-      select: { nilaiMaksimal: true } // This acts as KKM
-    });
-    const kkm = assignmentData?.nilaiMaksimal || 75;
-
-    // Logic Remedial
+    // Ujian (Exams) are strictly 1-attempt only, regardless of score.
     if (submissions.length > 0) {
-      const latestSubmission = submissions[0];
-
-      if (latestSubmission.nilai >= kkm) {
-        return new Response(
-          JSON.stringify({ message: "Anda sudah lulus KKM pada ujian ini." }),
-          { status: 400 }
-        );
-      }
-
-      // Max 3x attempts logic
-      if (submissions.length >= 3) {
-        return new Response(
-          JSON.stringify({ message: "Batas kesempatan remedial (3x) telah habis." }),
-          { status: 400 }
-        );
-      }
+      return new Response(
+        JSON.stringify({ message: "Anda sudah mengerjakan ujian ini dan tidak dapat mengulang." }),
+        { status: 400 }
+      );
     }
 
     const questions = await prisma.question.findMany({
@@ -170,21 +152,20 @@ export async function POST(req, { params }) {
       let nilai = 0;
 
       if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis)) {
-        // Find the option that student selected (by kode or teks)
-        const opsiDipilih = q.options.find(
-          (opt) =>
-            opt.kode === jawabanSiswa ||
-            opt.teks === jawabanSiswa ||
-            opt.teks?.trim().toLowerCase() === jawabanSiswa?.trim().toLowerCase()
+        // Find the correct option directly from schema setup
+        const opsiBenar = q.options.find(
+          (opt, i) => String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
         );
 
-        // Check if the selected option is the correct one
-        if (opsiDipilih) {
-          benar = opsiDipilih.adalahBenar === true;
+        if (opsiBenar) {
+          // Check if student's answer text matches true options exactly, or if it matched via `kode` (OPSI_A vs OPSI_0)
+          benar =
+            jawabanSiswa?.trim().toLowerCase() === opsiBenar.teks?.trim().toLowerCase() ||
+            jawabanSiswa?.trim().toLowerCase() === opsiBenar.kode?.trim().toLowerCase();
+
           nilai = benar ? q.poin : 0;
           totalNilai += nilai;
         } else {
-          // Student didn't select a valid option
           benar = false;
           nilai = 0;
         }
@@ -211,34 +192,13 @@ export async function POST(req, { params }) {
       },
     });
 
-    // Check if student passed KKM
-    const passedKKM = totalNilai >= kkm;
-    const attemptNumber = submissions.length + 1; // Current attempt
-    const remainingAttempts = 3 - attemptNumber;
-
-    let message = "";
-    let needsRemedial = false;
-
-    if (passedKKM) {
-      message = `Selamat! Anda lulus dengan nilai ${totalNilai}. KKM: ${kkm}`;
-    } else {
-      needsRemedial = true;
-      if (remainingAttempts > 0) {
-        message = `Nilai Anda ${totalNilai} belum mencapai KKM (${kkm}). Anda masih memiliki ${remainingAttempts} kesempatan remedial.`;
-      } else {
-        message = `Nilai Anda ${totalNilai} belum mencapai KKM (${kkm}). Kesempatan remedial Anda telah habis.`;
-      }
-    }
+    // No KKM checks or remedial opportunities, simple response.
+    const message = `Ujian berhasil disubmit. Anda mendapatkan nilai ${totalNilai}.`;
 
     return NextResponse.json({
       success: true,
       message,
       totalNilai,
-      kkm,
-      passedKKM,
-      needsRemedial,
-      attemptNumber,
-      remainingAttempts: Math.max(0, remainingAttempts),
     });
   } catch (error) {
     console.error("Gagal auto-grading ujian:", error);

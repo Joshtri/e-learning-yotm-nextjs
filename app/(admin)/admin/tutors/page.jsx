@@ -25,8 +25,17 @@ export default function TutorPage() {
     total: 0,
     pages: 0,
   });
+  const [selectedStatus, setSelectedStatus] = useState(null);
 
   const router = useRouter();
+
+  const TUTOR_STATUS_MAP = {
+    ACTIVE: { label: "Aktif", color: "bg-green-100 text-green-700" },
+    RESIGNED: { label: "Mengundurkan Diri", color: "bg-red-100 text-red-700" },
+    RETIRED: { label: "Pensiun", color: "bg-blue-100 text-blue-700" },
+    ON_LEAVE: { label: "Cuti Panjang", color: "bg-yellow-100 text-yellow-700" },
+    DECEASED: { label: "Meninggal Dunia", color: "bg-zinc-200 text-zinc-600" },
+  };
 
   const fetchTutors = async () => {
     try {
@@ -35,6 +44,7 @@ export default function TutorPage() {
       params.append("page", pagination.page.toString());
       params.append("limit", pagination.limit.toString());
       if (searchQuery) params.append("search", searchQuery);
+      if (selectedStatus) params.append("status", selectedStatus);
 
       const response = await api.get(`/tutors?${params.toString()}`);
       setTutors(response.data.data.tutors);
@@ -49,7 +59,7 @@ export default function TutorPage() {
 
   useEffect(() => {
     fetchTutors();
-  }, [pagination.page, pagination.limit, searchQuery]);
+  }, [pagination.page, pagination.limit, searchQuery, selectedStatus]);
 
   const filteredTutors = useMemo(() => {
     if (!searchQuery) return tutors;
@@ -108,15 +118,18 @@ export default function TutorPage() {
     },
     {
       header: "Status",
-      cell: (tutor) => (
-        <span className="text-sm font-medium">
-          {tutor.status === "ACTIVE"
-            ? "Aktif"
-            : tutor.status === "INACTIVE"
-              ? "Nonaktif"
-              : "Menunggu"}
-        </span>
-      ),
+      cell: (tutor) => {
+        const statusKey = tutor.status || "ACTIVE";
+        const { label, color } = TUTOR_STATUS_MAP[statusKey] ?? {
+          label: statusKey,
+          color: "bg-gray-100 text-gray-700",
+        };
+        return (
+          <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
+            {label}
+          </span>
+        );
+      },
     },
     {
       header: "Aksi",
@@ -179,7 +192,23 @@ export default function TutorPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
               searchPlaceholder="Cari nama atau email tutor..."
-              filterOptions={[]}
+              filterOptions={[
+                {
+                  label: "Status Tutor",
+                  options: [
+                    { label: "Semua Status", value: "ALL" },
+                    { label: "Aktif", value: "ACTIVE" },
+                    { label: "Mengundurkan Diri", value: "RESIGNED" },
+                    { label: "Pensiun", value: "RETIRED" },
+                    { label: "Cuti Panjang", value: "ON_LEAVE" },
+                    { label: "Meninggal Dunia", value: "DECEASED" },
+                  ],
+                  onSelect: (value) => {
+                    setSelectedStatus(value === "ALL" ? null : value);
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  },
+                },
+              ]}
             />
 
             <TabsContent value="all" className="space-y-4">

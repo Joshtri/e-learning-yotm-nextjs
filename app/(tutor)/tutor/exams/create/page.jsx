@@ -45,7 +45,6 @@ export default function ExamCreatePage() {
       tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
       jamSelesai: "",
       durasiMenit: 60,
-      nilaiMaksimal: 100,
       acakSoal: false,
       acakJawaban: false,
     },
@@ -330,7 +329,7 @@ export default function ExamCreatePage() {
                 required: "Durasi wajib diisi",
                 min: { value: 1, message: "Durasi minimal 1 menit" },
               })}
-              className="bg-gray-50"
+              className="bg-gray-50 bg-gray-100" // Light grey indicator that it's disabled.
             />
             {durasiText && (
               <p className="text-sm text-muted-foreground italic mt-1">
@@ -340,25 +339,6 @@ export default function ExamCreatePage() {
             {errors.durasiMenit && (
               <p className="text-sm text-red-500">
                 {errors.durasiMenit.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>KKM (Kriteria Ketuntasan Minimal)</Label>
-            <Input
-              type="number"
-              {...register("nilaiMaksimal", {
-                required: "KKM wajib diisi",
-                min: { value: 1, message: "Nilai minimal adalah 1" },
-              })}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Batas pengerjaan ulang (remedial) otomatis: 3 kali jika nilai di
-              bawah KKM.
-            </p>
-            {errors.nilaiMaksimal && (
-              <p className="text-sm text-red-500">
-                {errors.nilaiMaksimal.message}
               </p>
             )}
           </div>

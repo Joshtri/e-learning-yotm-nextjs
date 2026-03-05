@@ -155,6 +155,7 @@ export async function PATCH(req, { params }) {
       classSubjectTutorId,
       tanggalMulai,
       tanggalSelesai,
+      durasiMenit,
       nilaiMaksimal,
     } = body;
 
@@ -185,6 +186,7 @@ export async function PATCH(req, { params }) {
         classSubjectTutorId,
         TanggalMulai: tanggalMulai ? new Date(tanggalMulai) : undefined,
         TanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : undefined,
+        batasWaktuMenit: durasiMenit ? Number(durasiMenit) : undefined,
         nilaiMaksimal,
       },
       include: {

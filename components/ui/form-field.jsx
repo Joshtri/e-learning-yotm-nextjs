@@ -42,6 +42,7 @@ const FormField = forwardRef(
       className = "",
       min,
       max,
+      maxLength,
       step,
       rows = 3,
       control,
@@ -51,7 +52,7 @@ const FormField = forwardRef(
       text,
       ...rest
     },
-    ref
+    ref,
   ) => {
     const renderField = () => {
       // If no control is provided, use register
@@ -104,6 +105,7 @@ const FormField = forwardRef(
                 {...registered}
                 min={min}
                 max={max}
+                maxLength={maxLength}
                 step={step}
               />
             );
@@ -130,7 +132,7 @@ const FormField = forwardRef(
                         className={cn(
                           "w-full justify-start text-left rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition focus-visible:ring-2 focus-visible:ring-primary/50",
                           !field.value && "text-muted-foreground",
-                          className
+                          className,
                         )}
                         disabled={disabled}
                       >
@@ -162,14 +164,14 @@ const FormField = forwardRef(
                                 field.value &&
                                   new Date(field.value).getFullYear() === year
                                   ? "bg-primary text-white font-medium"
-                                  : "text-gray-700 hover:bg-gray-100"
+                                  : "text-gray-700 hover:bg-gray-100",
                               )}
                               onClick={() => {
                                 const currentDate = field.value
                                   ? new Date(field.value)
                                   : new Date();
                                 const newDate = new Date(
-                                  currentDate.setFullYear(year)
+                                  currentDate.setFullYear(year),
                                 );
                                 field.onChange(newDate.toISOString());
                               }}
@@ -187,7 +189,9 @@ const FormField = forwardRef(
                             field.onChange(date?.toISOString())
                           }
                           locale={id}
-                          month={field.value ? new Date(field.value) : undefined}
+                          month={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onMonthChange={(month) => {
                             if (field.value) {
                               const currentDate = new Date(field.value);
@@ -304,6 +308,7 @@ const FormField = forwardRef(
                     ref={ref}
                     min={min}
                     max={max}
+                    maxLength={maxLength}
                     step={step}
                   />
                 );
@@ -328,7 +333,7 @@ const FormField = forwardRef(
         {rest.children}
       </div>
     );
-  }
+  },
 );
 
 FormField.displayName = "FormField";

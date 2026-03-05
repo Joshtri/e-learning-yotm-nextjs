@@ -50,10 +50,6 @@ export async function GET(request) {
       include: {
         academicYear: true,
         program: true,
-        students: {
-          where: { status: "ACTIVE" },
-          orderBy: { namaLengkap: "asc" },
-        },
         homeroomTeacher: {
           include: {
             user: true,
@@ -106,10 +102,42 @@ export async function GET(request) {
       // Process each subject
       const subjectsData = [];
 
-      for (const [subId, group] of Object.entries(subjectGroups)) {
+      // ── MENGAMBIL DAFTAR SISWA SECARA HISTORIS ──
+      // 1. Coba ambil dari history kelas dulu
+      const classHistory = await prisma.studentClassHistory.findMany({
+        where: {
+          classId: kelas.id,
+          academicYearId: kelas.academicYearId, // Pakai academic year spesifik utk kelas/laporan ini
+        },
+        include: {
+          student: true,
+        },
+        orderBy: {
+          student: { namaLengkap: "asc" },
+        },
+      });
+
+      let classStudents = classHistory.map((h) => h.student);
+
+      // 2. Fallback: Jika tidak ada history (misal semester aktif saat ini berjalan, history belum digenerate)
+      if (classStudents.length === 0) {
+        classStudents = await prisma.student.findMany({
+          where: {
+            classId: kelas.id,
+            status: "ACTIVE", // Asumsi kalau baru berjalan, hanya cari yg aktif
+          },
+          orderBy: {
+            namaLengkap: "asc",
+          },
+        });
+      }
+
+      // ── HITUNG PRESENSI ──
+      for (const [, group] of Object.entries(subjectGroups)) {
         // Initialize student stats for this subject
         const studentStats = {};
-        kelas.students.forEach((student) => {
+
+        classStudents.forEach((student) => {
           studentStats[student.id] = {
             nama: student.namaLengkap,
             nisn: student.nisn,
@@ -225,7 +253,7 @@ function generatePDFAttendance(attendanceData) {
     }
 
     // Loop through subjects in this class
-    subjectsData.forEach((subjectData, sIdx) => {
+    subjectsData.forEach((subjectData) => {
       const { subjectName, studentStats } = subjectData;
 
       // Check space
@@ -285,7 +313,7 @@ function generatePDFAttendance(attendanceData) {
           7: { halign: "center", cellWidth: 15 },
         },
         margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
+        didDrawPage: () => {
           // Optional: header on new pages if split
         }
       });
@@ -380,8 +408,8 @@ function generateExcelAttendance(attendanceData) {
 
       // Sheet name: Class - Subject (truncated)
       // clean chars
-      const cleanClass = kelas.namaKelas.replace(/[:\\\/?*\[\]]/g, "");
-      const cleanSub = subjectName.replace(/[:\\\/?*\[\]]/g, "");
+      const cleanClass = kelas.namaKelas.replace(/[:\\/?*[\]]/g, "");
+      const cleanSub = subjectName.replace(/[:\\/?*[\]]/g, "");
       const sheetName = `${cleanClass}-${cleanSub}`.substring(0, 31);
 
       // Handle duplicate sheet names if needed? XLSX usually throws. 
@@ -389,7 +417,7 @@ function generateExcelAttendance(attendanceData) {
       // If sheet name exists, append number? simple try catch or check
       try {
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-      } catch (e) {
+      } catch {
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 28) + (Math.floor(Math.random() * 99)));
       }
     });

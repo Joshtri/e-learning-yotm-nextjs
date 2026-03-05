@@ -12,7 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
-import { ArrowUp, ChevronDown, GraduationCap, Loader2, Menu } from "lucide-react";
+import {
+  ArrowUp,
+  ChevronDown,
+  GraduationCap,
+  Loader2,
+  Menu,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,7 +39,11 @@ export default function AppHeader({ onMenuClick, role }) {
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
 
   // Class context — safe defaults jika dipakai di luar HomeroomClassProvider
-  const { classes: homeroomClasses, selectedClass, selectClass } = useHomeroomClass();
+  const {
+    classes: homeroomClasses,
+    selectedClass,
+    selectClass,
+  } = useHomeroomClass();
 
   // Show scroll button after scrolling 200px
   const scrolled = useScrollTop(200);
@@ -68,6 +78,7 @@ export default function AppHeader({ onMenuClick, role }) {
       try {
         if (mode === "default") {
           localStorage.setItem("mode", "homeroom");
+          localStorage.removeItem("selectedHomeroomClassId"); // CLEAR: user gets prompted to choose class
           setMode("homeroom");
           toast.success("Berpindah ke Mode Wali Kelas");
           router.replace("/homeroom/dashboard");
@@ -138,19 +149,17 @@ export default function AppHeader({ onMenuClick, role }) {
           >
             <Menu className="h-6 w-6" />
           </Button>
-        {/* Center Title */}
-        <div className="flex-1 px-4 hidden md:flex justify-center items-center">
-          <h1 className="font-bold text-lg text-white tracking-wide">
-            E-Learning App
-          </h1>
-        </div>
+          {/* Center Title */}
+          <div className="flex-1 px-4 hidden md:flex justify-center items-center">
+            <h1 className="font-bold text-lg text-white tracking-wide">
+              E-Learning App
+            </h1>
+          </div>
           {/* Desktop Date/Time Widget */}
           <div className="hidden md:block">
             <HeaderDateTimeWidget />
           </div>
         </div>
-
-
 
         {/* Right */}
         <div className="flex items-center gap-2 md:gap-4 pr-1">
@@ -161,7 +170,10 @@ export default function AppHeader({ onMenuClick, role }) {
 
           {/* ── Class Selector (hanya di homeroom mode dengan >1 kelas) ── */}
           {mode === "homeroom" && homeroomClasses.length > 1 && (
-            <DropdownMenu open={isClassDropdownOpen} onOpenChange={setIsClassDropdownOpen}>
+            <DropdownMenu
+              open={isClassDropdownOpen}
+              onOpenChange={setIsClassDropdownOpen}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -191,7 +203,9 @@ export default function AppHeader({ onMenuClick, role }) {
                   >
                     <div className="flex flex-col gap-0.5 w-full">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{kelas.namaKelas}</span>
+                        <span className="font-medium text-sm">
+                          {kelas.namaKelas}
+                        </span>
                         {kelas.id === selectedClass?.id && (
                           <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-semibold">
                             Aktif

@@ -29,6 +29,7 @@ export default function StudentCreatePage() {
       tanggalLahir: "",
       alamat: "",
       classId: "",
+      status: "ACTIVE",
     },
   });
 
@@ -56,7 +57,34 @@ export default function StudentCreatePage() {
 
   const onError = (errors) => {
     console.log("Form Errors:", errors);
-    toast.error("Form belum lengkap!");
+
+    const fieldLabels = {
+      userId: "Akun Siswa",
+      namaLengkap: "Nama Lengkap",
+      nisn: "NISN",
+      jenisKelamin: "Jenis Kelamin",
+      noTelepon: "Nomor Telepon",
+      nis: "NIS",
+      tempatLahir: "Tempat Lahir",
+      tanggalLahir: "Tanggal Lahir",
+      alamat: "Alamat",
+      classId: "Kelas",
+      status: "Status Siswa",
+    };
+
+    const messages = Object.entries(errors)
+      .map(([field, error]) => {
+        const label = fieldLabels[field] || field;
+        const message = error?.message || "tidak valid";
+        return `• ${label}: ${message}`;
+      })
+      .join("\n");
+
+    toast.error(
+      messages
+        ? `Periksa kembali form:\n${messages}`
+        : "Form belum lengkap, periksa kembali isian Anda.",
+    );
   };
 
   const onSubmit = async (formData) => {
@@ -199,7 +227,7 @@ export default function StudentCreatePage() {
                       "NISN hanya boleh berisi angka",
                   },
                 }}
-                inputProps={{ maxLength: 10 }}
+                maxLength={10}
                 onChange={(e) => {
                   const rawValue = e.target.value.replace(/\D/g, "");
                   const trimmed = rawValue.slice(0, 10);
@@ -237,7 +265,7 @@ export default function StudentCreatePage() {
                   message: "Nomor telepon harus 10-15 digit angka",
                 },
               }}
-              inputProps={{ maxLength: 15 }}
+              maxLength={15}
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, "");
                 form.setValue("noTelepon", rawValue, { shouldValidate: true });
@@ -255,7 +283,7 @@ export default function StudentCreatePage() {
                   message: "NIS harus berupa angka (maksimal 20 digit)",
                 },
               }}
-              inputProps={{ maxLength: 20 }}
+              maxLength={20}
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, "");
                 form.setValue("nis", rawValue, { shouldValidate: true });
@@ -312,6 +340,24 @@ export default function StudentCreatePage() {
                   kelas.academicYear?.tahunSelesai
                 }`,
               }))}
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              label="Status Siswa"
+              type="select"
+              required
+              placeholder="Pilih status siswa"
+              rules={{ required: "Status siswa wajib dipilih" }}
+              options={[
+                { value: "ACTIVE", label: "Aktif" },
+                { value: "INACTIVE", label: "Tidak Aktif" },
+                { value: "GRADUATED", label: "Lulus" },
+                { value: "TRANSFERRED", label: "Pindah Sekolah" },
+                { value: "DROPPED_OUT", label: "Mengundurkan Diri" },
+                { value: "DECEASED", label: "Meninggal Dunia" },
+              ]}
             />
           </CardContent>
         </Card>

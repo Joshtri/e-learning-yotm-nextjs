@@ -105,7 +105,7 @@ export default function SubjectPage() {
       header: "Aksi",
       cell: (item) => (
         <div className="flex gap-2 justify-end">
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={() => {
@@ -115,7 +115,7 @@ export default function SubjectPage() {
             title="Salin ke Program Lain"
           >
             Copy
-          </Button>
+          </Button> */}
           <Button
             variant="outline"
             size="sm"

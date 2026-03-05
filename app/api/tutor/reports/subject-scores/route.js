@@ -114,6 +114,9 @@ export async function GET(request) {
                   classSubjectTutorId: classSubjectTutor.id,
                 },
               },
+              orderBy: {
+                nilai: "desc"
+              },
               include: {
                 assignment: {
                   select: {

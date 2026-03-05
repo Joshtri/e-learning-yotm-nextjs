@@ -179,11 +179,11 @@ export async function POST(req, { params }) {
             String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
         );
 
-        const teksJawabanBenar = opsiBenar?.teks || "";
-
-        benar =
-          jawabanSiswa?.trim().toLowerCase() ===
-          teksJawabanBenar.trim().toLowerCase();
+        if (opsiBenar) {
+          benar =
+            jawabanSiswa?.trim().toLowerCase() === opsiBenar.teks?.trim().toLowerCase() ||
+            jawabanSiswa?.trim().toLowerCase() === opsiBenar.kode?.trim().toLowerCase();
+        }
 
         nilai = benar ? q.poin : 0;
       }

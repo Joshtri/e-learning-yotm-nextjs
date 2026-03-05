@@ -36,7 +36,8 @@ export default function QuizStartPage() {
       try {
         const res = await api.get(`/student/quizzes/${id}`);
         setQuiz(res.data.data);
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         toast.error("Gagal memuat kuis");
       }
     };
@@ -127,7 +128,6 @@ export default function QuizStartPage() {
         totalNilai,
         kkm,
         passedKKM,
-        needsRemedial,
         attemptNumber,
         remainingAttempts,
       } = response.data;
@@ -138,24 +138,29 @@ export default function QuizStartPage() {
           description: `Nilai Anda: ${totalNilai} | KKM: ${kkm}`,
           duration: 5000,
         });
+        setTimeout(() => router.push("/siswa/quizzes"), 2000);
       } else {
         if (remainingAttempts > 0) {
           toast.warning(message, {
-            description: `Percobaan ke-${attemptNumber} | Sisa kesempatan: ${remainingAttempts}x`,
+            description: `Percobaan ke-${attemptNumber} | Sisa kesempatan: ${remainingAttempts}x. Anda dapat langsung mengulang.`,
             duration: 6000,
           });
+          // Reset states to allow immediate retry
+          setTimeout(() => {
+            setAnswers({});
+            setAnswerImages({});
+            setCurrentQuestionIndex(0);
+            setQuizStarted(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }, 3000);
         } else {
           toast.error(message, {
             description: `Percobaan ke-${attemptNumber} | Tidak ada kesempatan lagi`,
             duration: 6000,
           });
+          setTimeout(() => router.push("/siswa/quizzes"), 2000);
         }
       }
-
-      // Redirect after showing message
-      setTimeout(() => {
-        router.push("/siswa/quizzes");
-      }, 2000);
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Gagal mengirim jawaban";
@@ -188,12 +193,6 @@ export default function QuizStartPage() {
     if (!quiz) return 0;
     const answeredCount = Object.keys(answers).length;
     return (answeredCount / quiz.questions.length) * 100;
-  };
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
   // Loading state

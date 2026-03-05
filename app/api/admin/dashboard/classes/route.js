@@ -36,6 +36,7 @@ export async function GET() {
         id: cls.id,
         name: cls.namaKelas,
         program: cls.program.namaPaket,
+        academicYearId: cls.academicYearId,
         academicYear: `${cls.academicYear.tahunMulai}/${cls.academicYear.tahunSelesai}`,
         semester: cls.academicYear.semester,
         studentCount: cls.students.length,

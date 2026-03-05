@@ -29,21 +29,18 @@ export function HomeroomClassProvider({ children }) {
         setClasses(classList);
 
         const stored = localStorage.getItem("selectedHomeroomClassId");
-        const activeClass = classList.find((c) => c.academicYear?.isActive);
         const isValid = classList.some((c) => c.id === stored);
 
         if (isValid) {
           setSelectedClassId(stored);
-        } else if (activeClass) {
-          const autoId = activeClass.id;
-          setSelectedClassId(autoId);
-          localStorage.setItem("selectedHomeroomClassId", autoId);
-        } else if (classList.length > 0) {
-          // Fallback ke kelas pertama jika tidak ada yang aktif
+        } else if (classList.length === 1) {
+          // Hanya auto-select jika dia hanya wali kelas dari 1 kelas
           const autoId = classList[0].id;
           setSelectedClassId(autoId);
           localStorage.setItem("selectedHomeroomClassId", autoId);
         }
+        // Jika length > 1 dan tidak ada stored valid, biarkan null.
+        // Ini akan memicu `needsSelection` dan memunculkan modal.
       } catch (err) {
         console.error("[HomeroomClassContext] Failed to fetch classes:", err);
       } finally {

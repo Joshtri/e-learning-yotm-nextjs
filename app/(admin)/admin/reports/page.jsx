@@ -10,7 +10,23 @@ import {
   Calendar,
   FileText,
   BookOpenCheck,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +54,23 @@ export default function AdminReportsPage() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [currentAcademicYear, setCurrentAcademicYear] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [classComboboxOpen, setClassComboboxOpen] = useState(false);
+
+  // Compute filtered classes based on selected academic year
+  const filteredClasses = classes.filter(
+    (cls) =>
+      !selectedAcademicYear || cls.academicYearId === selectedAcademicYear,
+  );
+
+  useEffect(() => {
+    // If we changed academic year and selected class is no longer valid, reset it
+    if (
+      selectedClassId !== "all" &&
+      !filteredClasses.some((c) => c.id === selectedClassId)
+    ) {
+      setSelectedClassId("all");
+    }
+  }, [selectedAcademicYear, classes]);
 
   useEffect(() => {
     fetchData();
@@ -241,25 +274,78 @@ export default function AdminReportsPage() {
               </Select>
             </div>
 
-            {/* Class Selection */}
-            <div className="space-y-2">
+            {/* Class Selection Combobox */}
+            <div className="space-y-2 flex flex-col">
               <label className="text-sm font-medium">Kelas</label>
-              <Select
-                value={selectedClassId}
-                onValueChange={setSelectedClassId}
+              <Popover
+                open={classComboboxOpen}
+                onOpenChange={setClassComboboxOpen}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Semua Kelas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Kelas</SelectItem>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name} - {cls.academicYear} ({cls.semester})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={classComboboxOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {selectedClassId === "all"
+                      ? "Semua Kelas"
+                      : filteredClasses.find((c) => c.id === selectedClassId)
+                          ?.name || "Pilih kelas..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[--radix-popover-trigger-width] p-0"
+                  align="start"
+                >
+                  <Command>
+                    <CommandInput placeholder="Cari kelas..." className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>Tidak ada kelas ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setSelectedClassId("all");
+                            setClassComboboxOpen(false);
+                          }}
+                        >
+                          Semua Kelas
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              selectedClassId === "all"
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                        {filteredClasses.map((cls) => (
+                          <CommandItem
+                            key={cls.id}
+                            value={cls.name}
+                            onSelect={() => {
+                              setSelectedClassId(cls.id);
+                              setClassComboboxOpen(false);
+                            }}
+                          >
+                            {cls.name} - {cls.academicYear} ({cls.semester})
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedClassId === cls.id
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Format Selection */}

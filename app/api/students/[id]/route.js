@@ -94,6 +94,7 @@ export async function GET(request, { params }) {
             tanggalLahir: student.tanggalLahir,
             alamat: student.alamat,
             fotoUrl: student.fotoUrl,
+            status: student.status, // ⬅️ include status for edit form
             user: student.user,
             classId: student.classId, // ⬅️ ini penting!
 
@@ -167,6 +168,21 @@ export async function PATCH(req, { params }) {
     // classId: hanya update jika dikirim
     if (data.classId !== undefined) {
       updatePayload.classId = data.classId || null;
+    }
+
+    // status: validasi enum StudentStatus
+    const validStatuses = ["ACTIVE", "INACTIVE", "GRADUATED", "TRANSFERRED", "DROPPED_OUT", "DECEASED"];
+    if (data.status !== undefined) {
+      if (!validStatuses.includes(data.status)) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+          }),
+          { status: 400 }
+        );
+      }
+      updatePayload.status = data.status;
     }
 
     const updated = await prisma.student.update({

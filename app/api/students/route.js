@@ -190,6 +190,7 @@ export async function POST(request) {
       tanggalLahir,
       alamat,
       classId,
+      status,
     } = data;
 
     // Validasi awal
@@ -222,6 +223,17 @@ export async function POST(request) {
     }
 
     // Buat data siswa
+    const validStatuses = ["ACTIVE", "INACTIVE", "GRADUATED", "TRANSFERRED", "DROPPED_OUT", "DECEASED"];
+    if (status && !validStatuses.includes(status)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Status tidak valid: "${status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+        }),
+        { status: 400 }
+      );
+    }
+
     const newStudent = await prisma.student.create({
       data: {
         userId,
@@ -234,6 +246,7 @@ export async function POST(request) {
         tanggalLahir: new Date(tanggalLahir),
         alamat: alamat?.trim() || null,
         classId: classId || null,
+        ...(status && { status }),
       },
       include: {
         user: {

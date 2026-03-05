@@ -18,6 +18,9 @@ export async function GET(req, { params }) {
         quizId,
         studentId,
       },
+      orderBy: {
+        nilai: "desc"
+      }
     });
 
     if (!submission) {

@@ -26,6 +26,7 @@ export default function TutorCreatePage() {
       pendidikan: "",
       pengalaman: "",
       bio: "",
+      status: "ACTIVE",
     },
   });
 
@@ -46,9 +47,27 @@ export default function TutorCreatePage() {
     fetchUsers();
   }, []);
 
-  const onError = (err) => {
-    console.warn("Form invalid:", err);
-    toast.error("Form belum lengkap!");
+  const onError = (errors) => {
+    const fieldLabels = {
+      userId: "Akun Tutor",
+      namaLengkap: "Nama Lengkap",
+      telepon: "Telepon",
+      pendidikan: "Pendidikan",
+      pengalaman: "Pengalaman",
+      bio: "Bio",
+      status: "Status Tutor",
+    };
+    const messages = Object.entries(errors)
+      .map(([field, error]) => {
+        const label = fieldLabels[field] || field;
+        return `• ${label}: ${error?.message || "tidak valid"}`;
+      })
+      .join("\n");
+    toast.error(
+      messages
+        ? `Periksa kembali form:\n${messages}`
+        : "Form belum lengkap, periksa kembali isian Anda.",
+    );
   };
 
   const onSubmit = async (formData) => {
@@ -102,10 +121,12 @@ export default function TutorCreatePage() {
           { label: "Tutor", href: "/admin/tutors" },
           { label: "Tambah Tutor" },
         ]}
-        
       />
 
-      <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, onError)}
+        className="space-y-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>Informasi Tutor</CardTitle>
@@ -173,6 +194,23 @@ export default function TutorCreatePage() {
               label="Biografi / Tentang Tutor"
               placeholder="Tulis sedikit tentang tutor ini"
               type="textarea"
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              label="Status Tutor"
+              type="select"
+              required
+              placeholder="Pilih status tutor"
+              rules={{ required: "Status tutor wajib dipilih" }}
+              options={[
+                { value: "ACTIVE", label: "Aktif" },
+                { value: "RESIGNED", label: "Mengundurkan Diri" },
+                { value: "RETIRED", label: "Pensiun" },
+                { value: "ON_LEAVE", label: "Cuti Panjang" },
+                { value: "DECEASED", label: "Meninggal Dunia" },
+              ]}
             />
           </CardContent>
         </Card>

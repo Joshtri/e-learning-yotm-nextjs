@@ -7,46 +7,30 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search")?.toLowerCase();
+    const statusFilter = searchParams.get("status");
 
     const skip = (page - 1) * limit;
 
+    const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+
     // Build filter
-    const where = search
-      ? {
-          OR: [
-            {
-              namaLengkap: {
-                contains: search,
-                mode: "insensitive",
-              },
+    const where = {
+      ...(statusFilter && validStatuses.includes(statusFilter) && { status: statusFilter }),
+      ...(search && {
+        OR: [
+          { namaLengkap: { contains: search, mode: "insensitive" } },
+          { telepon: { contains: search, mode: "insensitive" } },
+          {
+            user: {
+              OR: [
+                { nama: { contains: search, mode: "insensitive" } },
+                { email: { contains: search, mode: "insensitive" } },
+              ],
             },
-            {
-              telepon: {
-                contains: search,
-                mode: "insensitive",
-              },
-            },
-            {
-              user: {
-                OR: [
-                  {
-                    nama: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    email: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        }
-      : {};
+          },
+        ],
+      }),
+    };
 
     const [tutors, total] = await Promise.all([
       prisma.tutor.findMany({
@@ -98,7 +82,15 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userId, namaLengkap, telepon, pendidikan, pengalaman, bio } = body;
+    const { userId, namaLengkap, telepon, pendidikan, pengalaman, bio, status } = body;
+
+    const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json(
+        { success: false, message: `Status tidak valid: "${status}". Pilih salah satu dari: ${validStatuses.join(", ")}.` },
+        { status: 400 }
+      );
+    }
 
     if (!userId || !namaLengkap) {
       return NextResponse.json(
@@ -127,6 +119,7 @@ export async function POST(request) {
         pendidikan: pendidikan?.trim() || null,
         pengalaman: pengalaman?.trim() || null,
         bio: bio?.trim() || null,
+        ...(status && { status }),
       },
       include: {
         user: {

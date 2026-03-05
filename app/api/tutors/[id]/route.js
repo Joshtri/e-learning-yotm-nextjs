@@ -76,6 +76,7 @@ export async function GET(request, context) {
       namaLengkap: tutor.namaLengkap,
       bio: tutor.bio,
       fotoUrl: tutor.fotoUrl,
+      status: tutor.status, // ⬅️ include status for edit form
       assignments,
       pendidikan: isSelfOrAdmin ? tutor.pendidikan : undefined,
       pengalaman: isSelfOrAdmin ? tutor.pengalaman : undefined,
@@ -99,6 +100,14 @@ export async function PUT(request, { params }) {
   const { id } = params;
   const data = await request.json();
 
+  const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+  if (data.status && !validStatuses.includes(data.status)) {
+    return NextResponse.json(
+      { success: false, message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.` },
+      { status: 400 }
+    );
+  }
+
   const updated = await prisma.tutor.update({
     where: { id },
     data: {
@@ -107,6 +116,7 @@ export async function PUT(request, { params }) {
       pendidikan: data.pendidikan,
       pengalaman: data.pengalaman,
       bio: data.bio,
+      ...(data.status && { status: data.status }),
     },
   });
 

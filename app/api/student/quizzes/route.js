@@ -95,6 +95,9 @@ export async function GET(req) {
             studentId,
             status: "SUBMITTED",
           },
+          orderBy: {
+            nilai: "desc"
+          },
           select: {
             id: true,
             nilai: true,
