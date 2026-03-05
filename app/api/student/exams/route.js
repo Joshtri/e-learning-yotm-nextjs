@@ -42,22 +42,21 @@ export async function GET(request) {
       jenis: {
         in: ["MIDTERM", "FINAL_EXAM"], // Only UTS and UAS
       },
+      classSubjectTutor: {
+        classId: student.classId, // ✅ Filter by student's class
+      },
     };
 
-    // Add class filter based on academicYearId
+    // Add academic year filter if provided
     if (academicYearId) {
-      whereClause.classSubjectTutor = {
-        class: {
-          academicYearId: academicYearId,
-        },
+      whereClause.classSubjectTutor.class = {
+        academicYearId: academicYearId,
       };
     } else {
       // Default: get active academic year
-      whereClause.classSubjectTutor = {
-        class: {
-          academicYear: {
-            isActive: true,
-          },
+      whereClause.classSubjectTutor.class = {
+        academicYear: {
+          isActive: true,
         },
       };
     }

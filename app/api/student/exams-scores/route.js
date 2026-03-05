@@ -46,23 +46,22 @@ export async function GET(request) {
         jenis: {
           in: ["DAILY_TEST", "START_SEMESTER_TEST", "MIDTERM", "FINAL_EXAM"],
         },
+        classSubjectTutor: {
+          classId: student.classId, // ✅ Filter by student's class
+        },
       },
     };
 
     // If academicYearId is provided, filter by it
     if (academicYearId) {
-      whereClause.assignment.classSubjectTutor = {
-        class: {
-          academicYearId: academicYearId,
-        },
+      whereClause.assignment.classSubjectTutor.class = {
+        academicYearId: academicYearId,
       };
     } else {
       // Default: get active academic year
-      whereClause.assignment.classSubjectTutor = {
-        class: {
-          academicYear: {
-            isActive: true,
-          },
+      whereClause.assignment.classSubjectTutor.class = {
+        academicYear: {
+          isActive: true,
         },
       };
     }
