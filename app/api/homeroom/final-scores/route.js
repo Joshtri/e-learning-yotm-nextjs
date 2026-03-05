@@ -28,12 +28,34 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
 
-    // Get the class - if academicYearId specified, use it. Otherwise get the most recent class with students
+    // Get the class - prioritize classId, then academicYearId, or get the most recent class with students
     let kelas;
 
-    if (academicYearId) {
+    if (classId) {
+      // Priority 1: Use classId if provided
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+        },
+        include: {
+          program: true,
+          academicYear: true,
+          students: {
+            where: { status: "ACTIVE" },
+            include: { user: true },
+          },
+          classSubjectTutors: {
+            include: { subject: true },
+            distinct: ["subjectId"],
+          },
+        },
+      });
+    } else if (academicYearId) {
+      // Priority 2: Use academicYearId if specified
       kelas = await prisma.class.findFirst({
         where: {
           homeroomTeacherId: tutor.id,
@@ -53,7 +75,7 @@ export async function GET(request) {
         },
       });
     } else {
-      // Get all classes for this homeroom teacher, prioritize most recent with students
+      // Priority 3: Get all classes for this homeroom teacher, prioritize most recent with students
       const allClasses = await prisma.class.findMany({
         where: { homeroomTeacherId: tutor.id },
         include: {

@@ -24,33 +24,60 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
 
-    let whereClause = {
-      homeroomTeacherId: tutor.id,
-    };
+    let kelas;
 
-    if (academicYearId) {
-      whereClause.academicYearId = academicYearId;
-    } else {
-      whereClause.students = {
-        some: {
-          status: "ACTIVE",
+    if (classId) {
+      // Priority 1: If classId is provided, find that specific class
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
         },
-      };
+        include: {
+          academicYear: true,
+          program: true,
+        },
+      });
+    } else if (academicYearId) {
+      // Priority 2: If academicYearId is provided, find class by academic year
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+        orderBy: [
+          { academicYear: { tahunMulai: "desc" } },
+          { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
+        ],
+      });
+    } else {
+      // Priority 3: Find class with active students
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          students: {
+            some: {
+              status: "ACTIVE",
+            },
+          },
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+        orderBy: [
+          { academicYear: { tahunMulai: "desc" } },
+          { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
+        ],
+      });
     }
-
-    const kelas = await prisma.class.findFirst({
-      where: whereClause,
-      include: {
-        academicYear: true,
-        program: true,
-      },
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "desc" } }, // GENAP first, then GANJIL
-      ],
-    });
 
     const homeroomClasses = await prisma.class.findMany({
       where: { homeroomTeacherId: tutor.id },

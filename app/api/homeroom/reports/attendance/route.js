@@ -21,15 +21,9 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
     const format = searchParams.get("format") || "pdf";
-
-    if (!academicYearId) {
-      return NextResponse.json(
-        { success: false, message: "Academic Year ID is required" },
-        { status: 400 }
-      );
-    }
 
     // Get tutor
     const tutor = await prisma.tutor.findUnique({
@@ -43,12 +37,16 @@ export async function GET(request) {
       );
     }
 
-    // Get homeroom class for the specified academic year
-    const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYearId: academicYearId
-      },
+    // Get homeroom class with priority: classId -> academicYearId -> latest
+    let kelas;
+    
+    if (classId) {
+      // Priority 1: Direct classId
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+        },
       include: {
         academicYear: true,
         program: true,
@@ -70,7 +68,7 @@ export async function GET(request) {
     const sessions = await prisma.attendanceSession.findMany({
       where: {
         classId: kelas.id,
-        academicYearId: academicYearId,
+        academicYearId: kelas.academicYearId,
       },
       include: {
         subject: true,

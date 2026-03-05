@@ -78,7 +78,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { nama, email, password, role } = body;
+    const { nama, email, password, role, status } = body;
 
     if (!nama || !email || !password || !role) {
       return NextResponse.json(
@@ -103,7 +103,7 @@ export async function POST(request) {
         email,
         password: hashedPassword,
         role,
-        status: "ACTIVE",
+        status: status || "ACTIVE",
       },
       select: {
         id: true,

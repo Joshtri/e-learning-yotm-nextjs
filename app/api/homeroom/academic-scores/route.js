@@ -24,6 +24,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
 
     // First, get ALL classes where this tutor is homeroom teacher (for filter options)
@@ -51,8 +52,17 @@ export async function GET(request) {
 
     // Determine which class to use for data display
     let kelas;
-    if (academicYearId) {
-      // Find class for specific academic year
+    if (classId) {
+      // Priority 1: Use classId if provided
+      kelas = allHomeroomClasses.find((c) => c.id === classId);
+      if (!kelas) {
+        return NextResponse.json(
+          { success: false, message: "Kelas tidak ditemukan untuk classId yang dipilih" },
+          { status: 404 }
+        );
+      }
+    } else if (academicYearId) {
+      // Priority 2: Find class for specific academic year
       kelas = allHomeroomClasses.find((c) => c.academicYearId === academicYearId);
       if (!kelas) {
         return NextResponse.json(
@@ -61,7 +71,7 @@ export async function GET(request) {
         );
       }
     } else {
-      // Find the class with active academic year, or default to first class
+      // Priority 3: Find the class with active academic year, or default to first class
       kelas = allHomeroomClasses.find((c) => c.academicYear.isActive) || allHomeroomClasses[0];
     }
 

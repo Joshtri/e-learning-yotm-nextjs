@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 const getStatusVariant = (status) => {
   switch (status) {
@@ -38,6 +39,7 @@ const getStatusVariant = (status) => {
 };
 
 export default function AboutClassPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [classData, setClassData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filterOptions, setFilterOptions] = useState({ academicYears: [] });
@@ -46,7 +48,16 @@ export default function AboutClassPage() {
   const fetchClassData = useCallback(async (academicYearId) => {
     setIsLoading(true);
     try {
-      const params = academicYearId ? { academicYearId } : {};
+      const params = {};
+      
+      // Priority 1: Use selectedClassId from context if available
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      } else if (academicYearId) {
+        // Priority 2: Use academicYearId from filter
+        params.academicYearId = academicYearId;
+      }
+      
       const res = await api.get("/homeroom/about-class", { params });
       setClassData(res.data.data);
       if (res.data.filterOptions) {
@@ -66,7 +77,7 @@ export default function AboutClassPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedClassId]);
 
   useEffect(() => {
     fetchClassData();

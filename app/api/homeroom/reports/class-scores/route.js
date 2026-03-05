@@ -25,15 +25,9 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
     const format = searchParams.get("format") || "pdf";
-
-    if (!academicYearId) {
-      return NextResponse.json(
-        { success: false, message: "Academic year is required" },
-        { status: 400 }
-      );
-    }
 
     // Get tutor
     const tutor = await prisma.tutor.findUnique({
@@ -47,6 +41,65 @@ export async function GET(request) {
       );
     }
 
+    // Get homeroom class with priority: classId -> academicYearId -> latest
+    let kelas;
+    let actualAcademicYearId;
+    
+    if (classId) {
+      // Priority 1: Direct classId
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+      });
+      actualAcademicYearId = kelas?.academicYearId;
+    } else if (academicYearId) {
+      // Priority 2: By academic year
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+      });
+      actualAcademicYearId = academicYearId;
+    } else {
+      // Priority 3: Latest class with students
+      const activeAcademicYear = await prisma.academicYear.findFirst({
+        where: { isActive: true },
+      });
+
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          ...(activeAcademicYear && { academicYearId: activeAcademicYear.id }),
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+        orderBy: {
+          academicYear: { tahunMulai: "desc" },
+        },
+      });
+      actualAcademicYearId = kelas?.academicYearId;
+    }
+
+    if (!kelas) {
+      return NextResponse.json(
+        { success: false, message: "Class not found" },
+        { status: 404 }
+      );
+    }
+
     // ✅ FETCH STUDENTS ROBUSTLY
     // Common include for fetching submissions
     const submissionsInclude = {
@@ -55,14 +108,14 @@ export async function GET(request) {
           {
             assignment: {
               classSubjectTutor: {
-                class: { academicYearId: academicYearId },
+                class: { academicYearId: actualAcademicYearId },
               },
             },
           },
           {
             quiz: {
               classSubjectTutor: {
-                class: { academicYearId: academicYearId },
+                class: { academicYearId: actualAcademicYearId },
               },
             },
           },
@@ -82,18 +135,6 @@ export async function GET(request) {
       },
     };
 
-    // Get homeroom class with optimized query
-    const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYearId: academicYearId,
-      },
-      include: {
-        academicYear: true,
-        program: true,
-      },
-    });
-
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Class not found for this academic year" },
@@ -105,17 +146,17 @@ export async function GET(request) {
     const classHistory = await prisma.studentClassHistory.findMany({
       where: {
         classId: kelas.id,
-        academicYearId: academicYearId,
+        academicYearId: actualAcademicYearId,
       },
       include: {
         student: {
           include: {
             FinalScore: {
-              where: { tahunAjaranId: academicYearId },
+              where: { tahunAjaranId: actualAcademicYearId },
               include: { subject: true },
             },
             BehaviorScore: {
-              where: { academicYearId: academicYearId },
+              where: { academicYearId: actualAcademicYearId },
             },
             submissions: submissionsInclude,
           },

@@ -8,7 +8,7 @@ import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 //set timeout to 10 seconds. 
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(req) {
   try {
     const user = await getUserFromCookie();
 
@@ -31,17 +31,38 @@ export async function GET() {
       );
     }
 
+    // Get classId from query parameters
+    const { searchParams } = new URL(req.url);
+    const classId = searchParams.get("classId");
+
     // Cari kelas di mana tutor jadi wali
-    const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYear: { isActive: true }, // ✅ hanya tahun ajaran aktif
-      },
-      include: {
-        academicYear: true,
-        program: true,
-      },
-    });
+    let kelas;
+    
+    if (classId) {
+      // Priority 1: Use classId if provided
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+      });
+    } else {
+      // Priority 2: Find class with active academic year
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYear: { isActive: true }, // ✅ hanya tahun ajaran aktif
+        },
+        include: {
+          academicYear: true,
+          program: true,
+        },
+      });
+    }
 
     if (!kelas) {
       return new Response(

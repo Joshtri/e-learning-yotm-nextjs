@@ -11,7 +11,7 @@ export async function POST(req) {
       );
     }
 
-    const { academicYearId, startDate, classSubjectTutorId, sessionCount } = await req.json();
+    const { academicYearId, startDate, classSubjectTutorId, sessionCount, classId } = await req.json(); // 🟢 Add classId
 
     if (!academicYearId || !startDate) {
       return new Response(
@@ -54,16 +54,32 @@ export async function POST(req) {
       );
     }
 
-    // Find the class where this tutor is homeroom teacher
-    const kelas = await prisma.class.findFirst({
-      where: {
-        homeroomTeacherId: tutor.id,
-        academicYearId: academicYearId,
-      },
-      include: {
-        academicYear: true,
-      },
-    });
+    // Find the class - prioritize classId if provided
+    let kelas;
+    
+    if (classId) {
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+          ...(academicYearId && { academicYearId }),
+        },
+        include: {
+          academicYear: true,
+        },
+      });
+    } else {
+      // Fallback
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          academicYear: true,
+        },
+      });
+    }
 
     if (!kelas) {
       return new Response(

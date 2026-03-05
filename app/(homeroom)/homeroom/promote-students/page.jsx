@@ -33,8 +33,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 export default function PromoteStudentsPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [students, setStudents] = useState([]);
   const [academicYear, setAcademicYear] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,13 +56,19 @@ export default function PromoteStudentsPage() {
   useEffect(() => {
     fetchStudents();
     fetchAvailableAcademicYears();
-  }, []);
+  }, [selectedClassId]);
 
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
       setAccessDenied(false);
-      const res = await api.get("/homeroom/my-students-for-promotion");
+      
+      const params = {};
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      }
+      
+      const res = await api.get("/homeroom/my-students-for-promotion", { params });
       const { students, academicYear, className, program } =
         res.data.data || {};
       setStudents(students || []);

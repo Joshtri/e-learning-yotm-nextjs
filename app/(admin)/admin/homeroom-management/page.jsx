@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { User, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
@@ -212,7 +213,51 @@ export default function HomeroomManagementPage() {
         ]}
       />
 
-      {sortedAcademicYears.length > 0 ? (
+      {isLoading ? (
+        // Skeleton Loading dengan layout yang sama dengan Accordion
+        <div className="space-y-4">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="rounded-lg border bg-card text-card-foreground shadow-sm"
+            >
+              {/* Skeleton Accordion Trigger */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <Skeleton className="h-6 w-[300px]" />
+                <Skeleton className="h-4 w-4" />
+              </div>
+
+              {/* Skeleton Table Content */}
+              <div className="p-4 space-y-3">
+                {/* Table Header */}
+                <div className="grid grid-cols-6 gap-4 pb-3 border-b">
+                  <Skeleton className="h-4 w-[40px]" />
+                  <Skeleton className="h-4 w-[120px]" />
+                  <Skeleton className="h-4 w-[100px]" />
+                  <Skeleton className="h-4 w-[150px]" />
+                  <Skeleton className="h-4 w-[120px]" />
+                  <Skeleton className="h-4 w-[100px]" />
+                </div>
+
+                {/* Table Rows */}
+                {[1, 2, 3].map((row) => (
+                  <div key={row} className="grid grid-cols-6 gap-4 py-2">
+                    <Skeleton className="h-4 w-[20px]" />
+                    <Skeleton className="h-4 w-[100px]" />
+                    <Skeleton className="h-4 w-[80px]" />
+                    <Skeleton className="h-4 w-[140px]" />
+                    <Skeleton className="h-4 w-[110px]" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-[120px]" />
+                      <Skeleton className="h-8 w-[60px]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : sortedAcademicYears.length > 0 ? (
         <Accordion type="multiple" className="space-y-4">
           {sortedAcademicYears.map((tahun) => (
             <AccordionItem key={tahun} value={tahun}>
@@ -223,7 +268,7 @@ export default function HomeroomManagementPage() {
                 <DataTable
                   data={groupedByAcademicYear[tahun]}
                   columns={columns}
-                  isLoading={isLoading}
+                  isLoading={false}
                   loadingMessage={`Memuat kelas untuk tahun ajaran ${tahun}...`}
                   emptyMessage="Tidak ada kelas di tahun ini."
                   keyExtractor={(item) => item.id}

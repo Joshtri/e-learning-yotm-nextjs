@@ -29,6 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/axios";
 import { useEffect, useState } from "react";
+import { useHomeroomClass } from "@/context/HomeroomClassContext"; // 🟢 Import context
 
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -77,6 +78,8 @@ const STATUS_LABELS = {
 };
 
 export default function HomeroomAttendancePage() {
+  const { selectedClassId } = useHomeroomClass(); // 🟢 Use context for selected class
+  
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState([]);
@@ -125,7 +128,7 @@ export default function HomeroomAttendancePage() {
     if (selectedAcademicYearId) {
       fetchSessions();
     }
-  }, [selectedAcademicYearId]);
+  }, [selectedAcademicYearId, selectedClassId]); // 🟢 Re-fetch when class changes
 
   useEffect(() => {
     if (isGenerateOpen && selectedAcademicYearId) {
@@ -154,9 +157,17 @@ export default function HomeroomAttendancePage() {
   const fetchSessions = async () => {
     try {
       setIsLoading(true);
-      const res = await api.get(
-        `/homeroom/attendance?academicYearId=${selectedAcademicYearId}`,
-      );
+      
+      // 🟢 Build URL with classId from context
+      const params = new URLSearchParams();
+      if (selectedAcademicYearId) {
+        params.append('academicYearId', selectedAcademicYearId);
+      }
+      if (selectedClassId) {
+        params.append('classId', selectedClassId); // Pass selected class from context
+      }
+      
+      const res = await api.get(`/homeroom/attendance?${params.toString()}`);
       if (res.data.success) {
         setSessions(res.data.data.sessions || []);
         setClassName(res.data.data.className);
@@ -175,9 +186,17 @@ export default function HomeroomAttendancePage() {
 
     try {
       setIsLoadingSubjects(true);
-      const res = await api.get(
-        `/homeroom/subjects?academicYearId=${selectedAcademicYearId}`,
-      );
+      
+      // 🟢 Build URL with classId
+      const params = new URLSearchParams();
+      if (selectedAcademicYearId) {
+        params.append('academicYearId', selectedAcademicYearId);
+      }
+      if (selectedClassId) {
+        params.append('classId', selectedClassId);
+      }
+      
+      const res = await api.get(`/homeroom/subjects?${params.toString()}`);
       if (res.data.success) {
         setSubjects(res.data.data);
         setLastFetchedYearId(selectedAcademicYearId);
@@ -204,6 +223,7 @@ export default function HomeroomAttendancePage() {
       setIsGenerating(true);
       const res = await api.post("/homeroom/attendance/generate", {
         academicYearId: selectedAcademicYearId,
+        classId: selectedClassId, // 🟢 Pass selected class
         startDate: generateStartDate
           ? dayjs(generateStartDate).format("YYYY-MM-DD")
           : "",
@@ -319,9 +339,17 @@ export default function HomeroomAttendancePage() {
     if (!deleteSubjectId) return;
     try {
       setIsDeleting(true);
-      await api.delete(
-        `/homeroom/attendance?subjectId=${deleteSubjectId}&academicYearId=${selectedAcademicYearId}`,
-      );
+      
+      // 🟢 Build URL with classId
+      const params = new URLSearchParams({
+        subjectId: deleteSubjectId,
+        academicYearId: selectedAcademicYearId,
+      });
+      if (selectedClassId) {
+        params.append('classId', selectedClassId);
+      }
+      
+      await api.delete(`/homeroom/attendance?${params.toString()}`);
       toast.success("Semua sesi untuk mata pelajaran ini berhasil dihapus.");
       fetchSessions();
     } catch (error) {

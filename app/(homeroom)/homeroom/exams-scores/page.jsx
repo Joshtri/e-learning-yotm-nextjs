@@ -22,9 +22,11 @@ import api from "@/lib/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 // import AcademicYearFilter from "@/components/AcademicYearFilter";
 
 export default function HomeroomExamsScoresPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [data, setData] = useState([]);
   const [classInfo, setClassInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,16 @@ export default function HomeroomExamsScoresPage() {
   const fetchData = useCallback(async (academicYearId) => {
     try {
       setIsLoading(true);
-      const params = academicYearId ? { academicYearId } : {};
+      const params = {};
+      
+      // Priority 1: Use selectedClassId from context if available
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      } else if (academicYearId) {
+        // Priority 2: Use academicYearId from filter
+        params.academicYearId = academicYearId;
+      }
+      
       const res = await api.get("/homeroom/exams-scores", { params });
 
       setData(res.data.data || []);
@@ -63,7 +74,7 @@ export default function HomeroomExamsScoresPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedClassId]);
 
   useEffect(() => {
     fetchData();

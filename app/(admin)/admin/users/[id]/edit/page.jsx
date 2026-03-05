@@ -95,7 +95,7 @@ export default function EditUserPage() {
       });
 
       toast.success("Pengguna berhasil diperbarui");
-      router.push(`/admin/users/${id}`);
+      router.push(`/admin/users`);
     } catch (error) {
       console.error("Failed to update user:", error);
       toast.error(error.response?.data?.error || "Gagal memperbarui pengguna");

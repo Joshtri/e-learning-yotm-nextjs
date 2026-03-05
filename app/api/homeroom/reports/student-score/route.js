@@ -24,12 +24,31 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get("studentId");
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
     const format = searchParams.get("format") || "pdf";
 
-    if (!studentId || !academicYearId) {
+    if (!studentId) {
       return NextResponse.json(
-        { success: false, message: "Student ID and Academic year are required" },
+        { success: false, message: "Student ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Determine actual academic year ID from classId or academicYearId
+    let actualAcademicYearId = academicYearId;
+    
+    if (classId && !academicYearId) {
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        select: { academicYearId: true },
+      });
+      actualAcademicYearId = classData?.academicYearId;
+    }
+
+    if (!actualAcademicYearId) {
+      return NextResponse.json(
+        { success: false, message: "Academic year is required" },
         { status: 400 }
       );
     }
@@ -55,16 +74,16 @@ export async function GET(request) {
         },
         // Get existing final scores
         FinalScore: {
-          where: { tahunAjaranId: academicYearId },
+          where: { tahunAjaranId: actualAcademicYearId },
           include: { subject: true },
         },
         // Get behavior scores
         BehaviorScore: {
-          where: { academicYearId: academicYearId },
+          where: { academicYearId: actualAcademicYearId },
         },
         // Get attendance
         Attendance: {
-          where: { academicYearId: academicYearId },
+          where: { academicYearId: actualAcademicYearId },
         },
         // Get submissions for fallback calculation
         submissions: {
@@ -73,14 +92,14 @@ export async function GET(request) {
               {
                 assignment: {
                   classSubjectTutor: {
-                    class: { academicYearId: academicYearId },
+                    class: { academicYearId: actualAcademicYearId },
                   },
                 },
               },
               {
                 quiz: {
                   classSubjectTutor: {
-                    class: { academicYearId: academicYearId },
+                    class: { academicYearId: actualAcademicYearId },
                   },
                 },
               },
@@ -111,7 +130,7 @@ export async function GET(request) {
 
     // Get academic year
     const academicYear = await prisma.academicYear.findUnique({
-      where: { id: academicYearId },
+      where: { id: actualAcademicYearId },
     });
 
     // Calculate attendance summary

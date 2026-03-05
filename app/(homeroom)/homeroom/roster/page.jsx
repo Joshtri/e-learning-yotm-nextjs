@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 dayjs.locale("id");
 
@@ -40,6 +41,7 @@ const DAYS = [
 ];
 
 export default function HomeroomRosterPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [classInfo, setClassInfo] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,40 +58,29 @@ export default function HomeroomRosterPage() {
   });
 
   useEffect(() => {
-    fetchHomeroomInfo();
-    fetchSubjects();
-  }, []);
-
-  useEffect(() => {
-    if (classInfo?.id) {
-      fetchSchedules(classInfo.id);
+    if (selectedClassId) {
+      fetchSubjects(selectedClassId);
+      fetchSchedules(selectedClassId);
     }
-  }, [classInfo]);
+  }, [selectedClassId]);
 
-  const fetchHomeroomInfo = async () => {
+  const fetchSubjects = async (classId) => {
     try {
-      const res = await api.get("/homeroom/dashboard");
-      if (res.data.success && res.data.data.classInfo) {
-        setClassInfo(res.data.data.classInfo);
-      } else {
-        setError("Data kelas tidak ditemukan.");
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Gagal memuat informasi kelas.");
-      setIsLoading(false);
-    }
-  };
-
-  const fetchSubjects = async () => {
-    try {
-      const res = await api.get("/homeroom/subjects");
+      setIsLoading(true);
+      const res = await api.get("/homeroom/subjects", {
+        params: { classId },
+      });
       if (res.data.success) {
         setSubjects(res.data.data);
+        if (res.data.classInfo) {
+          setClassInfo(res.data.classInfo);
+        }
       }
     } catch (err) {
       console.error("Gagal memuat mapel:", err);
+      setError("Gagal memuat mata pelajaran.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,14 +102,14 @@ export default function HomeroomRosterPage() {
   const handleAddSchedule = async () => {
     if (!formData.classSubjectTutorId)
       return toast.error("Pilih Mata Pelajaran");
-    if (!classInfo?.id) return;
+    if (!selectedClassId) return;
 
     try {
       setIsSaving(true);
-      await api.post(`/classes/${classInfo.id}/schedules`, formData);
+      await api.post(`/classes/${selectedClassId}/schedules`, formData);
       toast.success("Jadwal berhasil ditambahkan");
       setIsAddOpen(false);
-      fetchSchedules(classInfo.id);
+      fetchSchedules(selectedClassId);
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Gagal menambah jadwal");
@@ -132,7 +123,7 @@ export default function HomeroomRosterPage() {
     try {
       await api.delete(`/schedules/${scheduleId}`);
       toast.success("Jadwal dihapus");
-      if (classInfo?.id) fetchSchedules(classInfo.id);
+      if (selectedClassId) fetchSchedules(selectedClassId);
     } catch (error) {
       console.error(error);
       toast.error("Gagal menghapus jadwal");

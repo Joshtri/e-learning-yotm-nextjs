@@ -29,8 +29,10 @@ import {
   GraduationCap,
   Loader2,
 } from "lucide-react";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 export default function HomeroomReportsPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [students, setStudents] = useState([]);
@@ -62,7 +64,12 @@ export default function HomeroomReportsPage() {
   useEffect(() => {
     const fetchMyClass = async () => {
       try {
-        const res = await api.get("/homeroom/about-class");
+        const params = {};
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        }
+        
+        const res = await api.get("/homeroom/about-class", { params });
         if (res.data.success && res.data.data) {
           setMyClass(res.data.data);
         }
@@ -72,40 +79,51 @@ export default function HomeroomReportsPage() {
     };
 
     fetchMyClass();
-  }, []);
+  }, [selectedClassId]);
 
   // Fetch students when academic year selected
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await api.get("/homeroom/my-students", {
-          params: { academicYearId: selectedAcademicYear },
-        });
+        const params = {};
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (selectedAcademicYear) {
+          params.academicYearId = selectedAcademicYear;
+        }
+        
+        const res = await api.get("/homeroom/my-students", { params });
         setStudents(res.data.data || []);
       } catch {
         toast.error("Gagal memuat data siswa");
       }
     };
 
-    if (selectedAcademicYear) {
+    if (selectedClassId || selectedAcademicYear) {
       fetchStudents();
     }
-  }, [selectedAcademicYear]);
+  }, [selectedAcademicYear, selectedClassId]);
 
   // Download handlers
   const downloadAttendanceReport = async (format) => {
-    if (!selectedAcademicYear) {
+    if (!selectedAcademicYear && !selectedClassId) {
       toast.error("Pilih tahun ajaran terlebih dahulu");
       return;
     }
 
     setLoading(true);
     try {
+      const params = { format };
+      
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      }
+      if (selectedAcademicYear) {
+        params.academicYearId = selectedAcademicYear;
+      }
+      
       const res = await api.get("/homeroom/reports/attendance", {
-        params: {
-          academicYearId: selectedAcademicYear,
-          format,
-        },
+        params,
         responseType: "blob",
       });
 
@@ -133,18 +151,24 @@ export default function HomeroomReportsPage() {
   };
 
   const downloadClassScoresReport = async (format) => {
-    if (!selectedAcademicYear) {
+    if (!selectedAcademicYear && !selectedClassId) {
       toast.error("Pilih tahun ajaran terlebih dahulu");
       return;
     }
 
     setLoading(true);
     try {
+      const params = { format };
+      
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      }
+      if (selectedAcademicYear) {
+        params.academicYearId = selectedAcademicYear;
+      }
+      
       const res = await api.get("/homeroom/reports/class-scores", {
-        params: {
-          academicYearId: selectedAcademicYear,
-          format,
-        },
+        params,
         responseType: "blob",
       });
 
@@ -177,19 +201,27 @@ export default function HomeroomReportsPage() {
       return;
     }
 
-    if (!selectedAcademicYear) {
+    if (!selectedAcademicYear && !selectedClassId) {
       toast.error("Pilih tahun ajaran terlebih dahulu");
       return;
     }
 
     setLoading(true);
     try {
+      const params = {
+        studentId: selectedStudent,
+        format,
+      };
+      
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      }
+      if (selectedAcademicYear) {
+        params.academicYearId = selectedAcademicYear;
+      }
+      
       const res = await api.get("/homeroom/reports/student-score", {
-        params: {
-          studentId: selectedStudent,
-          academicYearId: selectedAcademicYear,
-          format,
-        },
+        params,
         responseType: "blob",
       });
 

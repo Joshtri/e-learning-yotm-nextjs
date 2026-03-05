@@ -25,6 +25,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const classId = searchParams.get("classId");
     const academicYearId = searchParams.get("academicYearId");
 
     // Get all academic years for the filter
@@ -47,8 +48,34 @@ export async function GET(request) {
 
     let kelas;
 
-    if (academicYearId) {
-      // Jika ada parameter academicYearId, cari kelas berdasarkan tahun akademik tersebut
+    if (classId) {
+      // Priority 1: If classId is provided, find that specific class
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+        },
+        include: {
+          program: true,
+          academicYear: true,
+          homeroomTeacher: {
+            include: { user: true },
+          },
+          students: {
+            where: { status: 'ACTIVE' },
+            include: {
+              user: true,
+            },
+          },
+          classSubjectTutors: {
+            include: {
+              subject: true,
+            },
+          },
+        },
+      });
+    } else if (academicYearId) {
+      // Priority 2: If academicYearId is provided, find class by academic year
       kelas = await prisma.class.findFirst({
         where: {
           homeroomTeacherId: tutor.id,
@@ -74,7 +101,7 @@ export async function GET(request) {
         },
       });
     } else {
-      // Jika tidak ada parameter, cari kelas terbaru yang punya siswa aktif
+      // Priority 3: Find the latest class with active students
       const allClasses = await prisma.class.findMany({
         where: {
           homeroomTeacherId: tutor.id,
@@ -103,7 +130,7 @@ export async function GET(request) {
         ],
       });
 
-      // Pilih kelas yang punya siswa aktif, jika tidak ada ambil yang terbaru
+      // Choose class with active students, if none, take the latest
       kelas = allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
     }
 

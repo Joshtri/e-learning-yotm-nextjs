@@ -17,6 +17,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 const ClassInfoSkeleton = () => (
   <Card>
@@ -62,6 +63,7 @@ const ClassInfoSkeleton = () => (
 );
 
 export default function HomeroomAcademicScoresPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [data, setData] = useState({
     students: [],
     quizzes: [],
@@ -79,7 +81,16 @@ export default function HomeroomAcademicScoresPage() {
   const fetchScores = useCallback(async (academicYearId) => {
     setLoading(true);
     try {
-      const params = academicYearId ? { academicYearId } : {};
+      const params = {};
+      
+      // Priority 1: Use selectedClassId from context if available
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      } else if (academicYearId) {
+        // Priority 2: Use academicYearId from filter
+        params.academicYearId = academicYearId;
+      }
+      
       const res = await api.get("/homeroom/academic-scores", { params });
       setData(res.data || {});
       if (res.data?.classInfo?.academicYear?.id && !academicYearId) {
@@ -95,7 +106,7 @@ export default function HomeroomAcademicScoresPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedClassId]);
 
   useEffect(() => {
     fetchScores();

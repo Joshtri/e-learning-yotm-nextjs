@@ -18,9 +18,11 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Users } from "lucide-react";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 // import AcademicYearFilter from "@/components/AcademicYearFilter";
 
 export default function FinalScoresPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [data, setData] = useState({ students: [], subjects: [], tahunAjaranId: null, classInfo: null, filterOptions: { academicYears: [] } });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +39,16 @@ export default function FinalScoresPage() {
   const fetchFinalScores = useCallback(async (academicYearId) => {
     try {
       setIsLoading(true);
-      const params = academicYearId ? { academicYearId } : {};
+      const params = {};
+      
+      // Priority 1: Use selectedClassId from context if available
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      } else if (academicYearId) {
+        // Priority 2: Use academicYearId from filter
+        params.academicYearId = academicYearId;
+      }
+      
       const res = await api.get("/homeroom/final-scores", { params });
       setData(res.data.data || { students: [], subjects: [], classInfo: null, filterOptions: { academicYears: [] } });
       if (res.data.data?.classInfo?.academicYear?.id && !academicYearId) {
@@ -54,7 +65,7 @@ export default function FinalScoresPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedClassId]);
 
   useEffect(() => {
     fetchFinalScores();

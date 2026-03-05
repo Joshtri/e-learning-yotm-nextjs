@@ -11,9 +11,11 @@ import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AcademicYearFilter } from "@/components/AcademicYearFilter";
+import { useHomeroomClass } from "@/context/HomeroomClassContext";
 // import AcademicYearFilter from "@/components/AcademicYearFilter";
 
 export default function MyStudentsPage() {
+  const { selectedClassId } = useHomeroomClass();
   const [students, setStudents] = useState([]);
   const [classInfo, setClassInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +25,16 @@ export default function MyStudentsPage() {
   const fetchStudents = useCallback(async (academicYearId) => {
     try {
       setIsLoading(true);
-      const params = academicYearId ? { academicYearId } : {};
+      const params = {};
+      
+      // Priority 1: Use selectedClassId from context if available
+      if (selectedClassId) {
+        params.classId = selectedClassId;
+      } else if (academicYearId) {
+        // Priority 2: Use academicYearId from filter
+        params.academicYearId = academicYearId;
+      }
+      
       const res = await api.get("/homeroom/my-students", { params });
       setStudents(res.data.data || []);
       setClassInfo(res.data.classInfo || null);
@@ -45,7 +56,7 @@ export default function MyStudentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedClassId]);
 
   useEffect(() => {
     fetchStudents();

@@ -14,6 +14,7 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const academicYearId = searchParams.get("academicYearId");
+    const classId = searchParams.get("classId"); // 🟢 Tambahan untuk sync dengan class selection
 
     // Optional filters
     const subjectId = searchParams.get("subjectId");
@@ -28,18 +29,33 @@ export async function GET(req) {
       );
     }
 
-    // Get Class
-    const whereCondition = { homeroomTeacherId: tutor.id };
-    if (academicYearId) whereCondition.academicYearId = academicYearId;
+    // Get Class - prioritize classId if provided, otherwise find by homeroom teacher
+    let kelas;
+    
+    if (classId) {
+      // 🟢 Use specific classId from context
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id, // Ensure user is the homeroom teacher of this class
+          ...(academicYearId && { academicYearId }),
+        },
+        include: { academicYear: true },
+      });
+    } else {
+      // Fallback to finding any class where user is homeroom teacher
+      const whereCondition = { homeroomTeacherId: tutor.id };
+      if (academicYearId) whereCondition.academicYearId = academicYearId;
 
-    const kelas = await prisma.class.findFirst({
-      where: whereCondition,
-      orderBy: [
-        { academicYear: { tahunMulai: "desc" } },
-        { academicYear: { semester: "desc" } },
-      ],
-      include: { academicYear: true },
-    });
+      kelas = await prisma.class.findFirst({
+        where: whereCondition,
+        orderBy: [
+          { academicYear: { tahunMulai: "desc" } },
+          { academicYear: { semester: "desc" } },
+        ],
+        include: { academicYear: true },
+      });
+    }
 
     if (!kelas) {
       return NextResponse.json({ success: true, data: [] });
@@ -104,6 +120,7 @@ export async function DELETE(req) {
     const { searchParams } = new URL(req.url);
     const subjectId = searchParams.get("subjectId");
     const academicYearId = searchParams.get("academicYearId");
+    const classId = searchParams.get("classId"); // 🟢 Add classId parameter
 
     if (!subjectId || !academicYearId) {
       return NextResponse.json(
@@ -120,9 +137,22 @@ export async function DELETE(req) {
       );
     }
 
-    const kelas = await prisma.class.findFirst({
-      where: { homeroomTeacherId: tutor.id, academicYearId: academicYearId },
-    });
+    // Find class - prioritize classId if provided
+    let kelas;
+    
+    if (classId) {
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+          ...(academicYearId && { academicYearId }),
+        },
+      });
+    } else {
+      kelas = await prisma.class.findFirst({
+        where: { homeroomTeacherId: tutor.id, academicYearId: academicYearId },
+      });
+    }
 
     if (!kelas) {
       return NextResponse.json(
