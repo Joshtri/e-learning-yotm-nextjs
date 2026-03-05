@@ -5,7 +5,7 @@ export async function GET() {
     const users = await prisma.user.findMany({
       where: {
         role: "TUTOR",
-        student: null, // hanya yang belum punya profil tutor
+        tutor: null, // ✅ hanya yang belum punya profil tutor
       },
       select: {
         id: true,
@@ -22,7 +22,7 @@ export async function GET() {
         success: true,
         data: { users },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching tutor accounts:", error);
@@ -32,7 +32,7 @@ export async function GET() {
         message: "Gagal mengambil data akun tutor",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

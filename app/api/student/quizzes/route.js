@@ -9,7 +9,7 @@ export async function GET(req) {
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -30,7 +30,7 @@ export async function GET(req) {
     if (!student || !student.class) {
       return NextResponse.json(
         { success: false, message: "Student or class not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -93,15 +93,14 @@ export async function GET(req) {
         submissions: {
           where: {
             studentId,
-            status: "SUBMITTED",
-          },
-          orderBy: {
-            nilai: "desc"
           },
           select: {
             id: true,
             nilai: true,
+            attemptCount: true,
+            highestScore: true,
           },
+          take: 1, // Hanya ambil 1 submission (seharusnya cuma ada 1)
         },
         _count: {
           select: {
@@ -113,12 +112,18 @@ export async function GET(req) {
     });
 
     const formatted = quizzes.map((quiz) => {
-      const sudahDikerjakan = quiz.submissions.length > 0;
+      const submission = quiz.submissions[0]; // Hanya ada 1 submission per quiz
+      const totalAttempts = submission?.attemptCount || 0;
+      const highestScore = submission?.highestScore || null;
+      const sudahDikerjakan = totalAttempts > 0;
       const totalPoin = quiz._count.questions > 0 ? 100 : 0;
+
       return {
         ...quiz,
         sudahDikerjakan,
         totalPoin,
+        totalAttempts,
+        highestScore,
       };
     });
 

@@ -1,11 +1,11 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("DATABASE_URL")
 }
 
 // ========== ENUMS ==========
@@ -72,7 +72,7 @@ enum TutorStatus {
   DECEASED // Meninggal dunia
   ON_LEAVE // Cuti panjang
 }
-
+[]
 enum AttendanceStatus {
   PRESENT
   SICK
@@ -87,22 +87,22 @@ enum Semester {
 
 // ========== MAIN MODELS ==========
 model User {
-  id          String    @id @default(dbgenerated("concat('usr_', gen_random_uuid())")) @db.VarChar(40)
-  nama        String    @unique @db.VarChar(100)
-  email       String    @unique @db.VarChar(255)
+  id          String @id @default (dbgenerated("concat('usr_', gen_random_uuid())")) @db.VarChar(40)
+  nama        String @unique @db.VarChar(100)
+  email       String @unique @db.VarChar(255)
   password    String
   role        Role
-  status      Status?   @default(ACTIVE)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
+  status      Status ? @default (ACTIVE)
+  createdAt   DateTime @default (now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime ?
 
-  // Relations
-  student Student?
-  tutor   Tutor?
+    // Relations
+    student Student ?
+      tutor   Tutor ?
 
-  // 🔽 Tambahan untuk fitur chat & diskusi
-  chatRooms    ChatRoom[]    @relation("RoomUsers")
+        // 🔽 Tambahan untuk fitur chat & diskusi
+        chatRooms    ChatRoom[]    @relation("RoomUsers")
   sentMessages ChatMessage[] @relation("Sender") // semua pesan yg dikirim user
 
   DiscussionRoom    DiscussionRoom[]
@@ -120,29 +120,29 @@ model User {
 }
 
 model Student {
-  id          String @id @default(dbgenerated("concat('std_', gen_random_uuid())")) @db.VarChar(40)
+  id          String @id @default (dbgenerated("concat('std_', gen_random_uuid())")) @db.VarChar(40)
   userId      String @unique
   namaLengkap String @db.VarChar(100) // ✅ Tambahan
 
-  user         User          @relation(fields: [userId], references: [id])
-  nisn         String?       @unique @db.VarChar(20)
-  jenisKelamin Gender?
-  tempatLahir  String?       @db.VarChar(50)
-  tanggalLahir DateTime?
-  alamat       String?       @db.Text
-  fotoUrl      String?       @db.VarChar(255)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  status       StudentStatus @default(ACTIVE)
-  noTelepon    String?       @db.VarChar(20)
-  nis          String?       @db.VarChar(20) // Nomor Induk Siswa Nasional
+  user         User @relation(fields: [userId], references: [id])
+  nisn         String ? @unique @db.VarChar(20)
+  jenisKelamin Gender ?
+    tempatLahir  String ? @db.VarChar(50)
+  tanggalLahir DateTime ?
+    alamat       String ? @db.Text
+  fotoUrl      String ? @db.VarChar(255)
+  createdAt    DateTime @default (now())
+  updatedAt    DateTime @updatedAt
+  status       StudentStatus @default (ACTIVE)
+  noTelepon    String ? @db.VarChar(20)
+  nis          String ? @db.VarChar(20) // Nomor Induk Siswa Nasional
 
-  naikKelas    Boolean @default(false) // usulan dari homeroom untuk naik kelas
-  diprosesNaik Boolean @default(false) // apakah sudah diproses oleh admin
+  naikKelas    Boolean @default (false) // usulan dari homeroom untuk naik kelas
+  diprosesNaik Boolean @default (false) // apakah sudah diproses oleh admin
 
   // Relations
-  classId             String?
-  class               Class?                @relation("StudentClass", fields: [classId], references: [id])
+  classId             String ?
+    class Class? @relation("StudentClass", fields: [classId], references: [id])
   submissions         Submission[]
   StudentClassHistory StudentClassHistory[]
   Attendance          Attendance[]
@@ -156,19 +156,19 @@ model Student {
 }
 
 model Tutor {
-  id          String @id @default(dbgenerated("concat('ttr_', gen_random_uuid())")) @db.VarChar(40)
+  id          String @id @default (dbgenerated("concat('ttr_', gen_random_uuid())")) @db.VarChar(40)
   userId      String @unique
   namaLengkap String @db.VarChar(100)
 
-  user       User        @relation(fields: [userId], references: [id])
-  bio        String?     @db.Text
-  pendidikan String?     @db.Text
-  pengalaman String?     @db.Text
-  telepon    String?     @db.VarChar(20)
-  fotoUrl    String?     @db.VarChar(255)
-  status     TutorStatus @default(ACTIVE)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  user       User @relation(fields: [userId], references: [id])
+  bio        String ? @db.Text
+  pendidikan String ? @db.Text
+  pengalaman String ? @db.Text
+  telepon    String ? @db.VarChar(20)
+  fotoUrl    String ? @db.VarChar(255)
+  status     TutorStatus @default (ACTIVE)
+  createdAt  DateTime @default (now())
+  updatedAt  DateTime @updatedAt
 
   // Relasi mengajar biasa
   classSubjectTutors ClassSubjectTutor[]
@@ -184,11 +184,11 @@ model Tutor {
 
 // ========== ACADEMIC STRUCTURE ==========
 model AcademicYear {
-  id                  String                @id @default(dbgenerated("concat('acy_', gen_random_uuid())")) @db.VarChar(40)
+  id                  String @id @default (dbgenerated("concat('acy_', gen_random_uuid())")) @db.VarChar(40)
   tahunMulai          Int
   tahunSelesai        Int
-  semester            Semester              @default(GANJIL)
-  isActive            Boolean               @default(false)
+  semester            Semester @default (GANJIL)
+  isActive            Boolean @default (false)
   classes             Class[]
   StudentClassHistory StudentClassHistory[]
   Attendance          Attendance[]
@@ -202,8 +202,8 @@ model AcademicYear {
 }
 
 model Program {
-  id             String           @id @default(dbgenerated("concat('prg_', gen_random_uuid())")) @db.VarChar(40)
-  namaPaket      String           @db.VarChar(50)
+  id             String @id @default (dbgenerated("concat('prg_', gen_random_uuid())")) @db.VarChar(40)
+  namaPaket      String @db.VarChar(50)
   classes        Class[]
   ProgramSubject ProgramSubject[]
   subjects       Subject[]
@@ -213,18 +213,18 @@ model Program {
 }
 
 model Class {
-  id             String @id @default(dbgenerated("concat('cls_', gen_random_uuid())")) @db.VarChar(40)
+  id             String @id @default (dbgenerated("concat('cls_', gen_random_uuid())")) @db.VarChar(40)
   namaKelas      String @db.VarChar(50)
   programId      String
   academicYearId String
 
   // 🔥 Tambahan untuk wali kelas
-  homeroomTeacherId String?
-  homeroomTeacher   Tutor?  @relation("HomeroomRelation", fields: [homeroomTeacherId], references: [id])
+  homeroomTeacherId String ?
+    homeroomTeacher   Tutor ? @relation("HomeroomRelation", fields: [homeroomTeacherId], references: [id])
 
   // Normal Relations
-  program             Program               @relation(fields: [programId], references: [id])
-  academicYear        AcademicYear          @relation(fields: [academicYearId], references: [id])
+  program             Program @relation(fields: [programId], references: [id])
+  academicYear        AcademicYear @relation(fields: [academicYearId], references: [id])
   students            Student[]             @relation("StudentClass")
   classSubjectTutors  ClassSubjectTutor[]
   StudentClassHistory StudentClassHistory[]
@@ -236,21 +236,21 @@ model Class {
 }
 
 model Subject {
-  id        String  @id @default(dbgenerated("concat('sub_', gen_random_uuid())")) @db.VarChar(40)
-  namaMapel String  @db.VarChar(100)
-  kodeMapel String? @db.VarChar(20)
-  deskripsi String? @db.Text
+  id        String @id @default (dbgenerated("concat('sub_', gen_random_uuid())")) @db.VarChar(40)
+  namaMapel String @db.VarChar(100)
+  kodeMapel String ? @db.VarChar(20)
+  deskripsi String ? @db.Text
 
   // Relasi ke Program (One-to-Many) - Simpel & Jelas
-  programId String?  @db.VarChar(40)
-  program   Program? @relation(fields: [programId], references: [id])
+  programId String ? @db.VarChar(40)
+  program   Program ? @relation(fields: [programId], references: [id])
 
   // Relations
   classSubjectTutors ClassSubjectTutor[]
   ProgramSubject     ProgramSubject[] // Tetap ada untuk backward compatibility kalau perlu
 
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime @default (now())
+  updatedAt          DateTime @updatedAt
   SkillScore         SkillScore[]
   FinalScore         FinalScore[]
   attendanceSessions AttendanceSession[]
@@ -261,14 +261,14 @@ model Subject {
 }
 
 model ProgramSubject {
-  id        String @id @default(dbgenerated("concat('psj_', gen_random_uuid())")) @db.VarChar(40)
+  id        String @id @default (dbgenerated("concat('psj_', gen_random_uuid())")) @db.VarChar(40)
   programId String
   subjectId String
 
   program Program @relation(fields: [programId], references: [id])
   subject Subject @relation(fields: [subjectId], references: [id])
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default (now())
   updatedAt DateTime @updatedAt
 
   @@unique([programId, subjectId])
@@ -276,22 +276,22 @@ model ProgramSubject {
 
 // ========== LEARNING SYSTEM ==========
 model ClassSubjectTutor {
-  id        String @id @default(dbgenerated("concat('cst_', gen_random_uuid())")) @db.VarChar(40)
+  id        String @id @default (dbgenerated("concat('cst_', gen_random_uuid())")) @db.VarChar(40)
   tutorId   String
   classId   String
   subjectId String
 
   // Relations
-  tutor   Tutor   @relation(fields: [tutorId], references: [id])
-  class   Class   @relation(fields: [classId], references: [id])
+  tutor   Tutor @relation(fields: [tutorId], references: [id])
+  class Class   @relation(fields: [classId], references: [id])
   subject Subject @relation(fields: [subjectId], references: [id])
 
   learningMaterials LearningMaterial[]
   assignments       Assignment[]
   quizzes           Quiz[]
 
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime @default (now())
+  updatedAt      DateTime @updatedAt
   DiscussionRoom DiscussionRoom[]
   ChatRoom       ChatRoom[]
   schedules      Schedule[]
@@ -300,32 +300,32 @@ model ClassSubjectTutor {
 }
 
 model LearningMaterial {
-  id                  String                @id @default(dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
-  judul               String                @db.VarChar(200)
-  pertemuan           String?               @default("1") @db.VarChar(10) // Untuk materi pertemuan tertentu
-  konten              String                @db.Text
-  fileUrl             String?               @db.VarChar(255)
-  tipeMateri          LearningMaterialType? @default(FILE)
+  id                  String @id @default (dbgenerated("concat('mat_', gen_random_uuid())")) @db.VarChar(40)
+  judul               String @db.VarChar(200)
+  pertemuan           String ? @default ("1") @db.VarChar(10) // Untuk materi pertemuan tertentu
+  konten              String @db.Text
+  fileUrl             String ? @db.VarChar(255)
+  tipeMateri          LearningMaterialType ? @default (FILE)
   classSubjectTutorId String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  createdAt           DateTime @default (now())
+  updatedAt           DateTime @updatedAt
 
   classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
 }
 
 model Assignment {
-  id                  String         @id @default(dbgenerated("concat('asn_', gen_random_uuid())")) @db.VarChar(40)
-  judul               String         @db.VarChar(200)
-  deskripsi           String?        @db.Text
+  id                  String @id @default (dbgenerated("concat('asn_', gen_random_uuid())")) @db.VarChar(40)
+  judul               String @db.VarChar(200)
+  deskripsi           String ? @db.Text
   jenis               AssignmentType
   classSubjectTutorId String
-  TanggalMulai        DateTime?      @db.Date
-  TanggalSelesai      DateTime?      @db.Date
-  batasWaktuMenit     Int?
-  nilaiMaksimal       Int?
-  questionsFromPdf    String?        @db.Text // Store base64 PDF
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  TanggalMulai        DateTime ? @db.Date
+  TanggalSelesai      DateTime ? @db.Date
+  batasWaktuMenit     Int ?
+    nilaiMaksimal       Int ?
+      questionsFromPdf    String ? @db.Text // Store base64 PDF
+  createdAt           DateTime @default (now())
+  updatedAt           DateTime @updatedAt
 
   classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
   questions         Question[]
@@ -333,17 +333,17 @@ model Assignment {
 }
 
 model Quiz {
-  id                  String   @id @default(dbgenerated("concat('qz_', gen_random_uuid())")) @db.VarChar(40)
-  judul               String   @db.VarChar(200)
-  deskripsi           String?  @db.Text
+  id                  String @id @default (dbgenerated("concat('qz_', gen_random_uuid())")) @db.VarChar(40)
+  judul               String @db.VarChar(200)
+  deskripsi           String ? @db.Text
   classSubjectTutorId String
   waktuMulai          DateTime
   waktuSelesai        DateTime
   durasiMenit         Int
   nilaiMaksimal       Int
-  acakSoal            Boolean  @default(false)
-  acakJawaban         Boolean  @default(false)
-  createdAt           DateTime @default(now())
+  acakSoal            Boolean @default (false)
+  acakJawaban         Boolean @default (false)
+  createdAt           DateTime @default (now())
   updatedAt           DateTime @updatedAt
 
   classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
@@ -352,95 +352,97 @@ model Quiz {
 }
 
 model Question {
-  id           String         @id @default(dbgenerated("concat('qst_', gen_random_uuid())")) @db.VarChar(40)
-  assignmentId String?
-  quizId       String?
-  teks         String         @db.Text
-  image        String?        @db.Text // Base64 image
+  id           String @id @default (dbgenerated("concat('qst_', gen_random_uuid())")) @db.VarChar(40)
+  assignmentId String ?
+    quizId       String ?
+      teks         String @db.Text
+  image        String ? @db.Text // Base64 image
   jenis        QuestionType
-  poin         Int            @default(1)
+  poin         Int @default (1)
   options      AnswerOption[]
-  jawabanBenar String? // For auto-grading (could be JSON for multiple answers)
-  pembahasan   String?        @db.Text
+  jawabanBenar String ? // For auto-grading (could be JSON for multiple answers)
+    pembahasan   String ? @db.Text
 
-  assignment Assignment? @relation(fields: [assignmentId], references: [id])
-  quiz       Quiz?       @relation(fields: [quizId], references: [id])
+  assignment Assignment ? @relation(fields: [assignmentId], references: [id])
+  quiz       Quiz ? @relation(fields: [quizId], references: [id])
   answers    Answer[]
 }
 
 model AnswerOption {
-  id         String  @id @default(dbgenerated("concat('opt_', gen_random_uuid())")) @db.VarChar(40)
+  id         String @id @default (dbgenerated("concat('opt_', gen_random_uuid())")) @db.VarChar(40)
   questionId String
-  teks       String  @db.VarChar(500)
-  kode       String? // ✅ Tambahan field kode
+  teks       String @db.VarChar(500)
+  kode       String ? // ✅ Tambahan field kode
 
-  adalahBenar Boolean @default(false)
-  image       String? @db.Text // Optional image for option
+    adalahBenar Boolean @default (false)
+  image       String ? @db.Text // Optional image for option
 
   question Question @relation(fields: [questionId], references: [id])
 }
 
 model Submission {
-  id           String           @id @default(dbgenerated("concat('sbm_', gen_random_uuid())")) @db.VarChar(40)
-  studentId    String
-  assignmentId String? // UTK UTS DAN UAS
-  quizId       String? // UTK QUIZ SAJA
-  status       SubmissionStatus @default(NOT_STARTED)
-  waktuMulai   DateTime?
-  waktuKumpul  DateTime?
-  nilai        Float?
-  waktuDinilai DateTime?
-  feedback     String?          @db.Text
-  answerPdf    String?          @db.Text // Store base64 PDF for assignment answers
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id            String @id @default (dbgenerated("concat('sbm_', gen_random_uuid())")) @db.VarChar(40)
+  studentId     String
+  assignmentId  String ? // UTK UTS DAN UAS
+    quizId        String ? // UTK QUIZ SAJA
+      status        SubmissionStatus @default (NOT_STARTED)
+  waktuMulai    DateTime ?
+    waktuKumpul   DateTime ?
+      nilai         Float ?
+        waktuDinilai  DateTime ?
+          feedback      String ? @db.Text
+  answerPdf     String ? @db.Text // Store base64 PDF for assignment answers
+  attemptCount  Int ? @default (0) // Track number of attempts
+  highestScore  Float ?           // Track highest score achieved
+    createdAt     DateTime @default (now())
+  updatedAt     DateTime @updatedAt
 
-  student    Student     @relation(fields: [studentId], references: [id])
-  assignment Assignment? @relation(fields: [assignmentId], references: [id])
-  quiz       Quiz?       @relation(fields: [quizId], references: [id])
+  student    Student @relation(fields: [studentId], references: [id])
+  assignment Assignment ? @relation(fields: [assignmentId], references: [id])
+  quiz       Quiz ? @relation(fields: [quizId], references: [id])
   answers    Answer[]
 }
 
 model Answer {
-  id           String   @id @default(dbgenerated("concat('ans_', gen_random_uuid())")) @db.VarChar(40)
+  id           String @id @default (dbgenerated("concat('ans_', gen_random_uuid())")) @db.VarChar(40)
   submissionId String
   questionId   String
-  jawaban      String   @db.Text // Could be JSON for complex answers
-  image        String?  @db.Text // Base64 image for connection with question
-  adalahBenar  Boolean?
-  feedback     String?  @db.VarChar(500)
-  nilai        Float?
+  jawaban      String @db.Text // Could be JSON for complex answers
+  image        String ? @db.Text // Base64 image for connection with question
+  adalahBenar  Boolean ?
+    feedback     String ? @db.VarChar(500)
+  nilai        Float ?
 
-  submission Submission @relation(fields: [submissionId], references: [id])
-  question   Question   @relation(fields: [questionId], references: [id])
+    submission Submission @relation(fields: [submissionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id])
 }
 
 model DiscussionRoom {
-  id                  String   @id @default(dbgenerated("concat('dsr_', gen_random_uuid())")) @db.VarChar(40)
+  id                  String @id @default (dbgenerated("concat('dsr_', gen_random_uuid())")) @db.VarChar(40)
   classSubjectTutorId String
-  judul               String   @db.VarChar(200)
-  deskripsi           String?  @db.Text
+  judul               String @db.VarChar(200)
+  deskripsi           String ? @db.Text
   createdById         String
-  createdAt           DateTime @default(now())
+  createdAt           DateTime @default (now())
   updatedAt           DateTime @updatedAt
 
-  classSubjectTutor ClassSubjectTutor   @relation(fields: [classSubjectTutorId], references: [id])
-  createdBy         User                @relation(fields: [createdById], references: [id])
+  classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id])
+  createdBy         User @relation(fields: [createdById], references: [id])
   messages          DiscussionMessage[]
 
   @@index([classSubjectTutorId])
 }
 
 model DiscussionMessage {
-  id        String   @id @default(dbgenerated("concat('dsm_', gen_random_uuid())")) @db.VarChar(40)
+  id        String @id @default (dbgenerated("concat('dsm_', gen_random_uuid())")) @db.VarChar(40)
   roomId    String
   senderId  String
-  isiPesan  String   @db.Text
-  sentAt    DateTime @default(now())
+  isiPesan  String @db.Text
+  sentAt    DateTime @default (now())
   updatedAt DateTime @updatedAt
 
   room   DiscussionRoom @relation(fields: [roomId], references: [id])
-  sender User           @relation(fields: [senderId], references: [id])
+  sender User @relation(fields: [senderId], references: [id])
 
   @@index([roomId])
   @@index([senderId])
@@ -448,12 +450,12 @@ model DiscussionMessage {
 
 // ========== ATTENDANCE & SCHEDULE ==========
 model Schedule {
-  id                  String   @id @default(dbgenerated("concat('sch_', gen_random_uuid())")) @db.VarChar(40)
+  id                  String @id @default (dbgenerated("concat('sch_', gen_random_uuid())")) @db.VarChar(40)
   classSubjectTutorId String
   dayOfWeek           Int // 1=Monday, 7=Sunday
   startTime           DateTime @db.Time
   endTime             DateTime @db.Time
-  createdAt           DateTime @default(now())
+  createdAt           DateTime @default (now())
   updatedAt           DateTime @updatedAt
 
   classSubjectTutor ClassSubjectTutor @relation(fields: [classSubjectTutorId], references: [id], onDelete: Cascade)
@@ -468,7 +470,7 @@ enum AttendanceSessionStatus {
 }
 
 model AttendanceSession {
-  id String @id @default(dbgenerated("concat('ats_', gen_random_uuid())")) @db.VarChar(40)
+  id String @id @default (dbgenerated("concat('ats_', gen_random_uuid())")) @db.VarChar(40)
 
   classId        String
   academicYearId String
@@ -479,19 +481,19 @@ model AttendanceSession {
   meetingNumber Int // 1..16
   tanggal       DateTime // tanggal pertemuan (date + time)
 
-  startTime DateTime?
-  endTime   DateTime?
+  startTime DateTime ?
+    endTime   DateTime ?
 
-  status     AttendanceSessionStatus @default(TERJADWALKAN)
-  keterangan String?                 @db.VarChar(255)
+      status     AttendanceSessionStatus @default (TERJADWALKAN)
+  keterangan String ? @db.VarChar(255)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default (now())
   updatedAt DateTime @updatedAt
 
-  tutor        Tutor        @relation(fields: [tutorId], references: [id])
-  class        Class        @relation(fields: [classId], references: [id])
+  tutor        Tutor @relation(fields: [tutorId], references: [id])
+  class Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
-  subject      Subject      @relation(fields: [subjectId], references: [id])
+  subject      Subject @relation(fields: [subjectId], references: [id])
 
   attendances Attendance[]
 
@@ -501,23 +503,23 @@ model AttendanceSession {
 }
 
 model Attendance {
-  id                  String @id @default(dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
+  id                  String @id @default (dbgenerated("concat('att_', gen_random_uuid())")) @db.VarChar(40)
   studentId           String
   attendanceSessionId String @db.VarChar(40)
 
   status     AttendanceStatus
-  note       String?          @db.VarChar(255)
-  attachment String?          @db.Text // Base64 file attachment
+  note       String ? @db.VarChar(255)
+  attachment String ? @db.Text // Base64 file attachment
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default (now())
   updatedAt DateTime @updatedAt
 
-  student           Student           @relation(fields: [studentId], references: [id])
+  student           Student @relation(fields: [studentId], references: [id])
   attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
-  academicYear      AcademicYear?     @relation(fields: [academicYearId], references: [id])
-  academicYearId    String?           @db.VarChar(40)
-  class             Class?            @relation(fields: [classId], references: [id])
-  classId           String?           @db.VarChar(40)
+  academicYear      AcademicYear ? @relation(fields: [academicYearId], references: [id])
+  academicYearId    String ? @db.VarChar(40)
+    class Class? @relation(fields: [classId], references: [id])
+  classId           String ? @db.VarChar(40)
 
   @@unique([studentId, attendanceSessionId])
   @@index([studentId])
@@ -525,12 +527,12 @@ model Attendance {
 }
 
 model SkillScore {
-  id         String   @id @default(dbgenerated("concat('skl_', gen_random_uuid())")) @db.VarChar(40)
+  id         String @id @default (dbgenerated("concat('skl_', gen_random_uuid())")) @db.VarChar(40)
   studentId  String
   subjectId  String
   nilai      Float
-  keterangan String? // contoh: "Praktik Membuat Puisi", "Praktik Percobaan Kimia", dll
-  createdAt  DateTime @default(now())
+  keterangan String ? // contoh: "Praktik Membuat Puisi", "Praktik Percobaan Kimia", dll
+    createdAt  DateTime @default (now())
 
   student Student @relation(fields: [studentId], references: [id])
   subject Subject @relation(fields: [subjectId], references: [id])
@@ -539,123 +541,123 @@ model SkillScore {
 }
 
 model BehaviorScore {
-  id             String   @id @default(dbgenerated("concat('bhs_', gen_random_uuid())")) @db.VarChar(40)
+  id             String @id @default (dbgenerated("concat('bhs_', gen_random_uuid())")) @db.VarChar(40)
   studentId      String
   classId        String
   academicYearId String
   spiritual      Float
   sosial         Float
   kehadiran      Float // presentase atau skor berdasarkan absensi (auto-calculated)
-  catatan        String? // opsional, misal "Sikap sangat baik", "Perlu perbaikan kehadiran"
-  createdAt      DateTime @default(now())
+  catatan        String ? // opsional, misal "Sikap sangat baik", "Perlu perbaikan kehadiran"
+    createdAt      DateTime @default (now())
 
-  student      Student      @relation(fields: [studentId], references: [id])
-  class        Class        @relation(fields: [classId], references: [id])
+  student      Student @relation(fields: [studentId], references: [id])
+  class Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
 
   @@unique([studentId, classId, academicYearId]) // ❗ 1 tahun ajaran per kelas, 1 nilai behavior
 }
 
 model StudentClassHistory {
-  id             String @id @default(dbgenerated("concat('sch_', gen_random_uuid())")) @db.VarChar(40)
+  id             String @id @default (dbgenerated("concat('sch_', gen_random_uuid())")) @db.VarChar(40)
   studentId      String
   classId        String
   academicYearId String
 
-  student      Student      @relation(fields: [studentId], references: [id])
-  class        Class        @relation(fields: [classId], references: [id])
+  student      Student @relation(fields: [studentId], references: [id])
+  class Class        @relation(fields: [classId], references: [id])
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
 
-  naikKelas  Boolean @default(false) // apakah naik kelas
-  nilaiAkhir Float? // total rata-rata nilai
+  naikKelas  Boolean @default (false) // apakah naik kelas
+  nilaiAkhir Float ? // total rata-rata nilai
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default (now())
 }
 
 model Log {
-  id        String   @id @default(uuid())
+  id        String @id @default (uuid())
   userId    String
   action    String
-  timestamp DateTime @default(now())
-  metadata  Json?
-  user      User     @relation(fields: [userId], references: [id])
+  timestamp DateTime @default (now())
+  metadata  Json ?
+    user      User @relation(fields: [userId], references: [id])
 }
 
 model FinalScore {
-  id            String   @id @default(dbgenerated("concat('fns_', gen_random_uuid())")) @db.VarChar(40)
+  id            String @id @default (dbgenerated("concat('fns_', gen_random_uuid())")) @db.VarChar(40)
   studentId     String
   subjectId     String
   nilaiAkhir    Float
   tahunAjaranId String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime @default (now())
 
-  student      Student      @relation(fields: [studentId], references: [id])
-  subject      Subject      @relation(fields: [subjectId], references: [id])
+  student      Student @relation(fields: [studentId], references: [id])
+  subject      Subject @relation(fields: [subjectId], references: [id])
   academicYear AcademicYear @relation(fields: [tahunAjaranId], references: [id])
 
   @@unique([studentId, subjectId, tahunAjaranId]) // satu nilai akhir per mapel per tahun ajaran
 }
 
 model HolidayRange {
-  id             String   @id @default(dbgenerated("concat('hlr_', gen_random_uuid())")) @db.VarChar(40)
+  id             String @id @default (dbgenerated("concat('hlr_', gen_random_uuid())")) @db.VarChar(40)
   nama           String
   startDate      DateTime
   endDate        DateTime
-  academicYearId String?
+  academicYearId String ?
 
-  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+    academicYear AcademicYear ? @relation(fields: [academicYearId], references: [id])
 
-  @@index([startDate, endDate])
+    @@index([startDate, endDate])
 }
 
 model Holiday {
-  id        String   @id @default(dbgenerated("concat('hld_', gen_random_uuid())")) @db.VarChar(40)
+  id        String @id @default (dbgenerated("concat('hld_', gen_random_uuid())")) @db.VarChar(40)
   tanggal   DateTime @unique
-  reason    String   @db.VarChar(255)
-  createdAt DateTime @default(now())
+  reason    String @db.VarChar(255)
+  createdAt DateTime @default (now())
 }
 
 model Notification {
-  id         String   @id @default(dbgenerated("concat('ntf_', gen_random_uuid())")) @db.VarChar(40)
+  id         String @id @default (dbgenerated("concat('ntf_', gen_random_uuid())")) @db.VarChar(40)
   senderId   String // pengirim (User.id)
   receiverId String // penerima (User.id)
   title      String
   message    String
-  type       String // optional: 'GENERAL', 'TASK', 'ATTENDANCE', etc
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  type String // optional: 'GENERAL', 'TASK', 'ATTENDANCE', etc
+  isRead     Boolean @default (false)
+  createdAt  DateTime @default (now())
 
   sender   User @relation("SentNotifications", fields: [senderId], references: [id])
   receiver User @relation("ReceivedNotifications", fields: [receiverId], references: [id])
 }
 
 model ChatRoom {
-  id        String        @id @default(dbgenerated("concat('crm_', gen_random_uuid())")) @db.VarChar(40)
-  name      String?
-  type      ChatRoomType  @default(PRIVATE) // PRIVATE, GROUP, FORUM
+  id        String @id @default (dbgenerated("concat('crm_', gen_random_uuid())")) @db.VarChar(40)
+  name      String ?
+    type      ChatRoomType @default (PRIVATE) // PRIVATE, GROUP, FORUM
   users     User[]        @relation("RoomUsers") // ✅ BENAR
   messages  ChatMessage[]
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default (now())
 
-  createdById String?
-  createdBy   User?   @relation(fields: [createdById], references: [id])
+  createdById String ?
+    createdBy   User ? @relation(fields: [createdById], references: [id])
 
-  classSubjectTutorId String? // ← Tambahkan ini
-  classSubjectTutor   ClassSubjectTutor? @relation(fields: [classSubjectTutorId], references: [id])
+  classSubjectTutorId String ? // ← Tambahkan ini
+    classSubjectTutor   ClassSubjectTutor ? @relation(fields: [classSubjectTutorId], references: [id])
 
-  pinned Boolean @default(false)
-  closed Boolean @default(false)
+  pinned Boolean @default (false)
+  closed Boolean @default (false)
 }
 
 model ChatMessage {
-  id        String   @id @default(dbgenerated("concat('msg_', gen_random_uuid())")) @db.VarChar(40)
+  id        String @id @default (dbgenerated("concat('msg_', gen_random_uuid())")) @db.VarChar(40)
   senderId  String
   roomId    String
   content   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean @default (false)
+  createdAt DateTime @default (now())
 
-  sender User     @relation("Sender", fields: [senderId], references: [id])
+  sender User @relation("Sender", fields: [senderId], references: [id])
   room   ChatRoom @relation(fields: [roomId], references: [id])
 }
 

@@ -23,6 +23,7 @@ export default function QuizStartPage() {
   const router = useRouter();
 
   const [quiz, setQuiz] = useState(null);
+  const [attemptInfo, setAttemptInfo] = useState(null);
   const [answers, setAnswers] = useState({});
   const [answerImages, setAnswerImages] = useState({}); // ✅ New state for images
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -36,6 +37,7 @@ export default function QuizStartPage() {
       try {
         const res = await api.get(`/student/quizzes/${id}`);
         setQuiz(res.data.data);
+        setAttemptInfo(res.data.attemptInfo || null);
       } catch (error) {
         console.error(error);
         toast.error("Gagal memuat kuis");
@@ -206,15 +208,59 @@ export default function QuizStartPage() {
 
   // Pre-start screen
   if (!quizStarted) {
+    // Cek jika tidak bisa attempt lagi
+    if (attemptInfo && !attemptInfo.canAttempt) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+          <h1 className="text-2xl font-bold mb-4 text-red-600">
+            Tidak Dapat Mengerjakan Kuis
+          </h1>
+          {attemptInfo.attemptCount >= 3 ? (
+            <>
+              <p className="text-muted-foreground max-w-md mb-2">
+                Anda telah mencapai batas maksimal percobaan (3x) untuk kuis
+                ini.
+              </p>
+              <p className="text-lg font-semibold mb-6">
+                Nilai tertinggi Anda: {attemptInfo.highestScore || 0}
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground max-w-md mb-6">
+              Anda sudah lulus KKM untuk kuis ini dengan nilai{" "}
+              {attemptInfo.highestScore}.
+            </p>
+          )}
+          <Button
+            onClick={() => router.push("/siswa/quizzes")}
+            variant="outline"
+          >
+            Kembali ke Daftar Kuis
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
         <h1 className="text-2xl font-bold mb-4">Persiapan Kuis</h1>
-        <p className="text-muted-foreground max-w-md mb-6">
+        <p className="text-muted-foreground max-w-md mb-4">
           Anda akan mengerjakan kuis: <strong>{quiz.judul}</strong> untuk mata
           pelajaran <strong>{quiz.classSubjectTutor?.subject?.nama}</strong>.
           Pastikan Anda sudah siap sebelum memulai. Waktu akan berjalan begitu
           Anda memulai.
         </p>
+        {attemptInfo && attemptInfo.attemptCount > 0 && (
+          <div className="mb-4 p-4 bg-orange-50 rounded-lg max-w-md">
+            <p className="text-sm font-medium text-orange-800">
+              Ini adalah percobaan ke-{attemptInfo.attemptCount + 1}
+            </p>
+            <p className="text-sm text-orange-700">
+              Nilai tertinggi: {attemptInfo.highestScore || 0} | Sisa
+              kesempatan: {attemptInfo.remainingAttempts}x
+            </p>
+          </div>
+        )}
         <Button onClick={() => setQuizStarted(true)}>
           Saya Siap, Mulai Kerjakan
         </Button>

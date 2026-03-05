@@ -216,10 +216,6 @@ export default function StudentExamsPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>{exam.batasWaktuMenit || 0} Menit</span>
             </div>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              <span>Nilai Maksimal: {exam.nilaiMaksimal || 100}</span>
-            </div>
           </div>
 
           {/* Date Range */}
@@ -236,11 +232,6 @@ export default function StudentExamsPage() {
 
           {/* Action Button */}
           <div className="pt-2">
-            {/* KKM Info */}
-            <div className="text-sm font-medium text-blue-600 mb-2">
-              📊 KKM: {exam.nilaiMaksimal || 75}
-            </div>
-
             {exam.submission?.status === "GRADED" && (
               <>
                 {exam.submission.nilai >= (exam.nilaiMaksimal || 75) ? (
@@ -249,8 +240,7 @@ export default function StudentExamsPage() {
                       ✅ Lulus - Nilai Anda:
                     </span>
                     <span className="text-xl font-bold text-green-700">
-                      {exam.submission.nilai?.toFixed(2) || 0}/
-                      {exam.nilaiMaksimal}
+                      {exam.submission.nilai?.toFixed(2) || 0}
                     </span>
                   </div>
                 ) : (
@@ -260,8 +250,7 @@ export default function StudentExamsPage() {
                         ⚠️ Belum Lulus KKM - Nilai:
                       </span>
                       <span className="text-xl font-bold text-orange-700">
-                        {exam.submission.nilai?.toFixed(2) || 0}/
-                        {exam.nilaiMaksimal}
+                        {exam.submission.nilai?.toFixed(2) || 0}
                       </span>
                     </div>
                     {exam.submissionCount < 3 && exam.canStart ? (

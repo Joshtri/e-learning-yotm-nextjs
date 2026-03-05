@@ -54,7 +54,7 @@ export default function TutorCreatePage() {
         const res = await api.get("/tutors/account");
         const availableUsers = res.data?.data?.users || [];
         setUsers(availableUsers);
-        
+
         if (availableUsers.length === 0) {
           toast.info("Semua akun tutor sudah memiliki profil tutor");
         }
@@ -178,12 +178,12 @@ export default function TutorCreatePage() {
                       aria-expanded={comboboxOpen}
                       className={cn(
                         "w-full justify-between font-normal",
-                        !selectedUserId && "text-muted-foreground"
+                        !selectedUserId && "text-muted-foreground",
                       )}
                     >
                       {selectedUserId
-                        ? users.find((u) => u.id === selectedUserId)
-                            ?.nama || "Pilih akun tutor..."
+                        ? users.find((u) => u.id === selectedUserId)?.nama ||
+                          "Pilih akun tutor..."
                         : "Pilih akun tutor..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -191,6 +191,8 @@ export default function TutorCreatePage() {
                   <PopoverContent
                     className="w-[--radix-popover-trigger-width] p-0"
                     align="start"
+                    side="bottom"
+                    sideOffset={4}
                   >
                     <Command>
                       <CommandInput
@@ -222,7 +224,7 @@ export default function TutorCreatePage() {
                                   "ml-auto h-4 w-4",
                                   selectedUserId === user.id
                                     ? "opacity-100"
-                                    : "opacity-0"
+                                    : "opacity-0",
                                 )}
                               />
                             </CommandItem>
