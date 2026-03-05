@@ -3,7 +3,6 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 
-
 export const maxDuration = 60;
 
 export async function GET(request) {
@@ -12,7 +11,7 @@ export async function GET(request) {
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -23,7 +22,7 @@ export async function GET(request) {
     if (!tutor) {
       return new Response(
         JSON.stringify({ success: false, message: "Tutor not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -97,7 +96,8 @@ export async function GET(request) {
       });
 
       // Select the class that has active students, or the most recent one
-      kelas = allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
+      kelas =
+        allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
     }
 
     const homeroomClasses = await prisma.class.findMany({
@@ -124,7 +124,7 @@ export async function GET(request) {
           message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih",
           data: { filterOptions },
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -212,7 +212,7 @@ export async function GET(request) {
 
         // Get submissions for this student only
         const studentSubmissions = submissions.filter(
-          (s) => s.studentId === student.id
+          (s) => s.studentId === student.id,
         );
 
         // Process submissions
@@ -233,28 +233,26 @@ export async function GET(request) {
           if (!mapelName || !type) return;
 
           const mapelIndex = mapelDetails.findIndex(
-            (m) => m.namaMapel === mapelName
+            (m) => m.namaMapel === mapelName,
           );
           if (mapelIndex === -1) return;
 
           if (type === "EXERCISE") mapelDetails[mapelIndex].exercise = nilai;
           if (type === "QUIZ") mapelDetails[mapelIndex].quiz = nilai;
-          if (type === "DAILY_TEST")
-            mapelDetails[mapelIndex].dailyTest = nilai;
+          if (type === "DAILY_TEST") mapelDetails[mapelIndex].dailyTest = nilai;
           if (type === "MIDTERM") mapelDetails[mapelIndex].midterm = nilai;
-          if (type === "FINAL_EXAM")
-            mapelDetails[mapelIndex].finalExam = nilai;
+          if (type === "FINAL_EXAM") mapelDetails[mapelIndex].finalExam = nilai;
         });
 
         // Get skill scores for this student only
         const studentSkills = skillScores.filter(
-          (s) => s.studentId === student.id
+          (s) => s.studentId === student.id,
         );
 
         // Process skill scores
         studentSkills.forEach((skill) => {
           const mapelIndex = mapelDetails.findIndex(
-            (m) => m.namaMapel === skill.subject.namaMapel
+            (m) => m.namaMapel === skill.subject.namaMapel,
           );
           if (mapelIndex !== -1) {
             mapelDetails[mapelIndex].skill = skill.nilai;
@@ -262,9 +260,7 @@ export async function GET(request) {
         });
 
         // Find behavior score
-        const behavior = behaviorScores.find(
-          (b) => b.studentId === student.id
-        );
+        const behavior = behaviorScores.find((b) => b.studentId === student.id);
 
         // Calculate averages and round to 2 decimal places
         const nilaiRata2PerMapel = mapelDetails.map((m) => {
@@ -285,31 +281,31 @@ export async function GET(request) {
 
         const totalNilaiMapel = nilaiRata2PerMapel.length
           ? parseFloat(
-            (
-              nilaiRata2PerMapel.reduce((acc, n) => acc + n, 0) /
-              nilaiRata2PerMapel.length
-            ).toFixed(2)
-          )
+              (
+                nilaiRata2PerMapel.reduce((acc, n) => acc + n, 0) /
+                nilaiRata2PerMapel.length
+              ).toFixed(2),
+            )
           : 0;
 
         const totalNilaiBehavior = behavior
           ? parseFloat(
-            (
-              (behavior.spiritual + behavior.sosial + behavior.kehadiran) /
-              3
-            ).toFixed(2)
-          )
+              (
+                (behavior.spiritual + behavior.sosial + behavior.kehadiran) /
+                3
+              ).toFixed(2),
+            )
           : 0;
 
         const nilaiAkhir = parseFloat(
-          (totalNilaiMapel * 0.7 + totalNilaiBehavior * 0.3).toFixed(2)
+          (totalNilaiMapel * 0.7 + totalNilaiBehavior * 0.3).toFixed(2),
         );
 
         // ✅ Calculate Attendance Summary (Daily Aggregation)
         const attendanceSummary = await getStudentAttendanceSummary(
           student.id,
           kelas.academicYearId,
-          kelas.id
+          kelas.id,
         );
 
         return {
@@ -333,15 +329,15 @@ export async function GET(request) {
           })),
           behavior: behavior
             ? {
-              spiritual: parseFloat(behavior.spiritual.toFixed(2)),
-              sosial: parseFloat(behavior.sosial.toFixed(2)),
-              kehadiran: parseFloat(behavior.kehadiran.toFixed(2)),
-            }
+                spiritual: parseFloat(behavior.spiritual.toFixed(2)),
+                sosial: parseFloat(behavior.sosial.toFixed(2)),
+                kehadiran: parseFloat(behavior.kehadiran.toFixed(2)),
+              }
             : null,
           nilaiAkhir,
           attendanceSummary, // ✅ Add summary to response
         };
-      })
+      }),
     );
 
     return NextResponse.json({
@@ -375,7 +371,7 @@ export async function GET(request) {
         message: "Internal Server Error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

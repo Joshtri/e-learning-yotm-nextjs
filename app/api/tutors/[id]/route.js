@@ -97,33 +97,75 @@ export async function GET(request, context) {
 
 // PUT /api/tutors/[id]
 export async function PUT(request, { params }) {
-  const { id } = params;
-  const data = await request.json();
+  try {
+    const { id } = params;
 
-  const validStatuses = ["ACTIVE", "INACTIVE"];
-  if (data.status && !validStatuses.includes(data.status)) {
+    // 🔐 Auth check
+    const { user, error, status } = await getAuthUser(request);
+    if (error) {
+      return NextResponse.json({ success: false, message: error }, { status });
+    }
+
+    // 🔐 Authorization: Only ADMIN or the tutor themselves can update
+    const tutor = await prisma.tutor.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Tutor not found" },
+        { status: 404 },
+      );
+    }
+
+    const isSelfOrAdmin = user.role === "ADMIN" || user.id === tutor.userId;
+    if (!isSelfOrAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized to update this tutor" },
+        { status: 403 },
+      );
+    }
+
+    const data = await request.json();
+
+    // Validate status if provided
+    const validStatuses = ["ACTIVE", "INACTIVE"];
+    if (data.status && !validStatuses.includes(data.status)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Update tutor
+    const updated = await prisma.tutor.update({
+      where: { id },
+      data: {
+        namaLengkap: data.namaLengkap,
+        telepon: data.telepon,
+        pendidikan: data.pendidikan,
+        pengalaman: data.pengalaman,
+        bio: data.bio,
+        ...(data.status && { status: data.status }),
+      },
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error("Error updating tutor:", error);
     return NextResponse.json(
       {
         success: false,
-        message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+        message: "Failed to update tutor",
+        error: error.message,
       },
-      { status: 400 },
+      { status: 500 },
     );
   }
-
-  const updated = await prisma.tutor.update({
-    where: { id },
-    data: {
-      namaLengkap: data.namaLengkap,
-      telepon: data.telepon,
-      pendidikan: data.pendidikan,
-      pengalaman: data.pengalaman,
-      bio: data.bio,
-      ...(data.status && { status: data.status }),
-    },
-  });
-
-  return NextResponse.json({ success: true, data: updated });
 }
 
 // DELETE /api/tutors/[id]

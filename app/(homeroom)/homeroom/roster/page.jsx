@@ -143,7 +143,7 @@ export default function HomeroomRosterPage() {
   // Sort by time
   Object.keys(scheduleByDay).forEach((key) => {
     scheduleByDay[key].sort(
-      (a, b) => new Date(a.startTime) - new Date(b.startTime)
+      (a, b) => new Date(a.startTime) - new Date(b.startTime),
     );
   });
 

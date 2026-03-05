@@ -76,7 +76,7 @@ export default function TutorEditPage() {
       setSaving(true);
       await api.put(`/tutors/${id}`, form);
       toast.success("Data tutor berhasil diperbarui");
-      router.push(`/admin/tutors/${id}`);
+      router.push(`/admin/tutors`);
     } catch (error) {
       console.error(error);
       toast.error("Gagal memperbarui data tutor");

@@ -3,95 +3,98 @@ import { getUserFromCookie } from "@/utils/auth";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
-    try {
-        const user = await getUserFromCookie();
-        if (!user) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const { searchParams } = new URL(req.url);
-        const academicYearId = searchParams.get("academicYearId");
-        const classId = searchParams.get("classId"); // 🟢 Add classId parameter
-
-        const tutor = await prisma.tutor.findUnique({
-            where: { userId: user.id },
-        });
-
-        if (!tutor) {
-            return NextResponse.json(
-                { success: false, message: "Tutor not found" },
-                { status: 404 }
-            );
-        }
-
-        // Find class - prioritize classId if provided
-        let kelas;
-        
-        if (classId) {
-            kelas = await prisma.class.findFirst({
-                where: {
-                    id: classId,
-                    homeroomTeacherId: tutor.id,
-                    ...(academicYearId && { academicYearId }),
-                },
-                include: {
-                    classSubjectTutors: {
-                        include: {
-                            subject: true,
-                            tutor: true,
-                            schedules: true,
-                        }
-                    }
-                }
-            });
-        } else {
-            // Fallback
-            const whereCondition = { homeroomTeacherId: tutor.id };
-            if (academicYearId) whereCondition.academicYearId = academicYearId;
-
-            kelas = await prisma.class.findFirst({
-                where: whereCondition,
-                include: {
-                    classSubjectTutors: {
-                        include: {
-                            subject: true,
-                            tutor: true,
-                            schedules: true,
-                        }
-                    }
-                }
-            });
-        }
-
-        if (!kelas) {
-            return NextResponse.json({ success: true, data: [] });
-        }
-
-        // Format data
-        const subjects = kelas.classSubjectTutors.map((cst) => ({
-            id: cst.id,
-            subjectId: cst.subjectId,
-            subjectName: cst.subject.namaMapel,
-            subjectCode: cst.subject.kodeMapel,
-            tutorName: cst.tutor.namaLengkap,
-            hasSchedule: cst.schedules.length > 0,
-            scheduleDays: cst.schedules.map((s) => s.dayOfWeek),
-        }));
-
-        const classInfo = {
-            id: kelas.id,
-            namaKelas: kelas.namaKelas,
-        };
-
-        return NextResponse.json({ success: true, data: subjects, classInfo });
-
-    } catch (error) {
-        return NextResponse.json(
-            { success: false, message: "Internal Server Error", error: error.message },
-            { status: 500 }
-        );
+  try {
+    const user = await getUserFromCookie();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 },
+      );
     }
+
+    const { searchParams } = new URL(req.url);
+    const academicYearId = searchParams.get("academicYearId");
+    const classId = searchParams.get("classId"); // 🟢 Add classId parameter
+
+    const tutor = await prisma.tutor.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!tutor) {
+      return NextResponse.json(
+        { success: false, message: "Tutor not found" },
+        { status: 404 },
+      );
+    }
+
+    // Find class - prioritize classId if provided
+    let kelas;
+
+    if (classId) {
+      kelas = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          homeroomTeacherId: tutor.id,
+          ...(academicYearId && { academicYearId }),
+        },
+        include: {
+          classSubjectTutors: {
+            include: {
+              subject: true,
+              tutor: true,
+              schedules: true,
+            },
+          },
+        },
+      });
+    } else {
+      // Fallback
+      const whereCondition = { homeroomTeacherId: tutor.id };
+      if (academicYearId) whereCondition.academicYearId = academicYearId;
+
+      kelas = await prisma.class.findFirst({
+        where: whereCondition,
+        include: {
+          classSubjectTutors: {
+            include: {
+              subject: true,
+              tutor: true,
+              schedules: true,
+            },
+          },
+        },
+      });
+    }
+
+    if (!kelas) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    // Format data
+    const subjects = kelas.classSubjectTutors.map((cst) => ({
+      id: cst.id,
+      subjectId: cst.subjectId,
+      subjectName: cst.subject.namaMapel,
+      subjectCode: cst.subject.kodeMapel,
+      tutorName: cst.tutor.namaLengkap,
+      hasSchedule: cst.schedules.length > 0,
+      scheduleDays: cst.schedules.map((s) => s.dayOfWeek),
+    }));
+
+    const classInfo = {
+      id: kelas.id,
+      namaKelas: kelas.namaKelas,
+    };
+
+    return NextResponse.json({ success: true, data: subjects, classInfo });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      },
+      { status: 500 },
+    );
+  }
 }

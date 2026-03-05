@@ -8,7 +8,7 @@ export async function GET(req) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -25,13 +25,13 @@ export async function GET(req) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Get Class - prioritize classId if provided, otherwise find by homeroom teacher
     let kelas;
-    
+
     if (classId) {
       // 🟢 Use specific classId from context
       kelas = await prisma.class.findFirst({
@@ -76,13 +76,10 @@ export async function GET(req) {
         subject: { select: { id: true, namaMapel: true, kodeMapel: true } },
         tutor: { select: { namaLengkap: true } },
         _count: {
-          select: { attendances: true }
-        }
+          select: { attendances: true },
+        },
       },
-      orderBy: [
-        { tanggal: 'asc' },
-        { startTime: 'asc' }
-      ]
+      orderBy: [{ tanggal: "asc" }, { startTime: "asc" }],
     });
 
     return NextResponse.json({
@@ -90,10 +87,9 @@ export async function GET(req) {
       data: {
         className: kelas.namaKelas,
         academicYear: kelas.academicYear,
-        sessions: sessions
-      }
+        sessions: sessions,
+      },
     });
-
   } catch (error) {
     console.error("GET /homeroom/attendance error:", error);
     return NextResponse.json(
@@ -102,7 +98,7 @@ export async function GET(req) {
         message: "Internal Server Error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -113,7 +109,7 @@ export async function DELETE(req) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -125,7 +121,7 @@ export async function DELETE(req) {
     if (!subjectId || !academicYearId) {
       return NextResponse.json(
         { success: false, message: "Subject ID and Academic Year ID required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -133,13 +129,13 @@ export async function DELETE(req) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Find class - prioritize classId if provided
     let kelas;
-    
+
     if (classId) {
       kelas = await prisma.class.findFirst({
         where: {
@@ -157,7 +153,7 @@ export async function DELETE(req) {
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Class not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -183,7 +179,7 @@ export async function DELETE(req) {
         message: "Internal Server Error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

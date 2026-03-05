@@ -79,7 +79,7 @@ const STATUS_LABELS = {
 
 export default function HomeroomAttendancePage() {
   const { selectedClassId } = useHomeroomClass(); // 🟢 Use context for selected class
-  
+
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState([]);
@@ -157,16 +157,16 @@ export default function HomeroomAttendancePage() {
   const fetchSessions = async () => {
     try {
       setIsLoading(true);
-      
+
       // 🟢 Build URL with classId from context
       const params = new URLSearchParams();
       if (selectedAcademicYearId) {
-        params.append('academicYearId', selectedAcademicYearId);
+        params.append("academicYearId", selectedAcademicYearId);
       }
       if (selectedClassId) {
-        params.append('classId', selectedClassId); // Pass selected class from context
+        params.append("classId", selectedClassId); // Pass selected class from context
       }
-      
+
       const res = await api.get(`/homeroom/attendance?${params.toString()}`);
       if (res.data.success) {
         setSessions(res.data.data.sessions || []);
@@ -186,16 +186,16 @@ export default function HomeroomAttendancePage() {
 
     try {
       setIsLoadingSubjects(true);
-      
+
       // 🟢 Build URL with classId
       const params = new URLSearchParams();
       if (selectedAcademicYearId) {
-        params.append('academicYearId', selectedAcademicYearId);
+        params.append("academicYearId", selectedAcademicYearId);
       }
       if (selectedClassId) {
-        params.append('classId', selectedClassId);
+        params.append("classId", selectedClassId);
       }
-      
+
       const res = await api.get(`/homeroom/subjects?${params.toString()}`);
       if (res.data.success) {
         setSubjects(res.data.data);
@@ -339,16 +339,16 @@ export default function HomeroomAttendancePage() {
     if (!deleteSubjectId) return;
     try {
       setIsDeleting(true);
-      
+
       // 🟢 Build URL with classId
       const params = new URLSearchParams({
         subjectId: deleteSubjectId,
         academicYearId: selectedAcademicYearId,
       });
       if (selectedClassId) {
-        params.append('classId', selectedClassId);
+        params.append("classId", selectedClassId);
       }
-      
+
       await api.delete(`/homeroom/attendance?${params.toString()}`);
       toast.success("Semua sesi untuk mata pelajaran ini berhasil dihapus.");
       fetchSessions();

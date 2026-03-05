@@ -62,13 +62,15 @@ export default function PromoteStudentsPage() {
     try {
       setIsLoading(true);
       setAccessDenied(false);
-      
+
       const params = {};
       if (selectedClassId) {
         params.classId = selectedClassId;
       }
-      
-      const res = await api.get("/homeroom/my-students-for-promotion", { params });
+
+      const res = await api.get("/homeroom/my-students-for-promotion", {
+        params,
+      });
       const { students, academicYear, className, program } =
         res.data.data || {};
       setStudents(students || []);

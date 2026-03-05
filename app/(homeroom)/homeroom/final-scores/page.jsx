@@ -23,7 +23,13 @@ import { useHomeroomClass } from "@/context/HomeroomClassContext";
 
 export default function FinalScoresPage() {
   const { selectedClassId } = useHomeroomClass();
-  const [data, setData] = useState({ students: [], subjects: [], tahunAjaranId: null, classInfo: null, filterOptions: { academicYears: [] } });
+  const [data, setData] = useState({
+    students: [],
+    subjects: [],
+    tahunAjaranId: null,
+    classInfo: null,
+    filterOptions: { academicYears: [] },
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -36,36 +42,56 @@ export default function FinalScoresPage() {
     return isNaN(num) ? "-" : num.toFixed(2);
   };
 
-  const fetchFinalScores = useCallback(async (academicYearId) => {
-    try {
-      setIsLoading(true);
-      const params = {};
-      
-      // Priority 1: Use selectedClassId from context if available
-      if (selectedClassId) {
-        params.classId = selectedClassId;
-      } else if (academicYearId) {
-        // Priority 2: Use academicYearId from filter
-        params.academicYearId = academicYearId;
+  const fetchFinalScores = useCallback(
+    async (academicYearId) => {
+      try {
+        setIsLoading(true);
+        const params = {};
+
+        // Priority 1: Use selectedClassId from context if available
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (academicYearId) {
+          // Priority 2: Use academicYearId from filter
+          params.academicYearId = academicYearId;
+        }
+
+        const res = await api.get("/homeroom/final-scores", { params });
+        setData(
+          res.data.data || {
+            students: [],
+            subjects: [],
+            classInfo: null,
+            filterOptions: { academicYears: [] },
+          },
+        );
+        if (res.data.data?.classInfo?.academicYear?.id && !academicYearId) {
+          setSelectedYear(res.data.data.classInfo.academicYear.id);
+        }
+      } catch (error) {
+        console.error(error);
+        const errorMessage =
+          error.response?.data?.message ||
+          "Gagal memuat data nilai akhir siswa";
+        toast.error(errorMessage);
+        setData({
+          students: [],
+          subjects: [],
+          classInfo: null,
+          filterOptions: { academicYears: [] },
+        });
+        if (error.response?.data?.data?.filterOptions) {
+          setData((prevData) => ({
+            ...prevData,
+            filterOptions: error.response.data.data.filterOptions,
+          }));
+        }
+      } finally {
+        setIsLoading(false);
       }
-      
-      const res = await api.get("/homeroom/final-scores", { params });
-      setData(res.data.data || { students: [], subjects: [], classInfo: null, filterOptions: { academicYears: [] } });
-      if (res.data.data?.classInfo?.academicYear?.id && !academicYearId) {
-        setSelectedYear(res.data.data.classInfo.academicYear.id);
-      }
-    } catch (error) {
-      console.error(error);
-      const errorMessage = error.response?.data?.message || "Gagal memuat data nilai akhir siswa";
-      toast.error(errorMessage);
-      setData({ students: [], subjects: [], classInfo: null, filterOptions: { academicYears: [] } });
-      if (error.response?.data?.data?.filterOptions) {
-        setData(prevData => ({ ...prevData, filterOptions: error.response.data.data.filterOptions }));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedClassId]);
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     fetchFinalScores();
@@ -98,7 +124,7 @@ export default function FinalScoresPage() {
       data.students.forEach((student) => {
         data.subjects.forEach((subject) => {
           const mapel = student.mapelDetails.find(
-            (m) => m.namaMapel === subject.namaMapel
+            (m) => m.namaMapel === subject.namaMapel,
           );
 
           if (!mapel) return;
@@ -118,9 +144,8 @@ export default function FinalScoresPage() {
 
           if (nilaiList.length === 0) return;
 
-          const nilaiAkhir = (
-            nilaiList.reduce((acc, n) => acc + n, 0) / nilaiList.length
-          );
+          const nilaiAkhir =
+            nilaiList.reduce((acc, n) => acc + n, 0) / nilaiList.length;
 
           payload.push({
             studentId: student.id,
@@ -148,8 +173,6 @@ export default function FinalScoresPage() {
       setIsSaving(false);
     }
   };
-  
-  
 
   const classInfo = data.classInfo;
 
@@ -164,7 +187,11 @@ export default function FinalScoresPage() {
         ]}
       >
         <AcademicYearFilter
-          academicYears={(data.filterOptions?.academicYears || []).map(y => ({ ...y, value: y.id, label: y.label }))}
+          academicYears={(data.filterOptions?.academicYears || []).map((y) => ({
+            ...y,
+            value: y.id,
+            label: y.label,
+          }))}
           selectedYear={selectedYear}
           onYearChange={handleYearChange}
         />
@@ -328,7 +355,7 @@ export default function FinalScoresPage() {
 
                       {data.subjects.map((subject) => {
                         const mapel = student.mapelDetails.find(
-                          (m) => m.namaMapel === subject.namaMapel
+                          (m) => m.namaMapel === subject.namaMapel,
                         ) || {
                           exercise: "-",
                           quiz: "-",
@@ -340,11 +367,17 @@ export default function FinalScoresPage() {
 
                         return (
                           <>
-                            <TableCell>{formatNumber(mapel.exercise)}</TableCell>
+                            <TableCell>
+                              {formatNumber(mapel.exercise)}
+                            </TableCell>
                             <TableCell>{formatNumber(mapel.quiz)}</TableCell>
-                            <TableCell>{formatNumber(mapel.dailyTest)}</TableCell>
+                            <TableCell>
+                              {formatNumber(mapel.dailyTest)}
+                            </TableCell>
                             <TableCell>{formatNumber(mapel.midterm)}</TableCell>
-                            <TableCell>{formatNumber(mapel.finalExam)}</TableCell>
+                            <TableCell>
+                              {formatNumber(mapel.finalExam)}
+                            </TableCell>
                             <TableCell>{formatNumber(mapel.skill)}</TableCell>
                           </>
                         );
@@ -353,7 +386,9 @@ export default function FinalScoresPage() {
                       <TableCell>
                         {formatNumber(student.behavior?.spiritual)}
                       </TableCell>
-                      <TableCell>{formatNumber(student.behavior?.sosial)}</TableCell>
+                      <TableCell>
+                        {formatNumber(student.behavior?.sosial)}
+                      </TableCell>
                       <TableCell>
                         {formatNumber(student.behavior?.kehadiran)}
                       </TableCell>
@@ -369,7 +404,11 @@ export default function FinalScoresPage() {
           </div>
 
           <div className="flex justify-between mt-4 gap-2 flex-wrap">
-            <Button variant="outline" onClick={() => fetchFinalScores(selectedYear)} disabled={isSaving}>
+            <Button
+              variant="outline"
+              onClick={() => fetchFinalScores(selectedYear)}
+              disabled={isSaving}
+            >
               Refresh Data
             </Button>
             <Button onClick={handleOpenConfirmDialog} disabled={isSaving}>

@@ -68,8 +68,12 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to fetch users", error: error.message },
-      { status: 500 }
+      {
+        success: false,
+        message: "Failed to fetch users",
+        error: error.message,
+      },
+      { status: 500 },
     );
   }
 }
@@ -83,7 +87,7 @@ export async function POST(request) {
     if (!nama || !email || !password || !role) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -91,7 +95,7 @@ export async function POST(request) {
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: "Email already in use" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -118,13 +122,17 @@ export async function POST(request) {
 
     return NextResponse.json(
       { success: true, data: newUser, message: "User created successfully" },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating user:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to create user", error: error.message },
-      { status: 500 }
+      {
+        success: false,
+        message: "Failed to create user",
+        error: error.message,
+      },
+      { status: 500 },
     );
   }
 }

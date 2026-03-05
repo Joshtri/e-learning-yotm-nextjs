@@ -78,35 +78,48 @@ export default function HomeroomAcademicScoresPage() {
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState("");
 
-  const fetchScores = useCallback(async (academicYearId) => {
-    setLoading(true);
-    try {
-      const params = {};
-      
-      // Priority 1: Use selectedClassId from context if available
-      if (selectedClassId) {
-        params.classId = selectedClassId;
-      } else if (academicYearId) {
-        // Priority 2: Use academicYearId from filter
-        params.academicYearId = academicYearId;
+  const fetchScores = useCallback(
+    async (academicYearId) => {
+      setLoading(true);
+      try {
+        const params = {};
+
+        // Priority 1: Use selectedClassId from context if available
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (academicYearId) {
+          // Priority 2: Use academicYearId from filter
+          params.academicYearId = academicYearId;
+        }
+
+        const res = await api.get("/homeroom/academic-scores", { params });
+        setData(res.data || {});
+        if (res.data?.classInfo?.academicYear?.id && !academicYearId) {
+          setSelectedYear(res.data.classInfo.academicYear.id);
+        }
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message || "Gagal memuat rekap nilai siswa";
+        toast.error(errorMessage);
+        setData({
+          students: [],
+          quizzes: [],
+          assignments: [],
+          filterOptions: { subjects: [], classes: [], academicYears: [] },
+          classInfo: null,
+        });
+        if (error.response?.data?.filterOptions) {
+          setData((prevData) => ({
+            ...prevData,
+            filterOptions: error.response.data.filterOptions,
+          }));
+        }
+      } finally {
+        setLoading(false);
       }
-      
-      const res = await api.get("/homeroom/academic-scores", { params });
-      setData(res.data || {});
-      if (res.data?.classInfo?.academicYear?.id && !academicYearId) {
-        setSelectedYear(res.data.classInfo.academicYear.id);
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "Gagal memuat rekap nilai siswa";
-      toast.error(errorMessage);
-      setData({ students: [], quizzes: [], assignments: [], filterOptions: { subjects: [], classes: [], academicYears: [] }, classInfo: null });
-      if (error.response?.data?.filterOptions) {
-        setData(prevData => ({ ...prevData, filterOptions: error.response.data.filterOptions }));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedClassId]);
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     fetchScores();
@@ -155,7 +168,11 @@ export default function HomeroomAcademicScoresPage() {
   const subjectGroups = groupBySubject();
 
   // Generate columns for a specific subject
-  const generateSubjectColumns = (subjectId, subjectQuizzes, subjectAssignments) => [
+  const generateSubjectColumns = (
+    subjectId,
+    subjectQuizzes,
+    subjectAssignments,
+  ) => [
     {
       header: "No",
       cell: (_, index) => index + 1,
@@ -205,10 +222,14 @@ export default function HomeroomAcademicScoresPage() {
 
         const avg =
           subjectScores.length > 0
-            ? (subjectScores.reduce((a, b) => a + b, 0) / subjectScores.length).toFixed(2)
+            ? (
+                subjectScores.reduce((a, b) => a + b, 0) / subjectScores.length
+              ).toFixed(2)
             : "-";
 
-        return <div className="text-center font-semibold text-blue-600">{avg}</div>;
+        return (
+          <div className="text-center font-semibold text-blue-600">{avg}</div>
+        );
       },
       className: "text-center w-[100px]",
     },
@@ -230,7 +251,7 @@ export default function HomeroomAcademicScoresPage() {
           { label: "Rekap Nilai Akademik" },
         ]}
       >
-         <AcademicYearFilter
+        <AcademicYearFilter
           academicYears={filterOptions?.academicYears || []}
           selectedId={selectedYear}
           onChange={handleYearChange}
@@ -268,7 +289,9 @@ export default function HomeroomAcademicScoresPage() {
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-purple-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Tahun Ajaran</p>
+                    <p className="text-sm text-muted-foreground">
+                      Tahun Ajaran
+                    </p>
                     <p className="font-medium">{classInfo.tahunAjaran}</p>
                   </div>
                 </div>
@@ -278,7 +301,9 @@ export default function HomeroomAcademicScoresPage() {
                     <p className="text-sm text-muted-foreground">
                       Jumlah Siswa
                     </p>
-                    <p className="font-medium">{(students || []).length} siswa</p>
+                    <p className="font-medium">
+                      {(students || []).length} siswa
+                    </p>
                   </div>
                 </div>
               </div>
@@ -299,7 +324,8 @@ export default function HomeroomAcademicScoresPage() {
       ) : (
         <Accordion type="multiple" className="space-y-4">
           {Object.entries(subjectGroups).map(([subjectId, subjectData]) => {
-            const totalItems = subjectData.quizzes.length + subjectData.assignments.length;
+            const totalItems =
+              subjectData.quizzes.length + subjectData.assignments.length;
 
             return (
               <AccordionItem
@@ -334,7 +360,7 @@ export default function HomeroomAcademicScoresPage() {
                     columns={generateSubjectColumns(
                       subjectId,
                       subjectData.quizzes,
-                      subjectData.assignments
+                      subjectData.assignments,
                     )}
                     emptyMessage="Belum ada data nilai untuk mata pelajaran ini"
                     keyExtractor={(item) => item.studentId}

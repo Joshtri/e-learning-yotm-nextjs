@@ -40,41 +40,45 @@ export default function HomeroomExamsScoresPage() {
     return isNaN(num) ? "-" : num.toFixed(2);
   };
 
-  const fetchData = useCallback(async (academicYearId) => {
-    try {
-      setIsLoading(true);
-      const params = {};
-      
-      // Priority 1: Use selectedClassId from context if available
-      if (selectedClassId) {
-        params.classId = selectedClassId;
-      } else if (academicYearId) {
-        // Priority 2: Use academicYearId from filter
-        params.academicYearId = academicYearId;
-      }
-      
-      const res = await api.get("/homeroom/exams-scores", { params });
+  const fetchData = useCallback(
+    async (academicYearId) => {
+      try {
+        setIsLoading(true);
+        const params = {};
 
-      setData(res.data.data || []);
-      setClassInfo(res.data.classInfo || null);
-      if (res.data.filterOptions) {
-        setFilterOptions(res.data.filterOptions);
+        // Priority 1: Use selectedClassId from context if available
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (academicYearId) {
+          // Priority 2: Use academicYearId from filter
+          params.academicYearId = academicYearId;
+        }
+
+        const res = await api.get("/homeroom/exams-scores", { params });
+
+        setData(res.data.data || []);
+        setClassInfo(res.data.classInfo || null);
+        if (res.data.filterOptions) {
+          setFilterOptions(res.data.filterOptions);
+        }
+        if (res.data.classInfo?.academicYear?.id && !academicYearId) {
+          setSelectedYear(res.data.classInfo.academicYear.id);
+        }
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message || "Gagal memuat rekap nilai ujian";
+        toast.error(errorMessage);
+        setData([]);
+        setClassInfo(null);
+        if (error.response?.data?.filterOptions) {
+          setFilterOptions(error.response.data.filterOptions);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      if (res.data.classInfo?.academicYear?.id && !academicYearId) {
-        setSelectedYear(res.data.classInfo.academicYear.id);
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "Gagal memuat rekap nilai ujian";
-      toast.error(errorMessage);
-      setData([]);
-      setClassInfo(null);
-      if (error.response?.data?.filterOptions) {
-        setFilterOptions(error.response.data.filterOptions);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedClassId]);
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     fetchData();
@@ -169,13 +173,20 @@ export default function HomeroomExamsScoresPage() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <FileX className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Tidak Ada Data Nilai Ujian</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Tidak Ada Data Nilai Ujian
+            </h3>
             <p className="text-sm text-muted-foreground max-w-md mb-4">
-              Belum ada data nilai ujian untuk siswa di kelas Anda pada tahun ajaran yang dipilih. Nilai ujian akan muncul setelah tutor menilai submission siswa.
+              Belum ada data nilai ujian untuk siswa di kelas Anda pada tahun
+              ajaran yang dipilih. Nilai ujian akan muncul setelah tutor menilai
+              submission siswa.
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Users className="h-4 w-4" />
-              <span>Pastikan siswa sudah mengerjakan ujian dan tutor sudah memberikan nilai</span>
+              <span>
+                Pastikan siswa sudah mengerjakan ujian dan tutor sudah
+                memberikan nilai
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -194,17 +205,27 @@ export default function HomeroomExamsScoresPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mata Pelajaran</TableHead>
-                      <TableHead className="text-center">Ujian Harian</TableHead>
-                      <TableHead className="text-center">Ujian Awal Semester</TableHead>
-                      <TableHead className="text-center">Ujian Tengah Semester</TableHead>
-                      <TableHead className="text-center">Ujian Akhir Semester</TableHead>
+                      <TableHead className="text-center">
+                        Ujian Harian
+                      </TableHead>
+                      <TableHead className="text-center">
+                        Ujian Awal Semester
+                      </TableHead>
+                      <TableHead className="text-center">
+                        Ujian Tengah Semester
+                      </TableHead>
+                      <TableHead className="text-center">
+                        Ujian Akhir Semester
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {student.mapel && student.mapel.length > 0 ? (
                       student.mapel.map((subject, idx) => (
                         <TableRow key={`${subject.mataPelajaran}-${idx}`}>
-                          <TableCell className="font-medium">{subject.mataPelajaran}</TableCell>
+                          <TableCell className="font-medium">
+                            {subject.mataPelajaran}
+                          </TableCell>
                           <TableCell className="text-center">
                             {formatNumber(subject.DAILY_TEST)}
                           </TableCell>
@@ -221,7 +242,10 @@ export default function HomeroomExamsScoresPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-muted-foreground py-8"
+                        >
                           <FileX className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
                           Tidak ada data nilai untuk siswa ini
                         </TableCell>

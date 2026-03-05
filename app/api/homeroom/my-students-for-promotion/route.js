@@ -4,8 +4,8 @@ import prisma from "@/lib/prisma";
 import { getUserFromCookie } from "@/utils/auth";
 import { getStudentAttendanceSummary } from "@/lib/attendance-calculator";
 
-//set timeout. 
-//set timeout to 10 seconds. 
+//set timeout.
+//set timeout to 10 seconds.
 export const maxDuration = 60;
 
 export async function GET(req) {
@@ -15,7 +15,7 @@ export async function GET(req) {
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -27,7 +27,7 @@ export async function GET(req) {
     if (!tutor) {
       return new Response(
         JSON.stringify({ success: false, message: "Tutor not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function GET(req) {
 
     // Cari kelas di mana tutor jadi wali
     let kelas;
-    
+
     if (classId) {
       // Priority 1: Use classId if provided
       kelas = await prisma.class.findFirst({
@@ -67,7 +67,7 @@ export async function GET(req) {
     if (!kelas) {
       return new Response(
         JSON.stringify({ success: false, message: "Kelas tidak ditemukan" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -76,7 +76,8 @@ export async function GET(req) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Manajemen naik kelas hanya bisa diakses pada semester GENAP",
+          message:
+            "Manajemen naik kelas hanya bisa diakses pada semester GENAP",
           currentSemester: kelas.academicYear.semester,
           academicYear: {
             tahunMulai: kelas.academicYear.tahunMulai,
@@ -84,7 +85,7 @@ export async function GET(req) {
             semester: kelas.academicYear.semester,
           },
         }),
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -109,12 +110,12 @@ export async function GET(req) {
     // Ambil FinalScore semester GANJIL dan GENAP
     const finalScoresGanjil = ganjilAcademicYear
       ? await prisma.finalScore.findMany({
-        where: {
-          tahunAjaranId: ganjilAcademicYear.id,
-          studentId: { in: students.map((s) => s.id) },
-        },
-        include: { subject: true },
-      })
+          where: {
+            tahunAjaranId: ganjilAcademicYear.id,
+            studentId: { in: students.map((s) => s.id) },
+          },
+          include: { subject: true },
+        })
       : [];
 
     const finalScoresGenap = await prisma.finalScore.findMany({
@@ -130,23 +131,23 @@ export async function GET(req) {
       students.map(async (student) => {
         // Filter nilai per semester
         const scoresGanjil = finalScoresGanjil.filter(
-          (fs) => fs.studentId === student.id
+          (fs) => fs.studentId === student.id,
         );
         const scoresGenap = finalScoresGenap.filter(
-          (fs) => fs.studentId === student.id
+          (fs) => fs.studentId === student.id,
         );
 
         // Hitung rata-rata nilai per semester
         const avgGanjil =
           scoresGanjil.length > 0
             ? scoresGanjil.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
-            scoresGanjil.length
+              scoresGanjil.length
             : null;
 
         const avgGenap =
           scoresGenap.length > 0
             ? scoresGenap.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
-            scoresGenap.length
+              scoresGenap.length
             : null;
 
         // Hitung total nilai gabungan (GANJIL + GENAP)
@@ -154,7 +155,7 @@ export async function GET(req) {
         const avgTotal =
           allScores.length > 0
             ? allScores.reduce((sum, fs) => sum + fs.nilaiAkhir, 0) /
-            allScores.length
+              allScores.length
             : null;
 
         // Attendance Summary dengan Logic Baru (Daily Aggregation)
@@ -169,14 +170,14 @@ export async function GET(req) {
           summaryGanjil = await getStudentAttendanceSummary(
             student.id,
             ganjilAcademicYear.id,
-            kelas.id
+            kelas.id,
           );
         }
 
         const summaryGenap = await getStudentAttendanceSummary(
           student.id,
           kelas.academicYearId,
-          kelas.id
+          kelas.id,
         );
 
         const combinedSummary = {
@@ -197,9 +198,7 @@ export async function GET(req) {
           nilaiSemesterGanjil: avgGanjil
             ? parseFloat(avgGanjil.toFixed(2))
             : null,
-          nilaiSemesterGenap: avgGenap
-            ? parseFloat(avgGenap.toFixed(2))
-            : null,
+          nilaiSemesterGenap: avgGenap ? parseFloat(avgGenap.toFixed(2)) : null,
           nilaiTotal: avgTotal ? parseFloat(avgTotal.toFixed(2)) : null,
           detailNilaiGanjil: scoresGanjil.map((fs) => ({
             subject: fs.subject.namaMapel,
@@ -217,7 +216,7 @@ export async function GET(req) {
             persen: parseFloat(percent.toFixed(1)),
           },
         };
-      })
+      }),
     );
 
     return new Response(
@@ -234,7 +233,7 @@ export async function GET(req) {
           students: result,
         },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching homeroom students:", error);
@@ -244,7 +243,7 @@ export async function GET(req) {
         message: "Internal Server Error",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

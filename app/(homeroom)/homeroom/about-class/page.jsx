@@ -45,39 +45,43 @@ export default function AboutClassPage() {
   const [filterOptions, setFilterOptions] = useState({ academicYears: [] });
   const [selectedYear, setSelectedYear] = useState("");
 
-  const fetchClassData = useCallback(async (academicYearId) => {
-    setIsLoading(true);
-    try {
-      const params = {};
-      
-      // Priority 1: Use selectedClassId from context if available
-      if (selectedClassId) {
-        params.classId = selectedClassId;
-      } else if (academicYearId) {
-        // Priority 2: Use academicYearId from filter
-        params.academicYearId = academicYearId;
+  const fetchClassData = useCallback(
+    async (academicYearId) => {
+      setIsLoading(true);
+      try {
+        const params = {};
+
+        // Priority 1: Use selectedClassId from context if available
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (academicYearId) {
+          // Priority 2: Use academicYearId from filter
+          params.academicYearId = academicYearId;
+        }
+
+        const res = await api.get("/homeroom/about-class", { params });
+        setClassData(res.data.data);
+        if (res.data.filterOptions) {
+          setFilterOptions(res.data.filterOptions);
+        }
+        if (res.data.data?.academicYear?.id && !academicYearId) {
+          setSelectedYear(res.data.data.academicYear.id);
+        }
+      } catch (error) {
+        console.error(error);
+        const errorMessage =
+          error.response?.data?.message || "Gagal memuat data kelas";
+        toast.error(errorMessage);
+        setClassData(null); // Clear data on error
+        if (error.response?.data?.filterOptions) {
+          setFilterOptions(error.response.data.filterOptions);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      
-      const res = await api.get("/homeroom/about-class", { params });
-      setClassData(res.data.data);
-      if (res.data.filterOptions) {
-        setFilterOptions(res.data.filterOptions);
-      }
-      if (res.data.data?.academicYear?.id && !academicYearId) {
-        setSelectedYear(res.data.data.academicYear.id);
-      }
-    } catch (error) {
-      console.error(error);
-      const errorMessage = error.response?.data?.message || "Gagal memuat data kelas";
-      toast.error(errorMessage);
-      setClassData(null); // Clear data on error
-      if (error.response?.data?.filterOptions) {
-        setFilterOptions(error.response.data.filterOptions);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedClassId]);
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     fetchClassData();
@@ -143,7 +147,9 @@ export default function AboutClassPage() {
               <div>
                 <h4 className="font-semibold">Tahun Ajaran & Semester</h4>
                 <p>
-                  {classData.academicYear.tahunMulai}/{classData.academicYear.tahunSelesai} ({classData.academicYear.semester})
+                  {classData.academicYear.tahunMulai}/
+                  {classData.academicYear.tahunSelesai} (
+                  {classData.academicYear.semester})
                 </p>
               </div>
               <div>

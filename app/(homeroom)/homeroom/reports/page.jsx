@@ -68,7 +68,7 @@ export default function HomeroomReportsPage() {
         if (selectedClassId) {
           params.classId = selectedClassId;
         }
-        
+
         const res = await api.get("/homeroom/about-class", { params });
         if (res.data.success && res.data.data) {
           setMyClass(res.data.data);
@@ -91,7 +91,7 @@ export default function HomeroomReportsPage() {
         } else if (selectedAcademicYear) {
           params.academicYearId = selectedAcademicYear;
         }
-        
+
         const res = await api.get("/homeroom/my-students", { params });
         setStudents(res.data.data || []);
       } catch {
@@ -114,14 +114,14 @@ export default function HomeroomReportsPage() {
     setLoading(true);
     try {
       const params = { format };
-      
+
       if (selectedClassId) {
         params.classId = selectedClassId;
       }
       if (selectedAcademicYear) {
         params.academicYearId = selectedAcademicYear;
       }
-      
+
       const res = await api.get("/homeroom/reports/attendance", {
         params,
         responseType: "blob",
@@ -159,14 +159,14 @@ export default function HomeroomReportsPage() {
     setLoading(true);
     try {
       const params = { format };
-      
+
       if (selectedClassId) {
         params.classId = selectedClassId;
       }
       if (selectedAcademicYear) {
         params.academicYearId = selectedAcademicYear;
       }
-      
+
       const res = await api.get("/homeroom/reports/class-scores", {
         params,
         responseType: "blob",
@@ -212,14 +212,14 @@ export default function HomeroomReportsPage() {
         studentId: selectedStudent,
         format,
       };
-      
+
       if (selectedClassId) {
         params.classId = selectedClassId;
       }
       if (selectedAcademicYear) {
         params.academicYearId = selectedAcademicYear;
       }
-      
+
       const res = await api.get("/homeroom/reports/student-score", {
         params,
         responseType: "blob",

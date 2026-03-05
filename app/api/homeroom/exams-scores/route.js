@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -19,7 +19,7 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor profile not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -103,7 +103,7 @@ export async function GET(request) {
           message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih",
           filterOptions,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -186,9 +186,10 @@ export async function GET(request) {
       studentSubmissions.forEach((sub) => {
         if (subjectsMap[sub.mataPelajaran]) {
           // Format nilai ke 2 desimal
-          const nilai = sub.nilai !== null && sub.nilai !== undefined
-            ? parseFloat(parseFloat(sub.nilai).toFixed(2))
-            : null;
+          const nilai =
+            sub.nilai !== null && sub.nilai !== undefined
+              ? parseFloat(parseFloat(sub.nilai).toFixed(2))
+              : null;
           subjectsMap[sub.mataPelajaran][sub.jenis] = nilai;
         }
       });
@@ -221,7 +222,7 @@ export async function GET(request) {
     console.error("Gagal memuat rekap nilai ujian:", error);
     return NextResponse.json(
       { success: false, message: "Gagal memuat rekap nilai ujian" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

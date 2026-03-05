@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -19,7 +19,7 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -38,7 +38,7 @@ export async function GET(request) {
       },
       orderBy: {
         academicYear: {
-          tahunMulai: 'desc',
+          tahunMulai: "desc",
         },
       },
     });
@@ -46,7 +46,7 @@ export async function GET(request) {
     if (allHomeroomClasses.length === 0) {
       return NextResponse.json(
         { success: false, message: "Kelas tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -57,28 +57,38 @@ export async function GET(request) {
       kelas = allHomeroomClasses.find((c) => c.id === classId);
       if (!kelas) {
         return NextResponse.json(
-          { success: false, message: "Kelas tidak ditemukan untuk classId yang dipilih" },
-          { status: 404 }
+          {
+            success: false,
+            message: "Kelas tidak ditemukan untuk classId yang dipilih",
+          },
+          { status: 404 },
         );
       }
     } else if (academicYearId) {
       // Priority 2: Find class for specific academic year
-      kelas = allHomeroomClasses.find((c) => c.academicYearId === academicYearId);
+      kelas = allHomeroomClasses.find(
+        (c) => c.academicYearId === academicYearId,
+      );
       if (!kelas) {
         return NextResponse.json(
-          { success: false, message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih" },
-          { status: 404 }
+          {
+            success: false,
+            message: "Kelas tidak ditemukan untuk tahun ajaran yang dipilih",
+          },
+          { status: 404 },
         );
       }
     } else {
       // Priority 3: Find the class with active academic year, or default to first class
-      kelas = allHomeroomClasses.find((c) => c.academicYear.isActive) || allHomeroomClasses[0];
+      kelas =
+        allHomeroomClasses.find((c) => c.academicYear.isActive) ||
+        allHomeroomClasses[0];
     }
 
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Kelas tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -150,15 +160,15 @@ export async function GET(request) {
               select: {
                 tahunMulai: true,
                 tahunSelesai: true,
-              }
+              },
             },
             program: {
               select: {
                 namaPaket: true,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       },
     });
 
@@ -179,14 +189,14 @@ export async function GET(request) {
         assignment: {
           select: {
             jenis: true,
-          }
-        }
+          },
+        },
       },
     });
 
     // Pre-group submissions by studentId for efficient lookup
     const submissionsByStudent = {};
-    allSubmissions.forEach(sub => {
+    allSubmissions.forEach((sub) => {
       if (!submissionsByStudent[sub.studentId]) {
         submissionsByStudent[sub.studentId] = [];
       }
@@ -195,9 +205,11 @@ export async function GET(request) {
 
     // Function to calculate average
     const calculateAverage = (nilaiList) => {
-      const validNilai = nilaiList.filter(n => n !== null);
+      const validNilai = nilaiList.filter((n) => n !== null);
       if (validNilai.length === 0) return null;
-      return parseFloat((validNilai.reduce((a, b) => a + b, 0) / validNilai.length).toFixed(2));
+      return parseFloat(
+        (validNilai.reduce((a, b) => a + b, 0) / validNilai.length).toFixed(2),
+      );
     };
 
     const result = students.map((student) => {
@@ -215,9 +227,7 @@ export async function GET(request) {
       });
 
       const tugasNilai = tugasList.map((asn) => {
-        const s = studentSubmissions.find(
-          (sub) => sub.assignmentId === asn.id
-        );
+        const s = studentSubmissions.find((sub) => sub.assignmentId === asn.id);
         return {
           id: asn.id,
           judul: asn.judul,
@@ -228,12 +238,12 @@ export async function GET(request) {
 
       const nilaiUTS =
         studentSubmissions.find(
-          (s) => s.assignment && s.assignment.jenis === "MIDTERM"
+          (s) => s.assignment && s.assignment.jenis === "MIDTERM",
         )?.nilai ?? null;
 
       const nilaiUAS =
         studentSubmissions.find(
-          (s) => s.assignment && s.assignment.jenis === "FINAL_EXAM"
+          (s) => s.assignment && s.assignment.jenis === "FINAL_EXAM",
         )?.nilai ?? null;
 
       // Calculate average
@@ -289,7 +299,7 @@ export async function GET(request) {
 
     // Remove duplicates by academicYear.id
     const uniqueAcademicYears = academicYearsOptions.filter(
-      (year, index, self) => index === self.findIndex((y) => y.id === year.id)
+      (year, index, self) => index === self.findIndex((y) => y.id === year.id),
     );
 
     return NextResponse.json({
@@ -331,7 +341,7 @@ export async function GET(request) {
         message: "Internal Server Error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

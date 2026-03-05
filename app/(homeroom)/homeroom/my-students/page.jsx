@@ -22,41 +22,45 @@ export default function MyStudentsPage() {
   const [filterOptions, setFilterOptions] = useState({ academicYears: [] });
   const [selectedYear, setSelectedYear] = useState("");
 
-  const fetchStudents = useCallback(async (academicYearId) => {
-    try {
-      setIsLoading(true);
-      const params = {};
-      
-      // Priority 1: Use selectedClassId from context if available
-      if (selectedClassId) {
-        params.classId = selectedClassId;
-      } else if (academicYearId) {
-        // Priority 2: Use academicYearId from filter
-        params.academicYearId = academicYearId;
+  const fetchStudents = useCallback(
+    async (academicYearId) => {
+      try {
+        setIsLoading(true);
+        const params = {};
+
+        // Priority 1: Use selectedClassId from context if available
+        if (selectedClassId) {
+          params.classId = selectedClassId;
+        } else if (academicYearId) {
+          // Priority 2: Use academicYearId from filter
+          params.academicYearId = academicYearId;
+        }
+
+        const res = await api.get("/homeroom/my-students", { params });
+        setStudents(res.data.data || []);
+        setClassInfo(res.data.classInfo || null);
+        if (res.data.filterOptions) {
+          setFilterOptions(res.data.filterOptions);
+        }
+        if (res.data.classInfo?.academicYear?.id && !academicYearId) {
+          setSelectedYear(res.data.classInfo.academicYear.id);
+        }
+      } catch (error) {
+        console.error(error);
+        const errorMessage =
+          error.response?.data?.message || "Gagal memuat data siswa";
+        toast.error(errorMessage);
+        setStudents([]);
+        setClassInfo(null);
+        if (error.response?.data?.filterOptions) {
+          setFilterOptions(error.response.data.filterOptions);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      
-      const res = await api.get("/homeroom/my-students", { params });
-      setStudents(res.data.data || []);
-      setClassInfo(res.data.classInfo || null);
-      if (res.data.filterOptions) {
-        setFilterOptions(res.data.filterOptions);
-      }
-      if (res.data.classInfo?.academicYear?.id && !academicYearId) {
-        setSelectedYear(res.data.classInfo.academicYear.id);
-      }
-    } catch (error) {
-      console.error(error);
-      const errorMessage = error.response?.data?.message || "Gagal memuat data siswa";
-      toast.error(errorMessage);
-      setStudents([]);
-      setClassInfo(null);
-      if (error.response?.data?.filterOptions) {
-        setFilterOptions(error.response.data.filterOptions);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedClassId]);
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     fetchStudents();
@@ -96,11 +100,13 @@ export default function MyStudentsPage() {
       header: "Status",
       cell: (row) => {
         return (
-          <span className={`px-2 py-1 rounded-md text-xs ${
-            row.status === "ACTIVE"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}>
+          <span
+            className={`px-2 py-1 rounded-md text-xs ${
+              row.status === "ACTIVE"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {row.status === "ACTIVE" ? "Aktif" : "Tidak Aktif"}
           </span>
         );
@@ -128,69 +134,71 @@ export default function MyStudentsPage() {
       {/* Info Kelas & Tahun Ajaran */}
       {isLoading && !classInfo ? (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardHeader>
-                <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                </div>
-            </CardContent>
-        </Card>
-      ) : classInfo && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Informasi Kelas
-            </CardTitle>
+            <Skeleton className="h-6 w-48" />
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Kelas</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {classInfo.namaKelas}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Program</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {classInfo.program || "-"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tahun Ajaran</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {classInfo.academicYear.tahunMulai}/
-                  {classInfo.academicYear.tahunSelesai}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Semester</p>
-                <p className="text-lg font-bold">
-                  <span
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      classInfo.academicYear.semester === "GENAP"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
-                  >
-                    {classInfo.academicYear.semester}
-                  </span>
-                  {classInfo.academicYear.isActive && (
-                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
-                      Aktif
-                    </span>
-                  )}
-                </p>
-              </div>
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
             </div>
           </CardContent>
         </Card>
+      ) : (
+        classInfo && (
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Informasi Kelas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Kelas</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {classInfo.namaKelas}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Program</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {classInfo.program || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tahun Ajaran</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {classInfo.academicYear.tahunMulai}/
+                    {classInfo.academicYear.tahunSelesai}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Semester</p>
+                  <p className="text-lg font-bold">
+                    <span
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        classInfo.academicYear.semester === "GENAP"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {classInfo.academicYear.semester}
+                    </span>
+                    {classInfo.academicYear.isActive && (
+                      <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs">
+                        Aktif
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {isLoading ? (

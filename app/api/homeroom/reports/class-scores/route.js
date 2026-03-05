@@ -10,7 +10,7 @@ import {
   createPDFResponse,
 } from "@/lib/pdf-helper";
 
-//timeout add. 
+//timeout add.
 
 export const maxDuration = 60;
 
@@ -20,7 +20,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -37,14 +37,14 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Get homeroom class with priority: classId -> academicYearId -> latest
     let kelas;
     let actualAcademicYearId;
-    
+
     if (classId) {
       // Priority 1: Direct classId
       kelas = await prisma.class.findFirst({
@@ -96,7 +96,7 @@ export async function GET(request) {
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Class not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -138,7 +138,7 @@ export async function GET(request) {
     if (!kelas) {
       return NextResponse.json(
         { success: false, message: "Class not found for this academic year" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -214,7 +214,7 @@ export async function GET(request) {
       subjects.forEach((subject) => {
         // 1. Try FinalScore First
         const finalScore = student.FinalScore.find(
-          (fs) => fs.subjectId === subject.id
+          (fs) => fs.subjectId === subject.id,
         );
 
         if (finalScore) {
@@ -233,10 +233,10 @@ export async function GET(request) {
           if (subjectSubmissions.length > 0) {
             const sum = subjectSubmissions.reduce(
               (acc, curr) => acc + (curr.nilai || 0),
-              0
+              0,
             );
             const avg = parseFloat(
-              (sum / subjectSubmissions.length).toFixed(2)
+              (sum / subjectSubmissions.length).toFixed(2),
             ); // Round to 2 decimals
             scores[subject.id] = avg;
             totalScore += avg;
@@ -276,7 +276,7 @@ export async function GET(request) {
         message: "Internal server error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -297,7 +297,7 @@ function generatePDFClassScores(kelas, subjects, studentsData) {
     doc,
     `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} - ${kelas.academicYear?.semester}`,
     14,
-    37
+    37,
   );
 
   // Prepare table headers
@@ -343,7 +343,7 @@ function generatePDFClassScores(kelas, subjects, studentsData) {
     doc,
     `Dicetak pada: ${new Date().toLocaleString("id-ID")}`,
     14,
-    finalY
+    finalY,
   );
 
   const pdfBuffer = pdfToBuffer(doc);

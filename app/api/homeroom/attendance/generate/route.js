@@ -7,11 +7,17 @@ export async function POST(req) {
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { academicYearId, startDate, classSubjectTutorId, sessionCount, classId } = await req.json(); // 🟢 Add classId
+    const {
+      academicYearId,
+      startDate,
+      classSubjectTutorId,
+      sessionCount,
+      classId,
+    } = await req.json(); // 🟢 Add classId
 
     if (!academicYearId || !startDate) {
       return new Response(
@@ -19,7 +25,7 @@ export async function POST(req) {
           success: false,
           message: "Tahun Ajaran dan Tanggal Mulai wajib diisi",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,7 +34,7 @@ export async function POST(req) {
     if (isNaN(MAX_MEETINGS) || MAX_MEETINGS < 1) {
       return new Response(
         JSON.stringify({ success: false, message: "Jumlah sesi tidak valid" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -38,7 +44,7 @@ export async function POST(req) {
           success: false,
           message: "Mata Pelajaran wajib dipilih",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,13 +56,13 @@ export async function POST(req) {
     if (!tutor) {
       return new Response(
         JSON.stringify({ success: false, message: "Tutor not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Find the class - prioritize classId if provided
     let kelas;
-    
+
     if (classId) {
       kelas = await prisma.class.findFirst({
         where: {
@@ -85,9 +91,9 @@ export async function POST(req) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Kelas perwalian tidak ditemukan untuk Tahun Ajaran ini"
+          message: "Kelas perwalian tidak ditemukan untuk Tahun Ajaran ini",
         }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -95,7 +101,7 @@ export async function POST(req) {
     const classSubjectTutors = await prisma.classSubjectTutor.findMany({
       where: {
         id: classSubjectTutorId,
-        classId: kelas.id
+        classId: kelas.id,
       },
       include: {
         subject: true,
@@ -110,7 +116,7 @@ export async function POST(req) {
           success: false,
           message: "Mata Pelajaran tidak ditemukan atau bukan milik kelas ini.",
         }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -132,24 +138,35 @@ export async function POST(req) {
 
       // Validate startDate matches one of the schedule days
       // startDate is YYYY-MM-DD string or Date object.
-      // Make sure to parse it safely in consistent timezone context if possible, 
+      // Make sure to parse it safely in consistent timezone context if possible,
       // but usually new Date(startDate) works if ISO string.
       const startObjDate = new Date(startDate);
       const startDayJs = startObjDate.getDay();
       const startDayPrisma = startDayJs === 0 ? 7 : startDayJs; // 1=Mon...7=Sun
 
-      const validDays = schedules.map(s => s.dayOfWeek);
+      const validDays = schedules.map((s) => s.dayOfWeek);
       if (!validDays.includes(startDayPrisma)) {
-        const dayNames = ["", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
-        const validDayNames = validDays.map(d => dayNames[d]).join(", ");
+        const dayNames = [
+          "",
+          "Senin",
+          "Selasa",
+          "Rabu",
+          "Kamis",
+          "Jumat",
+          "Sabtu",
+          "Minggu",
+        ];
+        const validDayNames = validDays.map((d) => dayNames[d]).join(", ");
         const currentDayName = dayNames[startDayPrisma];
 
-        return new Response(JSON.stringify({
-          success: false,
-          message: `Tanggal mulai (${currentDayName}) tidak sesuai dengan jadwal roster (${validDayNames}).`
-        }), { status: 400 });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Tanggal mulai (${currentDayName}) tidak sesuai dengan jadwal roster (${validDayNames}).`,
+          }),
+          { status: 400 },
+        );
       }
-
 
       // Current logic: For each schedule slot, generate 16 meetings?
       // Or 16 meetings TOTAL for the subject?
@@ -170,7 +187,6 @@ export async function POST(req) {
 
       // We generate up to 16 meetings total for the subject
 
-
       while (meetingCount < MAX_MEETINGS) {
         for (const sch of schedules) {
           if (meetingCount >= MAX_MEETINGS) break;
@@ -185,16 +201,16 @@ export async function POST(req) {
           // 1. Get day index of startObj (0=Sun, 1=Mon...).
           // 2. Schedule dayOfWeek (1=Mon..7=Sun). Note: JS getDay is 0-6.
           //    We need to match the user Input dayOfWeek convention.
-          //    I defined Schedule.dayOfWeek as 1=Monday, 7=Sunday? 
+          //    I defined Schedule.dayOfWeek as 1=Monday, 7=Sunday?
           //    Let's check prisma model comment: "1=Monday, 7=Sunday".
-          //    JS getDay: 0=Sunday, 1=Monday... 
+          //    JS getDay: 0=Sunday, 1=Monday...
           //    So JS = (Prisma % 7).
 
           const targetDayJs = sch.dayOfWeek % 7;
 
           // Date of this meeting in Week 0 offset
           const meetingDate = new Date(startObj);
-          meetingDate.setDate(meetingDate.getDate() + (currentWeek * 7));
+          meetingDate.setDate(meetingDate.getDate() + currentWeek * 7);
 
           // Adjust day
           // If diff < 0 (e.g. Target Mon(1) - Current Tue(2) = -1), it means the day has passed in this week?
@@ -225,17 +241,17 @@ export async function POST(req) {
 
           // Let's calculate the specific date for this week iteration
           const baseDate = new Date(startObj);
-          baseDate.setDate(baseDate.getDate() + (currentWeek * 7));
+          baseDate.setDate(baseDate.getDate() + currentWeek * 7);
 
           const baseDayJs = baseDate.getDay();
           let daysToAdd = targetDayJs - baseDayJs;
           if (daysToAdd < 0) {
-            // If the target day is earlier in the week than the start date, 
+            // If the target day is earlier in the week than the start date,
             // we assume "Week 1" starts FROM startDate.
             // So we move to next week?
             // E.g. Start Wed. Schedule Mon.
             // The "Mon of Week 1" is technically passed? Or is "Mon of NEXT week"?
-            // Usually Start Date is Monday. 
+            // Usually Start Date is Monday.
             // Let's assume we add 7 days if it's passed, TO KEEP IT IN THE FUTURE.
             daysToAdd += 7;
           }
@@ -257,11 +273,15 @@ export async function POST(req) {
 
           // 1. Extract pure Local Hours/Minutes from the Schedule (stored in UTC)
           // e.g. 23:00 UTC -> 07:00 Local (next day relative to epoch, but we just want HH:mm)
-          const startLocalTime = new Date(startT.getTime() + (OFFSET * 60 * 60 * 1000));
+          const startLocalTime = new Date(
+            startT.getTime() + OFFSET * 60 * 60 * 1000,
+          );
           const startH = startLocalTime.getUTCHours();
           const startM = startLocalTime.getUTCMinutes();
 
-          const endLocalTime = new Date(endT.getTime() + (OFFSET * 60 * 60 * 1000));
+          const endLocalTime = new Date(
+            endT.getTime() + OFFSET * 60 * 60 * 1000,
+          );
           const endH = endLocalTime.getUTCHours();
           const endM = endLocalTime.getUTCMinutes();
 
@@ -277,8 +297,12 @@ export async function POST(req) {
 
           // 3. Shift back to real UTC (-8 hours)
           // "Jan 5 07:00 Local" -> "Jan 4 23:00 UTC"
-          const sTime = new Date(sTimeLocal.getTime() - (OFFSET * 60 * 60 * 1000));
-          const eTime = new Date(eTimeLocal.getTime() - (OFFSET * 60 * 60 * 1000));
+          const sTime = new Date(
+            sTimeLocal.getTime() - OFFSET * 60 * 60 * 1000,
+          );
+          const eTime = new Date(
+            eTimeLocal.getTime() - OFFSET * 60 * 60 * 1000,
+          );
 
           sessionsToCreate.push({
             classId: kelas.id,
@@ -289,8 +313,8 @@ export async function POST(req) {
             tanggal: sTime, // DateTime
             startTime: sTime,
             endTime: eTime,
-            status: 'TERJADWALKAN',
-            keterangan: 'Auto Generated',
+            status: "TERJADWALKAN",
+            keterangan: "Auto Generated",
           });
 
           meetingCount++;
@@ -300,7 +324,7 @@ export async function POST(req) {
     }
 
     // Batch create
-    // Use createMany? 
+    // Use createMany?
     // AtttendanceSession has Unique constraint on meetingNumber.
     // If we re-generate, we should skipDuplicates or upsert?
     // "skipDuplicates: true" ignores conflicts.
@@ -318,12 +342,11 @@ export async function POST(req) {
         success: true,
         message: `Berhasil generate presensi untuk ${subjectsProcessed} mata pelajaran.`,
         data: {
-          totalSessions: sessionsToCreate.length
-        }
+          totalSessions: sessionsToCreate.length,
+        },
       }),
-      { status: 201 }
+      { status: 201 },
     );
-
   } catch (error) {
     console.error("Generate error:", error);
     return new Response(
@@ -332,8 +355,7 @@ export async function POST(req) {
         message: "Internal Server Error",
         error: error?.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

@@ -9,7 +9,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -20,7 +20,7 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -62,7 +62,7 @@ export async function GET(request) {
             include: { user: true },
           },
           students: {
-            where: { status: 'ACTIVE' },
+            where: { status: "ACTIVE" },
             include: {
               user: true,
             },
@@ -88,7 +88,7 @@ export async function GET(request) {
             include: { user: true },
           },
           students: {
-            where: { status: 'ACTIVE' },
+            where: { status: "ACTIVE" },
             include: {
               user: true,
             },
@@ -113,7 +113,7 @@ export async function GET(request) {
             include: { user: true },
           },
           students: {
-            where: { status: 'ACTIVE' },
+            where: { status: "ACTIVE" },
             include: {
               user: true,
             },
@@ -131,7 +131,8 @@ export async function GET(request) {
       });
 
       // Choose class with active students, if none, take the latest
-      kelas = allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
+      kelas =
+        allClasses.find((cls) => cls.students.length > 0) || allClasses[0];
     }
 
     if (!kelas) {
@@ -142,7 +143,7 @@ export async function GET(request) {
           data: null,
           filterOptions,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -176,7 +177,6 @@ export async function GET(request) {
     };
 
     return NextResponse.json({ success: true, data, filterOptions });
-
   } catch (error) {
     console.error(error);
     return NextResponse.json(
@@ -185,7 +185,7 @@ export async function GET(request) {
         message: "Internal Server Error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

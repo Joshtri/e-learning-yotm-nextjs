@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!user || user.role !== "TUTOR") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -19,7 +19,7 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor profile not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -104,7 +104,7 @@ export async function GET(request) {
           classInfo: null,
           filterOptions,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -164,7 +164,7 @@ export async function GET(request) {
     console.error("Failed to load my students:", error);
     return NextResponse.json(
       { success: false, message: "Failed to load my students" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

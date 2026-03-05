@@ -18,7 +18,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -31,13 +31,13 @@ export async function GET(request) {
     if (!studentId) {
       return NextResponse.json(
         { success: false, message: "Student ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Determine actual academic year ID from classId or academicYearId
     let actualAcademicYearId = academicYearId;
-    
+
     if (classId && !academicYearId) {
       const classData = await prisma.class.findUnique({
         where: { id: classId },
@@ -49,7 +49,7 @@ export async function GET(request) {
     if (!actualAcademicYearId) {
       return NextResponse.json(
         { success: false, message: "Academic year is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -124,7 +124,7 @@ export async function GET(request) {
     if (!student) {
       return NextResponse.json(
         { success: false, message: "Student not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -163,7 +163,7 @@ export async function GET(request) {
       .map((subject) => {
         // 1. Try to find existing FinalScore
         const finalScore = student.FinalScore.find(
-          (fs) => fs.subjectId === subject.id
+          (fs) => fs.subjectId === subject.id,
         );
 
         if (finalScore) {
@@ -185,7 +185,7 @@ export async function GET(request) {
         if (subjectSubmissions.length > 0) {
           const sum = subjectSubmissions.reduce(
             (acc, curr) => acc + (curr.nilai || 0),
-            0
+            0,
           );
           const avg = parseFloat((sum / subjectSubmissions.length).toFixed(2));
           return {
@@ -207,7 +207,7 @@ export async function GET(request) {
     // Calculate average score
     const totalScoreValue = processedScores.reduce(
       (sum, item) => sum + item.nilaiAkhir,
-      0
+      0,
     );
     const averageScore =
       processedScores.length > 0
@@ -247,7 +247,7 @@ export async function GET(request) {
         message: "Internal server error",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -267,7 +267,7 @@ function generatePDFStudentScore(data) {
     `Tahun Ajaran ${data.academicYear.tahun} - Semester ${data.academicYear.semester}`,
     105,
     28,
-    { align: "center" }
+    { align: "center" },
   );
 
   // Student Information
@@ -334,7 +334,7 @@ function generatePDFStudentScore(data) {
       doc,
       `Spiritual: ${data.behaviorScore.spiritual} | Sosial: ${data.behaviorScore.sosial}`,
       14,
-      currentY
+      currentY,
     );
   } else {
     addText(doc, "Belum ada penilaian sikap", 14, currentY);
@@ -351,7 +351,7 @@ function generatePDFStudentScore(data) {
     doc,
     `Hadir: ${data.attendance.hadir} | Sakit: ${data.attendance.sakit} | Izin: ${data.attendance.izin} | Alpha: ${data.attendance.alpha}`,
     14,
-    currentY
+    currentY,
   );
   addText(doc, `Total Hari: ${data.totalAttendance}`, 14, currentY + 6);
 
@@ -362,7 +362,7 @@ function generatePDFStudentScore(data) {
     doc,
     `Dicetak pada: ${new Date().toLocaleString("id-ID")}`,
     14,
-    currentY
+    currentY,
   );
 
   const pdfBuffer = pdfToBuffer(doc);
@@ -403,13 +403,13 @@ function generateExcelStudentScore(data) {
     [],
     ["Rata-rata Nilai", data.averageScore],
     [],
-    ["NILAI SIKAP"]
+    ["NILAI SIKAP"],
   );
 
   if (data.behaviorScore) {
     worksheetData.push(
       ["Spiritual", data.behaviorScore.spiritual],
-      ["Sosial", data.behaviorScore.sosial]
+      ["Sosial", data.behaviorScore.sosial],
     );
   } else {
     worksheetData.push(["Belum ada penilaian sikap"]);
@@ -422,7 +422,7 @@ function generateExcelStudentScore(data) {
     ["Sakit", data.attendance.sakit],
     ["Izin", data.attendance.izin],
     ["Alpha", data.attendance.alpha],
-    ["Total Hari", data.totalAttendance]
+    ["Total Hari", data.totalAttendance],
   );
 
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -430,7 +430,13 @@ function generateExcelStudentScore(data) {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Rapor");
 
   // Set column widths
-  worksheet["!cols"] = [{ wch: 20 }, { wch: 40 }, { wch: 15 }, { wch: 10 }, { wch: 15 }];
+  worksheet["!cols"] = [
+    { wch: 20 },
+    { wch: 40 },
+    { wch: 15 },
+    { wch: 10 },
+    { wch: 15 },
+  ];
 
   const excelBuffer = XLSX.write(workbook, {
     type: "buffer",
@@ -443,9 +449,8 @@ function generateExcelStudentScore(data) {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename=rapor-${data.student.nama.replace(
         /\s+/g,
-        "-"
+        "-",
       )}.xlsx`,
     },
   });
 }
-

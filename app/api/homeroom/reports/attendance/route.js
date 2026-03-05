@@ -16,7 +16,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -33,13 +33,13 @@ export async function GET(request) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Get homeroom class with priority: classId -> academicYearId -> latest
     let kelas;
-    
+
     if (classId) {
       // Priority 1: Direct classId
       kelas = await prisma.class.findFirst({
@@ -47,20 +47,60 @@ export async function GET(request) {
           id: classId,
           homeroomTeacherId: tutor.id,
         },
-      include: {
-        academicYear: true,
-        program: true,
-        students: {
-          where: { status: "ACTIVE" },
-          orderBy: { namaLengkap: "asc" },
+        include: {
+          academicYear: true,
+          program: true,
+          students: {
+            where: { status: "ACTIVE" },
+            orderBy: { namaLengkap: "asc" },
+          },
         },
-      },
-    });
+      });
+    } else if (academicYearId) {
+      // Priority 2: By academic year
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          academicYearId: academicYearId,
+        },
+        include: {
+          academicYear: true,
+          program: true,
+          students: {
+            where: { status: "ACTIVE" },
+            orderBy: { namaLengkap: "asc" },
+          },
+        },
+      });
+    } else {
+      // Priority 3: Latest class with students
+      const activeAcademicYear = await prisma.academicYear.findFirst({
+        where: { isActive: true },
+      });
+
+      kelas = await prisma.class.findFirst({
+        where: {
+          homeroomTeacherId: tutor.id,
+          ...(activeAcademicYear && { academicYearId: activeAcademicYear.id }),
+        },
+        include: {
+          academicYear: true,
+          program: true,
+          students: {
+            where: { status: "ACTIVE" },
+            orderBy: { namaLengkap: "asc" },
+          },
+        },
+        orderBy: {
+          academicYear: { tahunMulai: "desc" },
+        },
+      });
+    }
 
     if (!kelas) {
       return NextResponse.json(
-        { success: false, message: "Class not found for this academic year" },
-        { status: 404 }
+        { success: false, message: "Class not found" },
+        { status: 404 },
       );
     }
 
@@ -125,8 +165,12 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error generating attendance report:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error", error: error.message },
-      { status: 500 }
+      {
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      },
+      { status: 500 },
     );
   }
 }
@@ -137,12 +181,19 @@ function generatePDFAttendance(kelas, subjectAttendance) {
   // Header Title (First Page)
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  addText(doc, "LAPORAN PRESENSI PER MATA PELAJARAN", 105, 15, { align: "center" });
+  addText(doc, "LAPORAN PRESENSI PER MATA PELAJARAN", 105, 15, {
+    align: "center",
+  });
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   addText(doc, `Kelas: ${kelas.namaKelas}`, 14, 25);
-  addText(doc, `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} (${kelas.academicYear?.semester})`, 14, 30);
+  addText(
+    doc,
+    `Tahun Ajaran: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} (${kelas.academicYear?.semester})`,
+    14,
+    30,
+  );
 
   let startY = 40;
 
@@ -179,7 +230,16 @@ function generatePDFAttendance(kelas, subjectAttendance) {
     createAutoTable(doc, {
       startY: startY,
       head: [
-        ["No", "Nama Siswa", "NISN", "Hadir", "Sakit", "Izin", "Alpha", "Total"],
+        [
+          "No",
+          "Nama Siswa",
+          "NISN",
+          "Hadir",
+          "Sakit",
+          "Izin",
+          "Alpha",
+          "Total",
+        ],
       ],
       body: tableData,
       theme: "grid",
@@ -207,9 +267,9 @@ function generatePDFAttendance(kelas, subjectAttendance) {
   doc.setFont("helvetica", "italic");
   addText(
     doc,
-    `Dicetak pada: ${new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    `Dicetak pada: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`,
     14,
-    finalY + 5
+    finalY + 5,
   );
 
   const pdfBuffer = pdfToBuffer(doc);
@@ -234,7 +294,9 @@ function generateExcelAttendance(kelas, subjectAttendance) {
     const worksheetData = [
       [`PRESENSI: ${subjectName.toUpperCase()}`],
       [`Kelas: ${kelas.namaKelas}`],
-      [`TA: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} (${kelas.academicYear?.semester})`],
+      [
+        `TA: ${kelas.academicYear?.tahunMulai}/${kelas.academicYear?.tahunSelesai} (${kelas.academicYear?.semester})`,
+      ],
       [],
       ["No", "Nama Siswa", "NISN", "Hadir", "Sakit", "Izin", "Alpha", "Total"],
     ];
@@ -270,13 +332,16 @@ function generateExcelAttendance(kelas, subjectAttendance) {
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   });
 
-  const excelBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  const excelBuffer = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+  });
 
   return new NextResponse(excelBuffer, {
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename=laporan-presensi-mapel-${kelas.academicYear?.tahunMulai}-${kelas.academicYear?.semester}.xlsx`,
     },
   });
 }
-
