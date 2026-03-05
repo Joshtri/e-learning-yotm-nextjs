@@ -51,7 +51,7 @@ export default function StudentOtherScoresPage() {
     let filtered = data.filter((item) => item.tipe === "TUGAS");
     if (selectedAcademicYearId) {
       filtered = filtered.filter(
-        (item) => item.academicYearId === selectedAcademicYearId
+        (item) => item.academicYearId === selectedAcademicYearId,
       );
     }
     if (selectedSubjectId) {
@@ -64,7 +64,7 @@ export default function StudentOtherScoresPage() {
     let filtered = data.filter((item) => item.tipe === "KUIS");
     if (selectedAcademicYearId) {
       filtered = filtered.filter(
-        (item) => item.academicYearId === selectedAcademicYearId
+        (item) => item.academicYearId === selectedAcademicYearId,
       );
     }
     if (selectedSubjectId) {
@@ -145,7 +145,12 @@ export default function StudentOtherScoresPage() {
           <label className="text-sm font-medium mb-2 block">
             Filter Tahun Ajaran
           </label>
-          <Select value={selectedAcademicYearId || "all"} onValueChange={(value) => setSelectedAcademicYearId(value === "all" ? "" : value)}>
+          <Select
+            value={selectedAcademicYearId || "all"}
+            onValueChange={(value) =>
+              setSelectedAcademicYearId(value === "all" ? "" : value)
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Semua Tahun Ajaran" />
             </SelectTrigger>
@@ -164,7 +169,12 @@ export default function StudentOtherScoresPage() {
           <label className="text-sm font-medium mb-2 block">
             Filter Mata Pelajaran
           </label>
-          <Select value={selectedSubjectId || "all"} onValueChange={(value) => setSelectedSubjectId(value === "all" ? "" : value)}>
+          <Select
+            value={selectedSubjectId || "all"}
+            onValueChange={(value) =>
+              setSelectedSubjectId(value === "all" ? "" : value)
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Semua Mata Pelajaran" />
             </SelectTrigger>
@@ -188,29 +198,35 @@ export default function StudentOtherScoresPage() {
 
         {/* Tab Tugas */}
         <TabsContent value="tugas">
-          {tugasData.length > 0 ? (
+          {isLoading ? (
+            <SkeletonTable numRows={3} numCols={5} />
+          ) : tugasData.length > 0 ? (
             <DataTable
               data={tugasData}
               columns={columns}
-              isLoading={isLoading}
+              isLoading={false}
               loadingMessage="Memuat nilai tugas..."
               emptyMessage="Belum ada nilai tugas."
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <>
-              <SkeletonTable numRows={3} numCols={5} />
-            </>
+            <EmptyState
+              title="Belum ada tugas"
+              description="Belum ada nilai tugas yang tersedia."
+              icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+            />
           )}
         </TabsContent>
 
         {/* Tab Kuis */}
         <TabsContent value="kuis">
-          {kuisData.length > 0 ? (
+          {isLoading ? (
+            <SkeletonTable numRows={3} numCols={5} />
+          ) : kuisData.length > 0 ? (
             <DataTable
               data={kuisData}
               columns={columns}
-              isLoading={isLoading}
+              isLoading={false}
               loadingMessage="Memuat nilai kuis..."
               emptyMessage="Belum ada nilai kuis."
               keyExtractor={(item) => item.id}
