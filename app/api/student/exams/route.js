@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -24,7 +24,7 @@ export async function GET(request) {
     if (!student) {
       return NextResponse.json(
         { success: false, message: "Student not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -130,13 +130,27 @@ export async function GET(request) {
       let status = "Belum Tersedia";
       let canStart = false;
       const now = new Date();
-      const currentDateUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      const currentDateUTC = Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      );
 
       const startDate = exam.TanggalMulai ? new Date(exam.TanggalMulai) : null;
-      const startDateUTC = startDate ? Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) : null;
+      const startDateUTC = startDate
+        ? Date.UTC(
+            startDate.getFullYear(),
+            startDate.getMonth(),
+            startDate.getDate(),
+          )
+        : null;
 
-      const endDate = exam.TanggalSelesai ? new Date(exam.TanggalSelesai) : null;
-      const endDateUTC = endDate ? Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : null;
+      const endDate = exam.TanggalSelesai
+        ? new Date(exam.TanggalSelesai)
+        : null;
+      const endDateUTC = endDate
+        ? Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+        : null;
 
       if (submission) {
         if (submission.status === "GRADED") {
@@ -209,7 +223,7 @@ export async function GET(request) {
         data: exams,
         count: exams.length,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("ERROR in /api/student/exams:", error);
@@ -220,7 +234,7 @@ export async function GET(request) {
         message: "Gagal memuat data ujian",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

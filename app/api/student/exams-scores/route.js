@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!user || user.role !== "STUDENT") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -17,14 +17,14 @@ export async function GET(request) {
       where: { userId: user.id },
       select: {
         id: true,
-        classId: true
+        classId: true,
       },
     });
 
     if (!student) {
       return NextResponse.json(
         { success: false, message: "Student not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -123,7 +123,8 @@ export async function GET(request) {
       const passingScore = nilaiMaksimal * 0.75;
       const statusKelulusan = nilai >= passingScore ? "LULUS" : "TIDAK LULUS";
 
-      const academicYear = submission.assignment?.classSubjectTutor?.class?.academicYear;
+      const academicYear =
+        submission.assignment?.classSubjectTutor?.class?.academicYear;
 
       return {
         id: submission.id,
@@ -151,9 +152,9 @@ export async function GET(request) {
       {
         success: true,
         data: scores,
-        count: scores.length
+        count: scores.length,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("ERROR in /api/student/exams-scores:", error);
@@ -162,9 +163,9 @@ export async function GET(request) {
       {
         success: false,
         message: "Gagal memuat nilai ujian",
-        error: error.message
+        error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
