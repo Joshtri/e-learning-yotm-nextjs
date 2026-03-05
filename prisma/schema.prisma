@@ -72,7 +72,7 @@ enum TutorStatus {
   DECEASED // Meninggal dunia
   ON_LEAVE // Cuti panjang
 }
-[]
+
 enum AttendanceStatus {
   PRESENT
   SICK
