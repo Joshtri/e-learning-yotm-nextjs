@@ -219,7 +219,7 @@ export default function UsersPage() {
       validation: { required: "Role wajib dipilih" },
     },
     {
-      name: "userActivated",
+      name: "status",
       label: "Status",
       type: "select",
       placeholder: "Pilih status pengguna",

@@ -192,10 +192,7 @@ export default function TutorEditPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ACTIVE">Aktif</SelectItem>
-                    <SelectItem value="RESIGNED">Mengundurkan Diri</SelectItem>
-                    <SelectItem value="RETIRED">Pensiun</SelectItem>
-                    <SelectItem value="ON_LEAVE">Cuti Panjang</SelectItem>
-                    <SelectItem value="DECEASED">Meninggal Dunia</SelectItem>
+                    <SelectItem value="INACTIVE">Tidak Aktif</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

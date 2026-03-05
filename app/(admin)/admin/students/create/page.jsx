@@ -353,10 +353,6 @@ export default function StudentCreatePage() {
               options={[
                 { value: "ACTIVE", label: "Aktif" },
                 { value: "INACTIVE", label: "Tidak Aktif" },
-                { value: "GRADUATED", label: "Lulus" },
-                { value: "TRANSFERRED", label: "Pindah Sekolah" },
-                { value: "DROPPED_OUT", label: "Mengundurkan Diri" },
-                { value: "DECEASED", label: "Meninggal Dunia" },
               ]}
             />
           </CardContent>

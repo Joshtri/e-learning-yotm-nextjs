@@ -39,7 +39,7 @@ export default function EditUserPage() {
       nama: "",
       email: "",
       role: "",
-      userActivated: "",
+      status: "",
       password: "",
     },
   });
@@ -58,7 +58,7 @@ export default function EditUserPage() {
           nama: userData.nama,
           email: userData.email,
           role: userData.role,
-          userActivated: userData.userActivated || "ACTIVE",
+          status: userData.status || "ACTIVE",
           password: "", // Empty by default for security
         });
       } catch (error) {
@@ -90,7 +90,7 @@ export default function EditUserPage() {
         nama: userData.nama,
         email: userData.email,
         role: userData.role,
-        userActivated: userData.userActivated,
+        status: userData.status,
         password: userData.password,
       });
 
@@ -210,7 +210,7 @@ export default function EditUserPage() {
 
                 <FormField
                   control={form.control}
-                  name="userActivated"
+                  name="status"
                   rules={{ required: "Status wajib dipilih" }}
                   render={({ field }) => (
                     <FormItem>

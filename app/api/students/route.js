@@ -53,7 +53,6 @@ export async function GET(request) {
       ];
     }
 
-
     // Relasi ke class.academicYearId
     // if (academicYearId) {
     //   filter.class = {
@@ -164,13 +163,13 @@ export async function GET(request) {
           },
         },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching students:", error);
     return new Response(
       JSON.stringify({ success: false, message: "Failed to fetch students" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -203,7 +202,7 @@ export async function POST(request) {
     ) {
       return new Response(
         JSON.stringify({ success: false, message: "Semua field wajib diisi" }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -218,19 +217,19 @@ export async function POST(request) {
           success: false,
           message: "Akun ini sudah memiliki profil siswa",
         }),
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // Buat data siswa
-    const validStatuses = ["ACTIVE", "INACTIVE", "GRADUATED", "TRANSFERRED", "DROPPED_OUT", "DECEASED"];
+    const validStatuses = ["ACTIVE", "INACTIVE"];
     if (status && !validStatuses.includes(status)) {
       return new Response(
         JSON.stringify({
           success: false,
           message: `Status tidak valid: "${status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -277,7 +276,7 @@ export async function POST(request) {
         message: "Data siswa berhasil ditambahkan",
         data: newStudent,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating student:", error);
@@ -287,7 +286,7 @@ export async function POST(request) {
         message: "Gagal menambahkan data siswa",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

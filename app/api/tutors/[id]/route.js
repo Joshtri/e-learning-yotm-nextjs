@@ -55,7 +55,7 @@ export async function GET(request, context) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -90,7 +90,7 @@ export async function GET(request, context) {
     console.error("Error fetching tutor:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch tutor details" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,11 +100,14 @@ export async function PUT(request, { params }) {
   const { id } = params;
   const data = await request.json();
 
-  const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+  const validStatuses = ["ACTIVE", "INACTIVE"];
   if (data.status && !validStatuses.includes(data.status)) {
     return NextResponse.json(
-      { success: false, message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.` },
-      { status: 400 }
+      {
+        success: false,
+        message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+      },
+      { status: 400 },
     );
   }
 
@@ -137,7 +140,7 @@ export async function DELETE(request, { params }) {
     if (user.role !== "ADMIN") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -145,7 +148,7 @@ export async function DELETE(request, { params }) {
     if (!tutor) {
       return NextResponse.json(
         { success: false, message: "Tutor tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -174,9 +177,7 @@ export async function DELETE(request, { params }) {
     console.error("Gagal menghapus tutor:", error);
     return NextResponse.json(
       { success: false, message: "Gagal menghapus tutor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-

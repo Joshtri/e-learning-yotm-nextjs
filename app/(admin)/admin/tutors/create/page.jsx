@@ -206,10 +206,7 @@ export default function TutorCreatePage() {
               rules={{ required: "Status tutor wajib dipilih" }}
               options={[
                 { value: "ACTIVE", label: "Aktif" },
-                { value: "RESIGNED", label: "Mengundurkan Diri" },
-                { value: "RETIRED", label: "Pensiun" },
-                { value: "ON_LEAVE", label: "Cuti Panjang" },
-                { value: "DECEASED", label: "Meninggal Dunia" },
+                { value: "INACTIVE", label: "Tidak Aktif" },
               ]}
             />
           </CardContent>

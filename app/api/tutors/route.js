@@ -11,11 +11,12 @@ export async function GET(request) {
 
     const skip = (page - 1) * limit;
 
-    const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+    const validStatuses = ["ACTIVE", "INACTIVE"];
 
     // Build filter
     const where = {
-      ...(statusFilter && validStatuses.includes(statusFilter) && { status: statusFilter }),
+      ...(statusFilter &&
+        validStatuses.includes(statusFilter) && { status: statusFilter }),
       ...(search && {
         OR: [
           { namaLengkap: { contains: search, mode: "insensitive" } },
@@ -73,7 +74,7 @@ export async function GET(request) {
         message: "Gagal mengambil data tutor",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,20 +83,31 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userId, namaLengkap, telepon, pendidikan, pengalaman, bio, status } = body;
+    const {
+      userId,
+      namaLengkap,
+      telepon,
+      pendidikan,
+      pengalaman,
+      bio,
+      status,
+    } = body;
 
-    const validStatuses = ["ACTIVE", "RESIGNED", "RETIRED", "ON_LEAVE", "DECEASED"];
+    const validStatuses = ["ACTIVE", "INACTIVE"];
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
-        { success: false, message: `Status tidak valid: "${status}". Pilih salah satu dari: ${validStatuses.join(", ")}.` },
-        { status: 400 }
+        {
+          success: false,
+          message: `Status tidak valid: "${status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
+        },
+        { status: 400 },
       );
     }
 
     if (!userId || !namaLengkap) {
       return NextResponse.json(
         { success: false, message: "User ID dan nama lengkap wajib diisi" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -107,7 +119,7 @@ export async function POST(request) {
     if (existingTutor) {
       return NextResponse.json(
         { success: false, message: "User ini sudah memiliki profil tutor" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -138,7 +150,7 @@ export async function POST(request) {
         message: "Tutor berhasil ditambahkan",
         data: newTutor,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Gagal menambahkan tutor:", error);
@@ -148,7 +160,7 @@ export async function POST(request) {
         message: "Terjadi kesalahan saat menambahkan tutor",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

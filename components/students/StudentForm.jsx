@@ -129,10 +129,6 @@ export default function StudentForm({
           options={[
             { label: "Aktif", value: "ACTIVE" },
             { label: "Tidak Aktif", value: "INACTIVE" },
-            { label: "Lulus", value: "GRADUATED" },
-            { label: "Pindah Sekolah", value: "TRANSFERRED" },
-            { label: "Mengundurkan Diri", value: "DROPPED_OUT" },
-            { label: "Meninggal Dunia", value: "DECEASED" },
           ]}
           rules={{ required: "Status wajib dipilih" }}
           error={errors.status?.message}

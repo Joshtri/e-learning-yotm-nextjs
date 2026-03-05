@@ -57,26 +57,26 @@ export async function GET(request, { params }) {
     if (!student) {
       return new Response(
         JSON.stringify({ success: false, message: "Student not found" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     const classData = student.class
       ? {
-        id: student.class.id,
-        namaKelas: student.class.namaKelas,
-        program: student.class.program,
-        academicYear: student.class.academicYear,
-        subjects: student.class.classSubjectTutors.map((cst) => ({
-          id: cst.subject.id,
-          namaMapel: cst.subject.namaMapel,
-          deskripsi: cst.subject.deskripsi,
-          tutor: {
-            id: cst.tutor.id,
-            nama: cst.tutor.user.nama,
-          },
-        })),
-      }
+          id: student.class.id,
+          namaKelas: student.class.namaKelas,
+          program: student.class.program,
+          academicYear: student.class.academicYear,
+          subjects: student.class.classSubjectTutors.map((cst) => ({
+            id: cst.subject.id,
+            namaMapel: cst.subject.namaMapel,
+            deskripsi: cst.subject.deskripsi,
+            tutor: {
+              id: cst.tutor.id,
+              nama: cst.tutor.user.nama,
+            },
+          })),
+        }
       : null;
 
     return new Response(
@@ -97,12 +97,11 @@ export async function GET(request, { params }) {
             status: student.status, // ⬅️ include status for edit form
             user: student.user,
             classId: student.classId, // ⬅️ ini penting!
-
           },
           class: classData,
         },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching student detail:", error);
@@ -112,12 +111,10 @@ export async function GET(request, { params }) {
         message: "Failed to fetch student detail",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-
 
 // app/api/students/[id]/route.ts
 
@@ -140,7 +137,7 @@ export async function PATCH(req, { params }) {
             success: false,
             message: `NISN "${data.nisn}" sudah digunakan oleh siswa lain.`,
           }),
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
@@ -148,21 +145,29 @@ export async function PATCH(req, { params }) {
     // ── Build payload hanya dengan field yang dikirim ──
     const updatePayload = {};
 
-    if (data.namaLengkap !== undefined) updatePayload.namaLengkap = data.namaLengkap;
-    if (data.noTelepon !== undefined) updatePayload.noTelepon = data.noTelepon || null;
-    if (data.jenisKelamin !== undefined) updatePayload.jenisKelamin = data.jenisKelamin || null;
-    if (data.tempatLahir !== undefined) updatePayload.tempatLahir = data.tempatLahir || null;
+    if (data.namaLengkap !== undefined)
+      updatePayload.namaLengkap = data.namaLengkap;
+    if (data.noTelepon !== undefined)
+      updatePayload.noTelepon = data.noTelepon || null;
+    if (data.jenisKelamin !== undefined)
+      updatePayload.jenisKelamin = data.jenisKelamin || null;
+    if (data.tempatLahir !== undefined)
+      updatePayload.tempatLahir = data.tempatLahir || null;
     if (data.alamat !== undefined) updatePayload.alamat = data.alamat || null;
     if (data.tanggalLahir !== undefined) {
-      updatePayload.tanggalLahir = data.tanggalLahir ? new Date(data.tanggalLahir) : null;
+      updatePayload.tanggalLahir = data.tanggalLahir
+        ? new Date(data.tanggalLahir)
+        : null;
     }
 
     // NISN & NIS: set null jika kosong, set value jika diisi
     if (data.nisn !== undefined) {
-      updatePayload.nisn = data.nisn && data.nisn.trim() !== "" ? data.nisn.trim() : null;
+      updatePayload.nisn =
+        data.nisn && data.nisn.trim() !== "" ? data.nisn.trim() : null;
     }
     if (data.nis !== undefined) {
-      updatePayload.nis = data.nis && data.nis.trim() !== "" ? data.nis.trim() : null;
+      updatePayload.nis =
+        data.nis && data.nis.trim() !== "" ? data.nis.trim() : null;
     }
 
     // classId: hanya update jika dikirim
@@ -171,7 +176,7 @@ export async function PATCH(req, { params }) {
     }
 
     // status: validasi enum StudentStatus
-    const validStatuses = ["ACTIVE", "INACTIVE", "GRADUATED", "TRANSFERRED", "DROPPED_OUT", "DECEASED"];
+    const validStatuses = ["ACTIVE", "INACTIVE"];
     if (data.status !== undefined) {
       if (!validStatuses.includes(data.status)) {
         return new Response(
@@ -179,7 +184,7 @@ export async function PATCH(req, { params }) {
             success: false,
             message: `Status tidak valid: "${data.status}". Pilih salah satu dari: ${validStatuses.join(", ")}.`,
           }),
-          { status: 400 }
+          { status: 400 },
         );
       }
       updatePayload.status = data.status;
@@ -203,7 +208,7 @@ export async function PATCH(req, { params }) {
           message: `Data duplikat: nilai pada ${field} sudah digunakan oleh siswa lain.`,
           error: error.message,
         }),
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -213,11 +218,10 @@ export async function PATCH(req, { params }) {
         message: "Gagal update siswa",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
 
 export async function DELETE(request, { params }) {
   try {
@@ -242,7 +246,7 @@ export async function DELETE(request, { params }) {
     if (!student) {
       return new Response(
         JSON.stringify({ success: false, message: "Siswa tidak ditemukan" }),
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -258,9 +262,10 @@ export async function DELETE(request, { params }) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Gagal menghapus: Siswa memiliki data terkait (Nilai, Absensi, dll).",
+          message:
+            "Gagal menghapus: Siswa memiliki data terkait (Nilai, Absensi, dll).",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -307,12 +312,18 @@ export async function DELETE(request, { params }) {
 
         // Hapus Notification (sebagai pengirim maupun penerima)
         await tx.notification.deleteMany({
-          where: { OR: [{ senderId: student.userId }, { receiverId: student.userId }] }
+          where: {
+            OR: [{ senderId: student.userId }, { receiverId: student.userId }],
+          },
         });
 
         // Hapus pesan Chat dan Diskusi
-        await tx.chatMessage.deleteMany({ where: { senderId: student.userId } });
-        await tx.discussionMessage.deleteMany({ where: { senderId: student.userId } });
+        await tx.chatMessage.deleteMany({
+          where: { senderId: student.userId },
+        });
+        await tx.discussionMessage.deleteMany({
+          where: { senderId: student.userId },
+        });
 
         // Terakhir hapus User
         await tx.user.delete({ where: { id: student.userId } });
@@ -321,7 +332,7 @@ export async function DELETE(request, { params }) {
 
     return new Response(
       JSON.stringify({ success: true, message: "Siswa berhasil dihapus" }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Gagal hapus siswa:", error);
@@ -331,7 +342,7 @@ export async function DELETE(request, { params }) {
         message: "Gagal menghapus siswa",
         error: error.message,
       }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

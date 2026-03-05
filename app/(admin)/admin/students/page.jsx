@@ -103,16 +103,6 @@ export default function StudentsPage() {
   const STUDENT_STATUS_MAP = {
     ACTIVE: { label: "Aktif", color: "bg-green-100 text-green-700" },
     INACTIVE: { label: "Tidak Aktif", color: "bg-gray-100 text-gray-600" },
-    GRADUATED: { label: "Lulus", color: "bg-blue-100 text-blue-700" },
-    TRANSFERRED: {
-      label: "Pindah Sekolah",
-      color: "bg-yellow-100 text-yellow-700",
-    },
-    DROPPED_OUT: {
-      label: "Mengundurkan Diri",
-      color: "bg-red-100 text-red-700",
-    },
-    DECEASED: { label: "Meninggal Dunia", color: "bg-zinc-200 text-zinc-600" },
   };
 
   // Initial Fetch
@@ -431,10 +421,6 @@ export default function StudentsPage() {
         { label: "Semua Status", value: "ALL" },
         { label: "Aktif", value: "ACTIVE" },
         { label: "Tidak Aktif", value: "INACTIVE" },
-        { label: "Lulus", value: "GRADUATED" },
-        { label: "Pindah Sekolah", value: "TRANSFERRED" },
-        { label: "Mengundurkan Diri", value: "DROPPED_OUT" },
-        { label: "Meninggal Dunia", value: "DECEASED" },
       ],
       onSelect: (value) => {
         setSelectedStatus(value === "ALL" ? null : value);

@@ -31,10 +31,7 @@ export default function TutorPage() {
 
   const TUTOR_STATUS_MAP = {
     ACTIVE: { label: "Aktif", color: "bg-green-100 text-green-700" },
-    RESIGNED: { label: "Mengundurkan Diri", color: "bg-red-100 text-red-700" },
-    RETIRED: { label: "Pensiun", color: "bg-blue-100 text-blue-700" },
-    ON_LEAVE: { label: "Cuti Panjang", color: "bg-yellow-100 text-yellow-700" },
-    DECEASED: { label: "Meninggal Dunia", color: "bg-zinc-200 text-zinc-600" },
+    INACTIVE: { label: "Tidak Aktif", color: "bg-gray-100 text-gray-600" },
   };
 
   const fetchTutors = async () => {
@@ -198,10 +195,7 @@ export default function TutorPage() {
                   options: [
                     { label: "Semua Status", value: "ALL" },
                     { label: "Aktif", value: "ACTIVE" },
-                    { label: "Mengundurkan Diri", value: "RESIGNED" },
-                    { label: "Pensiun", value: "RETIRED" },
-                    { label: "Cuti Panjang", value: "ON_LEAVE" },
-                    { label: "Meninggal Dunia", value: "DECEASED" },
+                    { label: "Tidak Aktif", value: "INACTIVE" },
                   ],
                   onSelect: (value) => {
                     setSelectedStatus(value === "ALL" ? null : value);

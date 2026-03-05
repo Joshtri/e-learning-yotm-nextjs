@@ -12,16 +12,13 @@ export async function POST(request) {
     if (!loginInput || !password) {
       return NextResponse.json(
         { message: "Missing username/email or password" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: loginInput },
-          { nama: loginInput }
-        ]
+        OR: [{ email: loginInput }, { nama: loginInput }],
       },
       select: {
         id: true,
@@ -30,13 +27,42 @@ export async function POST(request) {
         password: true,
         role: true,
         status: true,
+        student: {
+          select: {
+            status: true,
+          },
+        },
+        tutor: {
+          select: {
+            status: true,
+          },
+        },
       },
     });
 
     if (!user || user.status !== "ACTIVE") {
       return NextResponse.json(
         { message: "Invalid username/email or password" },
-        { status: 401 }
+        { status: 401 },
+      );
+    }
+
+    // 🟢 Cek status Student jika rolenya STUDENT
+    if (user.role === "STUDENT" && user.student?.status !== "ACTIVE") {
+      return NextResponse.json(
+        { message: "Akun siswa tidak aktif. Silakan hubungi admin." },
+        { status: 403 },
+      );
+    }
+
+    // 🟢 Cek status Tutor jika rolenya TUTOR atau HOMEROOM_TEACHER
+    if (
+      (user.role === "TUTOR" || user.role === "HOMEROOM_TEACHER") &&
+      user.tutor?.status !== "ACTIVE"
+    ) {
+      return NextResponse.json(
+        { message: "Akun tutor tidak aktif. Silakan hubungi admin." },
+        { status: 403 },
       );
     }
 
@@ -44,7 +70,7 @@ export async function POST(request) {
     if (!passwordMatch) {
       return NextResponse.json(
         { message: "Invalid email or password" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -88,12 +114,11 @@ export async function POST(request) {
     });
 
     return response;
-
   } catch (error) {
     console.error("Error during login:", error);
     return NextResponse.json(
       { message: "Login failed. Please try again later." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
