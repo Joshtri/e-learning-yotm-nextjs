@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, ChevronsUpDown, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "@/lib/axios";
@@ -11,12 +11,27 @@ import FormField from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function TutorCreatePage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -30,12 +45,19 @@ export default function TutorCreatePage() {
     },
   });
 
+  const selectedUserId = form.watch("userId");
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         const res = await api.get("/tutors/account");
-        setUsers(res.data?.data?.users || []);
+        const availableUsers = res.data?.data?.users || [];
+        setUsers(availableUsers);
+        
+        if (availableUsers.length === 0) {
+          toast.info("Semua akun tutor sudah memiliki profil tutor");
+        }
       } catch (err) {
         console.error("Gagal memuat akun tutor:", err);
         toast.error("Gagal memuat akun yang tersedia");
@@ -72,6 +94,16 @@ export default function TutorCreatePage() {
 
   const onSubmit = async (formData) => {
     try {
+      // Validate userId
+      if (!formData.userId) {
+        form.setError("userId", {
+          type: "manual",
+          message: "Akun tutor wajib dipilih",
+        });
+        toast.error("Silakan pilih akun tutor terlebih dahulu");
+        return;
+      }
+
       setSubmitting(true);
 
       const payload = {
@@ -133,19 +165,79 @@ export default function TutorCreatePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="userId"
-                label="Akun Tutor"
-                type="select"
-                placeholder="Pilih akun tutor"
-                required
-                rules={{ required: "Akun wajib dipilih" }}
-                options={users.map((user) => ({
-                  value: user.id,
-                  label: `${user.nama} (${user.email})`,
-                }))}
-              />
+              {/* Akun Tutor - Combobox with Search */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Akun Tutor <span className="text-red-500">*</span>
+                </label>
+                <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={comboboxOpen}
+                      className={cn(
+                        "w-full justify-between font-normal",
+                        !selectedUserId && "text-muted-foreground"
+                      )}
+                    >
+                      {selectedUserId
+                        ? users.find((u) => u.id === selectedUserId)
+                            ?.nama || "Pilih akun tutor..."
+                        : "Pilih akun tutor..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command>
+                      <CommandInput
+                        placeholder="Cari akun tutor..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          Tidak ada akun tutor ditemukan.
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {users.map((user) => (
+                            <CommandItem
+                              key={user.id}
+                              value={`${user.nama} ${user.email}`}
+                              onSelect={() => {
+                                form.setValue("userId", user.id);
+                                setComboboxOpen(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{user.nama}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {user.email}
+                                </span>
+                              </div>
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  selectedUserId === user.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {form.formState.errors.userId && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.userId.message}
+                  </p>
+                )}
+              </div>
 
               <FormField
                 control={form.control}
