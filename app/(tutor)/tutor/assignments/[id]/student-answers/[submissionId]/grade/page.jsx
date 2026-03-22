@@ -184,6 +184,32 @@ export default function GradeSubmissionPage() {
                   : "-"}
               </p>
             </div>
+            {assignment?.tanggalSelesaiPenilaian && (
+              <div>
+                <Label className="text-muted-foreground">
+                  Batas Waktu Penilaian
+                </Label>
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`font-medium ${
+                      new Date() > new Date(assignment.tanggalSelesaiPenilaian)
+                        ? "text-red-600"
+                        : ""
+                    }`}
+                  >
+                    {new Date(
+                      assignment.tanggalSelesaiPenilaian,
+                    ).toLocaleDateString("id-ID", {
+                      dateStyle: "long",
+                    })}
+                  </p>
+                  {new Date() > new Date(assignment.tanggalSelesaiPenilaian) &&
+                    submission.status !== "GRADED" && (
+                      <Badge variant="destructive">Terlambat</Badge>
+                    )}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

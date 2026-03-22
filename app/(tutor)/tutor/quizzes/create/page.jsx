@@ -9,7 +9,8 @@ import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/ui/form-field";
-import { useWatch, useFormContext } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { useWatch } from "react-hook-form";
 
 export default function QuizCreatePage() {
   const router = useRouter();
@@ -30,7 +31,8 @@ export default function QuizCreatePage() {
       jamMulai: "",
       tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
       jamSelesai: "",
-      durasiMenit: 60,
+      durasiValue: 60,
+      durasiUnit: "menit",
       nilaiMaksimal: 100,
       acakSoal: false,
       acakJawaban: false,
@@ -42,7 +44,7 @@ export default function QuizCreatePage() {
       try {
         const res = await api.get("/tutor/my-class-subjects");
         setClassSubjects(res.data.data);
-      } catch (error) {
+      } catch {
         toast.error("Gagal memuat kelas & mapel");
       }
     };
@@ -54,32 +56,25 @@ export default function QuizCreatePage() {
   const tanggalSelesai = useWatch({ control, name: "tanggalSelesai" });
   const jamSelesai = useWatch({ control, name: "jamSelesai" });
 
+  const durasiUnit = useWatch({ control, name: "durasiUnit" });
+
   useEffect(() => {
     if (tanggalMulai && jamMulai && tanggalSelesai && jamSelesai) {
       const mulai = new Date(`${tanggalMulai}T${jamMulai}`);
       const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
 
       if (selesai > mulai) {
-        let durasi = Math.floor((selesai - mulai) / 1000 / 60);
+        let durasiMenit = Math.floor((selesai - mulai) / 1000 / 60);
+        if (durasiMenit > 1440) durasiMenit = 1440;
 
-        // Batasi maksimal 24 jam (1440 menit)
-        if (durasi > 1440) {
-          durasi = 1440;
-          toast.warning(
-            "Durasi maksimal dibatasi 24 jam. Waktu selesai disesuaikan.",
-          );
-          // Opsional: kita bisa tidak mengubah durasi tapi memberi error,
-          // tapi "di set untuk 24 jam saja" bisa berarti auto-limit atau validasi.
-          // Mari kita validasi saja di onSubmit agar user sadar.
-          // Tapi instruksinya "di set untuk 24 jam saja".
-          // Mari kita set durasi jadi 1440 max di sini untuk preview, tapi validasi di onSubmit lebih kuat.
+        if (durasiUnit === "jam") {
+          setValue("durasiValue", parseFloat((durasiMenit / 60).toFixed(1)));
+        } else {
+          setValue("durasiValue", durasiMenit);
         }
-        setValue("durasiMenit", durasi);
-      } else {
-        setValue("durasiMenit", 0);
       }
     }
-  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, setValue]);
+  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, durasiUnit, setValue]);
 
   const onSubmit = async (data) => {
     if (!data.jamMulai || !data.jamSelesai) {
@@ -95,12 +90,15 @@ export default function QuizCreatePage() {
       return;
     }
 
-    let durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
+    // Convert to minutes for API
+    let durasiMenit =
+      data.durasiUnit === "jam"
+        ? Math.round(data.durasiValue * 60)
+        : data.durasiValue;
 
-    // Validasi maksimal 24 jam
     if (durasiMenit > 1440) {
       toast.error(
-        "Durasi kuis maksimal 24 jam. Harap sesuaikan waktu selesai.",
+        "Durasi kuis maksimal 24 jam. Harap sesuaikan waktu selesai atau durasi.",
       );
       return;
     }
@@ -112,25 +110,18 @@ export default function QuizCreatePage() {
       durasiMenit,
     };
 
-    console.log("Data Step 1:", payload);
-
     try {
       sessionStorage.setItem("quizInfo", JSON.stringify(payload));
-      console.log("SessionStorage set successfully");
-
-      // Verify the data was saved
+      
       const saved = sessionStorage.getItem("quizInfo");
       const parsedSaved = JSON.parse(saved || "{}");
-      console.log("Saved data:", parsedSaved);
 
-      // Only proceed if data was saved successfully
       if (parsedSaved.judul && parsedSaved.classSubjectTutorId) {
         router.push("/tutor/quizzes/create/questions");
       } else {
         throw new Error("Data tidak tersimpan dengan benar");
       }
-    } catch (error) {
-      console.error("Error saving to sessionStorage:", error);
+    } catch {
       toast.error("Gagal menyimpan data quiz. Coba lagi.");
     }
   };
@@ -293,25 +284,36 @@ export default function QuizCreatePage() {
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="durasiMenit" className="text-sm font-medium">
-              Durasi (menit)
-            </label>
-            <input
-              type="number"
-              id="durasiMenit"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Durasi dalam menit"
-              readOnly
-              {...register("durasiMenit", { valueAsNumber: true })}
-            />
+            <Label htmlFor="durasiValue">Durasi</Label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                id="durasiValue"
+                step="0.1"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Masukkan durasi"
+                {...register("durasiValue", { 
+                  required: "Durasi wajib diisi",
+                  valueAsNumber: true,
+                  min: { value: 0.1, message: "Durasi tidak boleh 0" }
+                })}
+              />
+              <select
+                {...register("durasiUnit")}
+                className="w-24 px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="menit">Menit</option>
+                <option value="jam">Jam</option>
+              </select>
+            </div>
             {durasiText && (
               <p className="text-sm text-muted-foreground italic">
                 {durasiText}
               </p>
             )}
-            {errors.durasiMenit && (
+            {errors.durasiValue && (
               <p className="text-sm text-red-500">
-                {errors.durasiMenit.message}
+                {errors.durasiValue.message}
               </p>
             )}
           </div>

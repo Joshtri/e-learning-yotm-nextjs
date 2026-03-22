@@ -44,7 +44,8 @@ export default function ExamCreatePage() {
       jamMulai: "",
       tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
       jamSelesai: "",
-      durasiMenit: 60,
+      durasiValue: 60,
+      durasiUnit: "menit",
       acakSoal: false,
       acakJawaban: false,
     },
@@ -67,7 +68,7 @@ export default function ExamCreatePage() {
         }));
 
         setOptions(mapped);
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat data kelas & mapel");
       }
     };
@@ -78,7 +79,11 @@ export default function ExamCreatePage() {
   const jamMulai = watch("jamMulai");
   const tanggalSelesai = watch("tanggalSelesai");
   const jamSelesai = watch("jamSelesai");
-  const durasiMenit = watch("durasiMenit");
+  const durasiValue = watch("durasiValue");
+  const durasiUnit = watch("durasiUnit");
+
+  const durasiMenit =
+    durasiUnit === "jam" ? Math.round(durasiValue * 60) : durasiValue;
 
   useEffect(() => {
     if (tanggalMulai && jamMulai && tanggalSelesai && jamSelesai) {
@@ -86,20 +91,17 @@ export default function ExamCreatePage() {
       const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
 
       if (selesai > mulai) {
-        let durasi = Math.floor((selesai - mulai) / 1000 / 60);
+        let durasiMin = Math.floor((selesai - mulai) / 1000 / 60);
+        if (durasiMin > 1440) durasiMin = 1440;
 
-        // Validasi maks 24 jam (1440 menit)
-        if (durasi > 1440) {
-          durasi = 1440;
-          // toast.warning("Durasi maksimal dibatasi 24 jam. Waktu selesai disesuaikan.");
-          // Kita validasi di onSubmit untuk error lebih jelas
+        if (durasiUnit === "jam") {
+          setValue("durasiValue", parseFloat((durasiMin / 60).toFixed(1)));
+        } else {
+          setValue("durasiValue", durasiMin);
         }
-        setValue("durasiMenit", durasi);
-      } else {
-        setValue("durasiMenit", 0);
       }
     }
-  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, setValue]);
+  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, durasiUnit, setValue]);
 
   // ✅ Format durasi yang user-friendly
   let durasiText = "";
@@ -137,12 +139,15 @@ export default function ExamCreatePage() {
       return;
     }
 
-    const durasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
+    const durasiMenit =
+      data.durasiUnit === "jam"
+        ? Math.round(data.durasiValue * 60)
+        : data.durasiValue;
 
     // Validasi maksimal 24 jam
     if (durasiMenit > 1440) {
       toast.error(
-        "Durasi ujian maksimal 24 jam. Harap sesuaikan waktu selesai.",
+        "Durasi ujian maksimal 24 jam. Harap sesuaikan waktu selesai atau durasi.",
       );
       return;
     }
@@ -151,6 +156,7 @@ export default function ExamCreatePage() {
       ...data,
       tanggalMulai: mulai.toISOString(),
       tanggalSelesai: selesai.toISOString(),
+      durasiMenit,
     };
 
     try {
@@ -160,7 +166,6 @@ export default function ExamCreatePage() {
       toast.success("Ujian berhasil dibuat!");
       router.push(`/tutor/exams/${examId}/questions/create`);
     } catch (err) {
-      console.error(err);
       const message = err?.response?.data?.message || "Gagal menyimpan ujian";
       toast.error(message);
     } finally {
@@ -321,24 +326,33 @@ export default function ExamCreatePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label>Durasi (menit)</Label>
-            <Input
-              type="number"
-              disabled
-              {...register("durasiMenit", {
-                required: "Durasi wajib diisi",
-                min: { value: 1, message: "Durasi minimal 1 menit" },
-              })}
-              className="bg-gray-50 bg-gray-100" // Light grey indicator that it's disabled.
-            />
+            <Label>Durasi</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.1"
+                {...register("durasiValue", {
+                  required: "Durasi wajib diisi",
+                  min: { value: 0.1, message: "Durasi minimal 0.1" },
+                })}
+                placeholder="Masukkan durasi"
+              />
+              <select
+                {...register("durasiUnit")}
+                className="w-24 px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+              >
+                <option value="menit">Menit</option>
+                <option value="jam">Jam</option>
+              </select>
+            </div>
             {durasiText && (
               <p className="text-sm text-muted-foreground italic mt-1">
                 {durasiText}
               </p>
             )}
-            {errors.durasiMenit && (
+            {errors.durasiValue && (
               <p className="text-sm text-red-500">
-                {errors.durasiMenit.message}
+                {errors.durasiValue.message}
               </p>
             )}
           </div>

@@ -31,6 +31,7 @@ export async function POST(req) {
       classSubjectTutorId,
       tanggalMulai,
       tanggalSelesai,
+      tanggalSelesaiPenilaian,
       batasWaktuMenit,
       nilaiMaksimal,
       jenis,
@@ -47,7 +48,11 @@ export async function POST(req) {
     console.log("User ID:", user.id);
     console.log("Tutor ID:", tutor.id);
     console.log("ClassSubjectTutor ID:", classSubjectTutorId);
-    console.log("Received dates:", { tanggalMulai, tanggalSelesai });
+    console.log("Received dates:", {
+      tanggalMulai,
+      tanggalSelesai,
+      tanggalSelesaiPenilaian,
+    });
 
     // Ambil info class + subject + semua siswa
     const classSubjectTutor = await prisma.classSubjectTutor.findFirst({
@@ -89,10 +94,13 @@ export async function POST(req) {
 
     const parsedTanggalMulai = parseDate(tanggalMulai);
     const parsedTanggalSelesai = parseDate(tanggalSelesai);
+    const parsedTanggalSelesaiPenilaian = parseDate(tanggalSelesaiPenilaian);
 
     console.log("Parsed dates:", {
       parsedTanggalMulai: parsedTanggalMulai?.toISOString(),
       parsedTanggalSelesai: parsedTanggalSelesai?.toISOString(),
+      parsedTanggalSelesaiPenilaian:
+        parsedTanggalSelesaiPenilaian?.toISOString(),
     });
 
     // Validasi tanggal
@@ -131,6 +139,7 @@ export async function POST(req) {
         classSubjectTutorId,
         TanggalMulai: parsedTanggalMulai,
         TanggalSelesai: parsedTanggalSelesai,
+        tanggalSelesaiPenilaian: parsedTanggalSelesaiPenilaian,
         batasWaktuMenit: batasWaktuMenit ? Number(batasWaktuMenit) : undefined,
         nilaiMaksimal: nilaiMaksimal ? Number(nilaiMaksimal) : undefined,
         questionsFromPdf: questionsFromPdf || null, // Store PDF as base64

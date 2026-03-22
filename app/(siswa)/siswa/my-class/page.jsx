@@ -5,11 +5,9 @@ import { useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-// import { useToast } from "@/hooks/use-toast"
-import { GraduationCap, Users, BookOpen } from "lucide-react";
+import { GraduationCap, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 const fetcher = async (url) => {
   const res = await fetch(url);
@@ -17,14 +15,6 @@ const fetcher = async (url) => {
   const json = await res.json();
   return json && json.data != null ? json.data : json;
 };
-
-function getInitials(name) {
-  if (!name) return "S";
-  const parts = name.trim().split(/\s+/);
-  const a = parts[0];
-  const b = parts[1];
-  return ((a && a[0]) || "") + ((b && b[0]) || "");
-}
 
 export default function MyClassPage() {
   // const { toast } = useToast()
@@ -37,19 +27,15 @@ export default function MyClassPage() {
 
   useEffect(() => {
     if (error) {
-      toast({
-        title: "Tidak bisa memuat kelas",
-        description: "Silakan coba lagi beberapa saat lagi.",
-        variant: "destructive",
-      });
+      toast.error("Tidak bisa memuat data kelas");
     }
-  }, [error, toast]);
+  }, [error]);
 
   const loadingContent = (
     <main className="p-6 space-y-6">
       <PageHeader
         title="Kelas Saya"
-        description="Lihat informasi kelas, teman sekelas, dan mata pelajaran dengan ringkas."
+        description="Informasi ringkas tentang kelas dan mata pelajaran Anda."
       />
       <div className="grid gap-6 md:grid-cols-2">
         <Skeleton className="h-48 w-full" />
@@ -66,7 +52,7 @@ export default function MyClassPage() {
       <main className="p-6 space-y-6">
         <PageHeader
           title="Kelas Saya"
-          description="Lihat informasi kelas, teman sekelas, dan mata pelajaran dengan ringkas."
+          description="Informasi ringkas tentang kelas dan mata pelajaran Anda."
           breadcrumbs={[
             { label: "Dashboard", href: "/siswa/dashboard" },
             { label: "Kelas Saya" },
@@ -85,23 +71,21 @@ export default function MyClassPage() {
     );
   }
 
-  const totalSiswa = (myClass.students && myClass.students.length) || 0;
   const totalMapel =
     (myClass.classSubjectTutors && myClass.classSubjectTutors.length) || 0;
-  const placeholderAvatar = "/student-avatar.png";
 
   return (
     <main className="p-6 space-y-6">
       <PageHeader
         title="Kelas Saya"
-        description="Informasi ringkas tentang kelas, teman sekelas, dan mata pelajaran."
+        description="Informasi ringkas tentang kelas dan mata pelajaran Anda."
         breadcrumbs={[
           { label: "Dashboard", href: "/siswa/dashboard" },
           { label: "Kelas Saya" },
         ]}
       />
 
-      <section className="grid gap-6 md:grid-cols-3">
+      <section className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-base font-medium">
@@ -141,41 +125,6 @@ export default function MyClassPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-base font-medium">
-              Teman Sekelas
-            </CardTitle>
-            <Users
-              className="size-5 text-muted-foreground"
-              aria-hidden="true"
-            />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Total siswa:{" "}
-              <span className="text-foreground font-medium">{totalSiswa}</span>
-            </p>
-            <Separator />
-            <div className="flex -space-x-2">
-              {(myClass.students || []).slice(0, 5).map((s) => (
-                <Avatar key={s.id} className="border border-border">
-                  <AvatarImage
-                    alt={s.namaLengkap}
-                    src={placeholderAvatar || "/placeholder.svg"}
-                  />
-                  <AvatarFallback>{getInitials(s.namaLengkap)}</AvatarFallback>
-                </Avatar>
-              ))}
-              {totalSiswa > 5 && (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted text-xs">
-                  +{totalSiswa - 5}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">
               Mata Pelajaran
             </CardTitle>
             <BookOpen
@@ -205,59 +154,24 @@ export default function MyClassPage() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section>
         <Card>
           <CardHeader>
-            <CardTitle>Teman Seangkatan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {totalSiswa > 0 ? (
-              <ul className="divide-y divide-border">
-                {(myClass.students || []).map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 py-3">
-                    <Avatar className="size-9 border border-border">
-                      <AvatarImage
-                        alt={s.namaLengkap}
-                        src={placeholderAvatar || "/placeholder.svg"}
-                      />
-                      <AvatarFallback>
-                        {getInitials(s.namaLengkap)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {s.namaLengkap}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {(s.user && s.user.email) || "Email tidak tersedia"}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Belum ada siswa lain.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Mata Pelajaran</CardTitle>
+            <CardTitle>Daftar Mata Pelajaran</CardTitle>
           </CardHeader>
           <CardContent>
             {totalMapel > 0 ? (
-              <ul className="grid gap-2">
+              <ul className="grid gap-3 sm:grid-cols-2">
                 {(myClass.classSubjectTutors || []).map((subject) => (
                   <li
                     key={subject.id}
-                    className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2"
+                    className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3"
                   >
-                    <span className="text-sm">
-                      {subject.subject && subject.subject.namaMapel}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {subject.subject && subject.subject.namaMapel}
+                      </span>
+                    </div>
                     <Badge variant="outline" className="rounded-full">
                       {(subject.tutor &&
                         (subject.tutor.namaLengkap ||
@@ -268,7 +182,7 @@ export default function MyClassPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 Belum ada mata pelajaran tersedia.
               </p>
             )}

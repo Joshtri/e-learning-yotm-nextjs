@@ -51,6 +51,7 @@ export async function PATCH(req, context) {
       classSubjectTutorId,
       tanggalMulai,
       tanggalSelesai,
+      tanggalSelesaiPenilaian,
       jenis,
       nilaiMaksimal,
       questionsFromPdf,
@@ -77,6 +78,9 @@ export async function PATCH(req, context) {
         classSubjectTutorId,
         TanggalMulai: tanggalMulai ? new Date(tanggalMulai) : undefined,
         TanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : undefined,
+        tanggalSelesaiPenilaian: tanggalSelesaiPenilaian
+          ? new Date(tanggalSelesaiPenilaian)
+          : undefined,
         jenis,
         nilaiMaksimal,
         questionsFromPdf,

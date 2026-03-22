@@ -320,7 +320,8 @@ model Assignment {
   jenis               AssignmentType
   classSubjectTutorId String
   TanggalMulai        DateTime ? @db.Date
-  TanggalSelesai      DateTime ? @db.Date
+  TanggalSelesai      DateTime? @db.Date
+  tanggalSelesaiPenilaian DateTime? @db.Date
   batasWaktuMenit     Int ?
     nilaiMaksimal       Int ?
       questionsFromPdf    String ? @db.Text // Store base64 PDF

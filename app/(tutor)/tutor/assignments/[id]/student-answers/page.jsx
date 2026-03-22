@@ -141,7 +141,9 @@ export default function AssignmentSubmissionsPage() {
         title={`Jawaban Siswa: ${assignment?.judul || "-"}`}
         description={`${
           assignment?.classSubjectTutor?.class?.namaKelas || "-"
-        } - ${assignment?.classSubjectTutor?.subject?.namaMapel || "-"}`}
+        } - ${
+          assignment?.classSubjectTutor?.subject?.namaMapel || "-"
+        } ${assignment?.tanggalSelesaiPenilaian ? `| Batas Waktu Penilaian: ${new Date(assignment.tanggalSelesaiPenilaian).toLocaleDateString("id-ID", { dateStyle: "long" })}` : ""}`}
         breadcrumbs={[
           { label: "Dashboard", href: "/tutor" },
           { label: "Tugas", href: "/tutor/assignments" },

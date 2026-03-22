@@ -49,29 +49,33 @@ export async function GET(req, { params }) {
       select: {
         studentId: true,
         status: true,
+        nilai: true,
       },
     });
 
-    // Buat map studentId -> status pengerjaan
+    // Buat map studentId -> { status, nilai }
     const submissionMap = new Map(
-      submissions.map((s) => [s.studentId, s.status])
+      submissions.map((s) => [s.studentId, { status: s.status, nilai: s.nilai }])
     );
 
     // Gabungkan data siswa + status pengerjaan
-    const result = students.map((s) => ({
-      id: s.id,
-      namaLengkap: s.namaLengkap,
-      user: {
-        email: s.user.email,
-      },
-      statusPengerjaan: submissionMap.get(s.id) || "BELUM_MENGERJAKAN",
-    }));
+    const result = students.map((s) => {
+      const submission = submissionMap.get(s.id);
+      return {
+        id: s.id,
+        namaLengkap: s.namaLengkap,
+        user: {
+          email: s.user.email,
+        },
+        statusPengerjaan: submission?.status || "BELUM_MENGERJAKAN",
+        nilai: submission?.nilai ?? null,
+      };
+    });
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error("Gagal mengambil data siswa:", error);
+  } catch {
     return NextResponse.json(
-      { message: "Terjadi kesalahan", detail: error.message },
+      { message: "Terjadi kesalahan" },
       { status: 500 }
     );
   }

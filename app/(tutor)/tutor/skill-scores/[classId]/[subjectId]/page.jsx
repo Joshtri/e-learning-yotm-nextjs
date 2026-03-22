@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { PageHeader } from "@/components/ui/page-header";
@@ -21,37 +21,47 @@ export default function InputSkillScoresPage() {
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [scores, setScores] = useState({});
+  const [descriptions, setDescriptions] = useState({});
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-  
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const res = await api.get(`/tutor/skill-scores/students?classId=${classId}&subjectId=${subjectId}`);
       const studentsData = res.data.data || [];
   
       setStudents(studentsData);
   
-      // 🟢 Set nilai awal ke state scores jika sudah pernah dinilai
-      setScores(
-        Object.fromEntries(
-          studentsData
-            .filter((s) => s.nilai != null)
-            .map((s) => [s.id, s.nilai.toString()])
-        )
-      );
-    } catch (error) {
-      console.error(error);
+      // 🟢 Set nilai & keterangan awal ke state jika sudah pernah dinilai
+      const initialScores = {};
+      const initialDescriptions = {};
+      
+      studentsData.forEach(s => {
+        if (s.nilai != null) initialScores[s.id] = s.nilai.toString();
+        if (s.keterangan != null) initialDescriptions[s.id] = s.keterangan;
+      });
+
+      setScores(initialScores);
+      setDescriptions(initialDescriptions);
+    } catch {
       toast.error("Gagal memuat daftar siswa");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [classId, subjectId]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
   
 
   const handleInputChange = (studentId, value) => {
     setScores((prev) => ({
+      ...prev,
+      [studentId]: value,
+    }));
+  };
+
+  const handleDescriptionChange = (studentId, value) => {
+    setDescriptions((prev) => ({
       ...prev,
       [studentId]: value,
     }));
@@ -63,6 +73,7 @@ export default function InputSkillScoresPage() {
         studentId,
         subjectId,
         nilai: parseFloat(nilai),
+        keterangan: descriptions[studentId] || "",
       }));
 
       await api.post("/tutor/skill-scores/submit", {
@@ -72,8 +83,7 @@ export default function InputSkillScoresPage() {
       });
       toast.success("Berhasil menyimpan nilai skill!");
       router.push("/tutor/skill-scores");
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Gagal menyimpan nilai skill");
     }
   };
@@ -173,22 +183,39 @@ export default function InputSkillScoresPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`score-${student.id}`}>
-                            Nilai Skill
-                          </Label>
-                          <Input
-                            id={`score-${student.id}`}
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={scores[student.id] || ""}
-                            onChange={(e) =>
-                              handleInputChange(student.id, e.target.value)
-                            }
-                            placeholder="Masukkan nilai (0-100)"
-                            className="text-lg font-medium"
-                          />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`score-${student.id}`}>
+                              Nilai Skill
+                            </Label>
+                            <Input
+                              id={`score-${student.id}`}
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={scores[student.id] || ""}
+                              onChange={(e) =>
+                                handleInputChange(student.id, e.target.value)
+                              }
+                              placeholder="0-100"
+                              className="font-medium"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`desc-${student.id}`}>
+                              Keterangan (Contoh: Praktik Puisi)
+                            </Label>
+                            <Input
+                              id={`desc-${student.id}`}
+                              type="text"
+                              value={descriptions[student.id] || ""}
+                              onChange={(e) =>
+                                handleDescriptionChange(student.id, e.target.value)
+                              }
+                              placeholder="Keterangan praktik"
+                              className="text-sm"
+                            />
+                          </div>
                         </div>
                       </div>
                     </CardContent>

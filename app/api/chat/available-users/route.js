@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import prisma from "@/lib/prisma";
 
-export async function GET(req) {
+export async function GET() {
   const cookieStore = cookies();
   const token = cookieStore.get("auth_token")?.value;
 
@@ -48,40 +48,15 @@ export async function GET(req) {
     });
 
     const studentUsers = classSubjectTutor.flatMap((entry) =>
-      entry.class.students.map((s) => s.user)
+      entry.class.students.map((s) => ({
+        id: s.user.id,
+        nama: s.user.nama,
+        role: s.user.role,
+      }))
     );
 
-    const otherTutors = await prisma.user.findMany({
-      where: {
-        role: "TUTOR",
-        id: { not: user.id },
-      },
-      select: {
-        id: true,
-        nama: true,
-        role: true,
-      },
-    });
-
-    const admins = await prisma.user.findMany({
-      where: {
-        role: "ADMIN",
-      },
-      select: {
-        id: true,
-        nama: true,
-        role: true,
-      },
-    });
-
-    const combined = [
-      ...studentUsers.map(({ id, nama, role }) => ({ id, nama, role })),
-      ...otherTutors,
-      ...admins,
-    ];
-
     const uniqueUsers = Array.from(
-      new Map(combined.map((u) => [u.id, u])).values()
+      new Map(studentUsers.map((u) => [u.id, u])).values()
     );
 
     return NextResponse.json({ success: true, data: uniqueUsers });
@@ -91,20 +66,54 @@ export async function GET(req) {
   // STUDENT: boleh chat ke TUTOR, HOMEROOM_TEACHER, ADMIN
   // ==========================================
   if (user.role === "STUDENT") {
-    const allowedRoles = ["TUTOR", "HOMEROOM_TEACHER", "ADMIN"];
-    const users = await prisma.user.findMany({
-      where: {
-        id: { not: user.id },
-        role: { in: allowedRoles },
-      },
-      select: {
-        id: true,
-        nama: true,
-        role: true,
+    // 1. Dapatkan profil siswa untuk mengetahui classId
+    const student = await prisma.student.findUnique({
+      where: { userId: user.id },
+      select: { classId: true },
+    });
+
+    if (!student || !student.classId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    // 2. Dapatkan tutor yang mengajar di kelas ini
+    const classSubjectTutors = await prisma.classSubjectTutor.findMany({
+      where: { classId: student.classId },
+      include: {
+        tutor: {
+          include: { user: true },
+        },
       },
     });
 
-    return NextResponse.json({ success: true, data: users });
+    const tutorUsers = classSubjectTutors
+      .map((cst) => cst.tutor?.user)
+      .filter((u) => u !== null && u !== undefined);
+
+    // 3. Dapatkan teman sekelas
+    const classmates = await prisma.student.findMany({
+      where: {
+        classId: student.classId,
+        userId: { not: user.id }, // Kecuali diri sendiri
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    const classmateUsers = classmates.map((s) => s.user);
+
+    // 4. Gabungkan dan unikkan
+    const combined = [
+      ...tutorUsers.map(({ id, nama, role }) => ({ id, nama, role })),
+      ...classmateUsers.map(({ id, nama, role }) => ({ id, nama, role })),
+    ];
+
+    const uniqueUsers = Array.from(
+      new Map(combined.map((u) => [u.id, u])).values()
+    );
+
+    return NextResponse.json({ success: true, data: uniqueUsers });
   }
 
   // ==========================================

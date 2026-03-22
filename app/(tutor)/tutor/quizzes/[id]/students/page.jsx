@@ -21,8 +21,8 @@ export default function QuizStudentListPage() {
       try {
         const res = await api.get(`/tutor/quizzes/${quizId}/students`);
         setStudents(res.data || []);
-      } catch (err) {
-        console.error("Gagal mengambil data siswa", err);
+      } catch {
+        // Silently fail or handled by UI
       } finally {
         setLoading(false);
       }
@@ -62,16 +62,26 @@ export default function QuizStudentListPage() {
                   {student.user.email}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  router.push(`/tutor/quizzes/${quizId}/students/${student.id}`)
-                }
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Lihat Jawaban
-              </Button>
+              <div className="flex items-center gap-4">
+                {student.nilai !== null && (
+                  <div className="text-right mr-2">
+                    <div className="text-xs text-muted-foreground uppercase font-bold">Nilai</div>
+                    <div className="text-lg font-bold text-primary">
+                      {student.nilai}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    router.push(`/tutor/quizzes/${quizId}/students/${student.id}`)
+                  }
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  Lihat Jawaban
+                </Button>
+              </div>
             </div>
           ))}
         </div>

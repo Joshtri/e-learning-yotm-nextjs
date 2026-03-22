@@ -62,6 +62,12 @@ export default function AssignmentEditPage() {
           format(new Date(assignment.TanggalSelesai), "yyyy-MM-dd"),
         );
       }
+      if (assignment.tanggalSelesaiPenilaian) {
+        setValue(
+          "tanggalSelesaiPenilaian",
+          format(new Date(assignment.tanggalSelesaiPenilaian), "yyyy-MM-dd"),
+        );
+      }
     } catch {
       toast.error("Gagal memuat data tugas");
       router.push("/tutor/assignments");
@@ -89,7 +95,7 @@ export default function AssignmentEditPage() {
   useEffect(() => {
     fetchClassOptions();
     fetchAssignmentData();
-  }, [fetchAssignmentData]);
+  }, [fetchClassOptions, fetchAssignmentData]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -107,6 +113,7 @@ export default function AssignmentEditPage() {
         classSubjectTutorId: data.classSubjectTutorId,
         tanggalMulai: data.tanggalMulai,
         tanggalSelesai: data.tanggalSelesai,
+        tanggalSelesaiPenilaian: data.tanggalSelesaiPenilaian,
         jenis: data.jenis || "EXERCISE",
         nilaiMaksimal: Number(data.nilaiMaksimal) || 100,
         ...(questionsFromPdf && { questionsFromPdf }),
@@ -338,6 +345,42 @@ export default function AssignmentEditPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Tanggal Selesai Penilaian */}
+        <div>
+          <Label className="text-gray-700 font-medium">
+            Tanggal Selesai Penilaian <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            type="date"
+            {...register("tanggalSelesaiPenilaian", {
+              required: "Tanggal selesai penilaian wajib diisi",
+              validate: {
+                afterAssignmentEndDate: (value) => {
+                  const assignmentEndDate = getValues("tanggalSelesai");
+                  if (!assignmentEndDate) return true;
+                  return (
+                    new Date(value) >= new Date(assignmentEndDate) ||
+                    "Tanggal selesai penilaian harus sama dengan atau setelah tanggal selesai tugas"
+                  );
+                },
+              },
+            })}
+            className={`mt-1 border ${
+              errors.tanggalSelesaiPenilaian
+                ? "border-red-500"
+                : "border-gray-300"
+            } rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all`}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Batas waktu bagi Anda untuk memberikan penilaian kepada siswa.
+          </p>
+          {errors.tanggalSelesaiPenilaian && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors.tanggalSelesaiPenilaian.message}
+            </p>
+          )}
         </div>
 
         {/* Questions PDF Upload */}
