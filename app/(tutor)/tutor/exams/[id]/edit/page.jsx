@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import { format } from "date-fns";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,36 +49,13 @@ export default function ExamEditPage() {
       deskripsi: "",
       jenis: "",
       classSubjectTutorId: "",
-      tanggalMulai: "",
-      jamMulai: "",
-      tanggalSelesai: "",
-      jamSelesai: "",
-      durasiMenit: 0,
+      durasiMenit: 60,
+      nilaiMaksimal: 70,
     },
   });
 
-  const tanggalMulai = watch("tanggalMulai");
-  const jamMulai = watch("jamMulai");
-  const tanggalSelesai = watch("tanggalSelesai");
-  const jamSelesai = watch("jamSelesai");
+
   const durasiMenit = watch("durasiMenit");
-
-  useEffect(() => {
-    if (tanggalMulai && jamMulai && tanggalSelesai && jamSelesai) {
-      const mulai = new Date(`${tanggalMulai}T${jamMulai}`);
-      const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
-
-      if (selesai > mulai) {
-        let durasi = Math.floor((selesai - mulai) / 1000 / 60);
-        if (durasi > 1440) {
-          durasi = 1440;
-        }
-        setValue("durasiMenit", durasi);
-      } else {
-        setValue("durasiMenit", 0);
-      }
-    }
-  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, setValue]);
 
   let durasiText = "";
   if (typeof durasiMenit === "number" && durasiMenit > 0) {
@@ -113,20 +89,8 @@ export default function ExamEditPage() {
       setValue("jenis", exam.jenis);
       setValue("classSubjectTutorId", exam.classSubjectTutorId);
 
-      // Format dates to yyyy-MM-dd and times to HH:mm
-      if (exam.TanggalMulai) {
-        const d = new Date(exam.TanggalMulai);
-        setValue("tanggalMulai", format(d, "yyyy-MM-dd"));
-        setValue("jamMulai", format(d, "HH:mm"));
-      }
-      if (exam.TanggalSelesai) {
-        const d = new Date(exam.TanggalSelesai);
-        setValue("tanggalSelesai", format(d, "yyyy-MM-dd"));
-        setValue("jamSelesai", format(d, "HH:mm"));
-      }
-      if (exam.batasWaktuMenit) {
-        setValue("durasiMenit", exam.batasWaktuMenit);
-      }
+      setValue("durasiMenit", exam.batasWaktuMenit || 60);
+      setValue("nilaiMaksimal", exam.nilaiMaksimal || 70);
     } catch (error) {
       console.error("Gagal memuat data ujian:", error);
       toast.error("Gagal memuat data ujian");
@@ -162,28 +126,10 @@ export default function ExamEditPage() {
   }, [examId]);
 
   const onSubmit = async (data) => {
-    if (!data.jamMulai || !data.jamSelesai) {
-      toast.error("Jam mulai dan jam selesai wajib diisi");
-      return;
-    }
-
-    const mulai = new Date(`${data.tanggalMulai}T${data.jamMulai}`);
-    const selesai = new Date(`${data.tanggalSelesai}T${data.jamSelesai}`);
-
-    if (selesai <= mulai) {
-      toast.error("Waktu selesai harus lebih besar dari waktu mulai");
-      return;
-    }
-
-    const calculatedDurasiMenit = Math.floor((selesai - mulai) / (1000 * 60));
-
-    // Validasi maksimal 24 jam
-    if (calculatedDurasiMenit > 1440) {
-      toast.error(
-        "Durasi ujian maksimal 24 jam. Harap sesuaikan waktu selesai.",
-      );
-      return;
-    }
+    const hariIni = new Date();
+    // Default: mulai sekarang, selesai 2099 biar "Always Open"
+    const mulai = hariIni;
+    const selesai = new Date("2099-12-31T23:59:59Z");
 
     const payload = {
       judul: data.judul,
@@ -192,7 +138,8 @@ export default function ExamEditPage() {
       classSubjectTutorId: data.classSubjectTutorId,
       tanggalMulai: mulai.toISOString(),
       tanggalSelesai: selesai.toISOString(),
-      durasiMenit: calculatedDurasiMenit,
+      durasiMenit: Number(data.durasiMenit),
+      nilaiMaksimal: Number(data.nilaiMaksimal),
     };
 
     try {
@@ -301,75 +248,17 @@ export default function ExamEditPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Tanggal Mulai</Label>
-            <Input
-              type="date"
-              {...register("tanggalMulai", {
-                required: "Tanggal mulai wajib diisi",
-              })}
-            />
-            {errors.tanggalMulai && (
-              <p className="text-sm text-red-500">
-                {errors.tanggalMulai.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>Jam Mulai</Label>
-            <Input
-              type="time"
-              {...register("jamMulai", { required: "Jam mulai wajib diisi" })}
-            />
-            {errors.jamMulai && (
-              <p className="text-sm text-red-500">{errors.jamMulai.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Tanggal Selesai</Label>
-            <Input
-              type="date"
-              {...register("tanggalSelesai", {
-                required: "Tanggal selesai wajib diisi",
-              })}
-            />
-            {errors.tanggalSelesai && (
-              <p className="text-sm text-red-500">
-                {errors.tanggalSelesai.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>Jam Selesai</Label>
-            <Input
-              type="time"
-              {...register("jamSelesai", {
-                required: "Jam selesai wajib diisi",
-              })}
-            />
-            {errors.jamSelesai && (
-              <p className="text-sm text-red-500">
-                {errors.jamSelesai.message}
-              </p>
-            )}
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Durasi (menit)</Label>
             <Input
               type="number"
-              disabled
               {...register("durasiMenit", {
                 required: "Durasi wajib diisi",
+                valueAsNumber: true,
                 min: { value: 1, message: "Durasi minimal 1 menit" },
               })}
-              className="bg-gray-50"
             />
             {durasiText && (
               <p className="text-sm text-muted-foreground italic mt-1">
@@ -382,20 +271,26 @@ export default function ExamEditPage() {
               </p>
             )}
           </div>
+
+          <div>
+            <Label>KKM (Kriteria Ketuntasan Minimal)</Label>
+            <Input
+              type="number"
+              {...register("nilaiMaksimal", {
+                required: "KKM wajib diisi",
+                valueAsNumber: true,
+                min: { value: 1, message: "KKM minimal 1" },
+              })}
+              placeholder="Nilai KKM (Contoh: 70)"
+            />
+            {errors.nilaiMaksimal && (
+              <p className="text-sm text-red-500">
+                {errors.nilaiMaksimal.message}
+              </p>
+            )}
+          </div>
         </div>
 
-        {tanggalMulai &&
-          jamMulai &&
-          tanggalSelesai &&
-          jamSelesai &&
-          durasiMenit <= 0 && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">
-                ⚠️ Waktu selesai harus lebih besar dari waktu mulai untuk
-                mendapatkan durasi yang valid.
-              </p>
-            </div>
-          )}
 
         <div className="flex gap-3 pt-4">
           <Button
@@ -407,14 +302,7 @@ export default function ExamEditPage() {
           </Button>
           <Button
             type="submit"
-            disabled={
-              loading ||
-              !tanggalMulai ||
-              !jamMulai ||
-              !tanggalSelesai ||
-              !jamSelesai ||
-              durasiMenit <= 0
-            }
+            disabled={loading}
           >
             {loading ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>

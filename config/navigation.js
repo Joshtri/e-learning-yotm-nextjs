@@ -5,7 +5,6 @@ import {
   BookOpen,
   Calendar,
   CalendarCheck,
-  ChartBar,
   ClipboardList,
   FileCheck2,
   FileSearch,
@@ -383,6 +382,11 @@ export const navByRole = {
     {
       title: "Nilai",
       items: [
+        {
+          title: "Rapor Saya",
+          href: "/siswa/report",
+          icon: <ClipboardList className="h-4 w-4" />,
+        },
         {
           title: "Nilai Ujian",
           href: "/siswa/exams-scores",

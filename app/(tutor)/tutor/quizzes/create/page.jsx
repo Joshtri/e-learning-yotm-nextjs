@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "@/lib/axios";
-import { format } from "date-fns";
-
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
@@ -20,20 +18,14 @@ export default function QuizCreatePage() {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
       judul: "",
       deskripsi: "",
       classSubjectTutorId: "",
-      tanggalMulai: format(new Date(), "yyyy-MM-dd"),
-      jamMulai: "",
-      tanggalSelesai: format(new Date(), "yyyy-MM-dd"),
-      jamSelesai: "",
-      durasiValue: 60,
-      durasiUnit: "menit",
-      nilaiMaksimal: 100,
+      durasiMenit: 60,
+      nilaiMaksimal: 70,
       acakSoal: false,
       acakJawaban: false,
     },
@@ -51,63 +43,18 @@ export default function QuizCreatePage() {
     fetchClassSubjects();
   }, []);
 
-  const tanggalMulai = useWatch({ control, name: "tanggalMulai" });
-  const jamMulai = useWatch({ control, name: "jamMulai" });
-  const tanggalSelesai = useWatch({ control, name: "tanggalSelesai" });
-  const jamSelesai = useWatch({ control, name: "jamSelesai" });
-
-  const durasiUnit = useWatch({ control, name: "durasiUnit" });
-
-  useEffect(() => {
-    if (tanggalMulai && jamMulai && tanggalSelesai && jamSelesai) {
-      const mulai = new Date(`${tanggalMulai}T${jamMulai}`);
-      const selesai = new Date(`${tanggalSelesai}T${jamSelesai}`);
-
-      if (selesai > mulai) {
-        let durasiMenit = Math.floor((selesai - mulai) / 1000 / 60);
-        if (durasiMenit > 1440) durasiMenit = 1440;
-
-        if (durasiUnit === "jam") {
-          setValue("durasiValue", parseFloat((durasiMenit / 60).toFixed(1)));
-        } else {
-          setValue("durasiValue", durasiMenit);
-        }
-      }
-    }
-  }, [tanggalMulai, jamMulai, tanggalSelesai, jamSelesai, durasiUnit, setValue]);
 
   const onSubmit = async (data) => {
-    if (!data.jamMulai || !data.jamSelesai) {
-      toast.error("Jam mulai dan jam selesai wajib diisi");
-      return;
-    }
-
-    const mulai = new Date(`${data.tanggalMulai}T${data.jamMulai}`);
-    const selesai = new Date(`${data.tanggalSelesai}T${data.jamSelesai}`);
-
-    if (selesai <= mulai) {
-      toast.error("Waktu selesai harus lebih besar dari waktu mulai");
-      return;
-    }
-
-    // Convert to minutes for API
-    let durasiMenit =
-      data.durasiUnit === "jam"
-        ? Math.round(data.durasiValue * 60)
-        : data.durasiValue;
-
-    if (durasiMenit > 1440) {
-      toast.error(
-        "Durasi kuis maksimal 24 jam. Harap sesuaikan waktu selesai atau durasi.",
-      );
-      return;
-    }
+    const hariIni = new Date();
+    // Default waktu mulai sekarang, waktu selesai 2099 biar "Always Open"
+    const mulai = hariIni;
+    const selesai = new Date("2099-12-31T23:59:59Z");
 
     const payload = {
       ...data,
       waktuMulai: mulai.toISOString(),
       waktuSelesai: selesai.toISOString(),
-      durasiMenit,
+      durasiMenit: Number(data.durasiMenit),
     };
 
     try {
@@ -188,132 +135,26 @@ export default function QuizCreatePage() {
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="tanggalMulai" className="text-sm font-medium">
-              Tanggal Mulai <span className="text-red-500">*</span>
-            </label>
+            <Label htmlFor="durasiMenit">Durasi (Menit)</Label>
             <input
-              type="date"
-              id="tanggalMulai"
+              type="number"
+              id="durasiMenit"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min={format(new Date(), "yyyy-MM-dd")}
-              {...register("tanggalMulai", {
-                required: "Tanggal mulai wajib diisi",
-                validate: (value) => {
-                  const selectedDate = new Date(value);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return (
-                    selectedDate >= today ||
-                    "Tanggal tidak boleh sebelum hari ini"
-                  );
-                },
+              placeholder="Masukkan durasi dalam menit"
+              {...register("durasiMenit", {
+                required: "Durasi wajib diisi",
+                valueAsNumber: true,
+                min: { value: 1, message: "Durasi minimal 1 menit" },
               })}
             />
-            {errors.tanggalMulai && (
-              <p className="text-sm text-red-500">
-                {errors.tanggalMulai.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="jamMulai" className="text-sm font-medium">
-              Jam Mulai <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              id="jamMulai"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              {...register("jamMulai", { required: "Jam mulai wajib diisi" })}
-            />
-            {errors.jamMulai && (
-              <p className="text-sm text-red-500">{errors.jamMulai.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="tanggalSelesai" className="text-sm font-medium">
-              Tanggal Selesai <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="tanggalSelesai"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min={format(new Date(), "yyyy-MM-dd")}
-              {...register("tanggalSelesai", {
-                required: "Tanggal selesai wajib diisi",
-                validate: (value) => {
-                  const selectedDate = new Date(value);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return (
-                    selectedDate >= today ||
-                    "Tanggal tidak boleh sebelum hari ini"
-                  );
-                },
-              })}
-            />
-            {errors.tanggalSelesai && (
-              <p className="text-sm text-red-500">
-                {errors.tanggalSelesai.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="jamSelesai" className="text-sm font-medium">
-              Jam Selesai <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              id="jamSelesai"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              {...register("jamSelesai", {
-                required: "Jam selesai wajib diisi",
-              })}
-            />
-            {errors.jamSelesai && (
-              <p className="text-sm text-red-500">
-                {errors.jamSelesai.message}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="durasiValue">Durasi</Label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                id="durasiValue"
-                step="0.1"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Masukkan durasi"
-                {...register("durasiValue", { 
-                  required: "Durasi wajib diisi",
-                  valueAsNumber: true,
-                  min: { value: 0.1, message: "Durasi tidak boleh 0" }
-                })}
-              />
-              <select
-                {...register("durasiUnit")}
-                className="w-24 px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-              >
-                <option value="menit">Menit</option>
-                <option value="jam">Jam</option>
-              </select>
-            </div>
             {durasiText && (
               <p className="text-sm text-muted-foreground italic">
                 {durasiText}
               </p>
             )}
-            {errors.durasiValue && (
+            {errors.durasiMenit && (
               <p className="text-sm text-red-500">
-                {errors.durasiValue.message}
+                {errors.durasiMenit.message}
               </p>
             )}
           </div>

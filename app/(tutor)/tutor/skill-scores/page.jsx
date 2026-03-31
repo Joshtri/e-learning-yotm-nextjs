@@ -38,13 +38,13 @@ export default function TutorSkillScoresPage() {
       setSelectedYearId(defaultYearId);
       fetchClasses(defaultYearId);
     }
-  }, [academicYears]);
+  }, [academicYears, selectedYearId]);
 
   const fetchAcademicYears = async () => {
     try {
       const res = await api.get("/academic-years");
       setAcademicYears(res.data?.data?.academicYears || []);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat tahun ajaran");
     }
   };
@@ -58,24 +58,16 @@ export default function TutorSkillScoresPage() {
 
       // Transform the response to flatten class-subject combinations
       const rawData = res.data.data || [];
-      const flattened = rawData.flatMap((classItem) =>
-        (classItem.taughtSubjects || []).map((subject) => ({
-          id: `${classItem.id}_${subject.id}`,
-          class: {
-            id: classItem.id,
-            namaKelas: classItem.namaKelas,
-            academicYear: classItem.academicYear,
-            program: classItem.program,
-          },
-          subject: {
-            id: subject.id,
-            namaMapel: subject.name,
-          },
-        }))
-      );
+      const flattened = rawData
+        .filter((item) => item.subject) // Only include entries with a subject (exclude homeroom-only)
+        .map((item) => ({
+          id: `${item.class.id}_${item.subject.id}`,
+          class: item.class,
+          subject: item.subject,
+        }));
 
       setClasses(flattened);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat daftar kelas");
     } finally {
       setIsLoading(false);
