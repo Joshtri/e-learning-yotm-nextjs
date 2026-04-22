@@ -10,7 +10,19 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import ForumCreateForm from "@/components/forums/ForumCreateForm";
+import { toast } from "sonner";
 
 export default function TutorForumsPage() {
   const [forums, setForums] = useState([]);
@@ -22,6 +34,24 @@ export default function TutorForumsPage() {
     };
     fetchForums();
   }, []);
+
+  const handleToggleForum = async (forumId, currentClosed) => {
+    try {
+      const res = await axios.patch(`/forums/${forumId}`, {
+        closed: !currentClosed,
+      });
+      if (res.data.success) {
+        setForums((prev) =>
+          prev.map((f) =>
+            f.id === forumId ? { ...f, closed: !currentClosed } : f
+          )
+        );
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Gagal mengubah status forum");
+    }
+  };
 
   return (
     <div className="container p-4">
@@ -41,13 +71,15 @@ export default function TutorForumsPage() {
       </div>
 
       {forums.map((forum) => (
-        <Link
+        <div
           key={forum.id}
-          href={`/tutor/discussions/${forum.id}`}
-          className="block border p-4 mb-3 rounded hover:bg-gray-50"
+          className="border p-4 mb-3 rounded hover:bg-gray-50 dark:hover:bg-gray-900/50"
         >
           <div className="flex justify-between items-center">
-            <div>
+            <Link
+              href={`/tutor/discussions/${forum.id}`}
+              className="flex-1"
+            >
               <h2 className="text-lg font-semibold">{forum.name}</h2>
               <p className="text-sm text-gray-500">
                 Dibuat oleh:{" "}
@@ -57,18 +89,50 @@ export default function TutorForumsPage() {
                 Kelas: {forum.classSubjectTutor?.class?.namaKelas} -{" "}
                 {forum.classSubjectTutor?.subject?.namaMapel}
               </p>
-
               <p className="text-sm text-gray-500">
                 Tanggal: {new Date(forum.createdAt).toLocaleString()}
               </p>
+            </Link>
+            <div className="flex items-center gap-3 ml-4">
+              {forum.closed && (
+                <span className="text-sm text-red-500 font-medium">
+                  [Ditutup]
+                </span>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant={forum.closed ? "outline" : "destructive"}
+                    size="sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {forum.closed ? "Buka Kembali" : "Akhiri Forum"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {forum.closed ? "Buka Kembali Forum?" : "Akhiri Forum?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {forum.closed
+                        ? "Forum akan dibuka kembali dan siswa dapat mengirim pesan."
+                        : "Forum akan ditutup dan siswa tidak dapat mengirim pesan lagi."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleToggleForum(forum.id, forum.closed)}
+                    >
+                      {forum.closed ? "Buka Kembali" : "Akhiri Forum"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-            {forum.closed && (
-              <span className="text-sm text-red-500 font-medium">
-                [Ditutup]
-              </span>
-            )}
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );

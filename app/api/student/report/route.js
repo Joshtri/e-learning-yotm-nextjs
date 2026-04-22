@@ -73,64 +73,70 @@ export async function GET() {
     });
 
     // 3. Kelompokkan data
+    // Nilai hanya ditampilkan jika wali kelas sudah menyimpan nilai akhir (FinalScore)
     const reportData = {};
 
-    const ensureYear = (year) => {
-      const yearStr = `${year.tahunMulai}/${year.tahunSelesai} - ${year.semester}`;
+    // Bangun daftar tahun ajaran & mata pelajaran yang sudah ada FinalScore
+    const finalScoreKeys = new Set();
+
+    finalScores.forEach(fs => {
+      const yearStr = `${fs.academicYear.tahunMulai}/${fs.academicYear.tahunSelesai} - ${fs.academicYear.semester}`;
       if (!reportData[yearStr]) {
         reportData[yearStr] = {
           academicYear: yearStr,
-          academicYearId: year.id,
+          academicYearId: fs.academicYear.id,
           subjects: {},
           behavior: null,
         };
       }
-      return reportData[yearStr];
-    };
-
-    // Process Final Scores
-    finalScores.forEach(fs => {
-      const year = ensureYear(fs.academicYear);
       const subName = fs.subject.namaMapel;
-      if (!year.subjects[subName]) year.subjects[subName] = { name: subName, final: null, skill: null, exams: [] };
-      year.subjects[subName].final = fs.nilaiAkhir;
+      if (!reportData[yearStr].subjects[subName]) {
+        reportData[yearStr].subjects[subName] = { name: subName, final: null, skill: null, exams: [] };
+      }
+      reportData[yearStr].subjects[subName].final = fs.nilaiAkhir;
+      finalScoreKeys.add(`${yearStr}::${subName}`);
     });
 
-    // Process Behavior Scores
+    // Jika tidak ada FinalScore sama sekali, langsung return kosong
+    if (finalScores.length === 0) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    // Process Behavior Scores - hanya untuk tahun ajaran yang ada FinalScore-nya
     behaviorScores.forEach(bs => {
-      const year = ensureYear(bs.academicYear);
-      year.behavior = {
-        spiritual: bs.spiritual,
-        social: bs.sosial,
-      };
+      const yearStr = `${bs.academicYear.tahunMulai}/${bs.academicYear.tahunSelesai} - ${bs.academicYear.semester}`;
+      if (reportData[yearStr]) {
+        reportData[yearStr].behavior = {
+          spiritual: bs.spiritual,
+          social: bs.sosial,
+        };
+      }
     });
 
-    // Process Exam Submissions
+    // Process Exam Submissions - hanya untuk mata pelajaran yang sudah ada FinalScore
     examSubmissions.forEach(sub => {
       const yearInfo = sub.assignment.classSubjectTutor.class.academicYear;
-      const year = ensureYear(yearInfo);
+      const yearStr = `${yearInfo.tahunMulai}/${yearInfo.tahunSelesai} - ${yearInfo.semester}`;
       const subName = sub.assignment.classSubjectTutor.subject.namaMapel;
-      if (!year.subjects[subName]) year.subjects[subName] = { name: subName, final: null, skill: null, exams: [] };
-      
-      year.subjects[subName].exams.push({
-        title: sub.assignment.judul,
-        jenis: sub.assignment.jenis,
-        nilai: sub.nilai,
-        nilaiMaksimal: sub.assignment.nilaiMaksimal,
-      });
+      const key = `${yearStr}::${subName}`;
+
+      if (finalScoreKeys.has(key) && reportData[yearStr]?.subjects[subName]) {
+        reportData[yearStr].subjects[subName].exams.push({
+          title: sub.assignment.judul,
+          jenis: sub.assignment.jenis,
+          nilai: sub.nilai,
+          nilaiMaksimal: sub.assignment.nilaiMaksimal,
+        });
+      }
     });
 
-    // Process Skill Scores (Lacking academicYearId, assign to current/latest year for that subject in reportData)
+    // Process Skill Scores - hanya untuk mata pelajaran yang sudah ada FinalScore
     skillScores.forEach(ss => {
       const subName = ss.subject.namaMapel;
-      // We look for this subject in any academic year available in reportData
-      // and update the skill score there. If multiple years have this subject,
-      // it's a bit ambiguous, but we'll try to match it or at least put it in the latest.
       const yearsWithThisSubject = Object.values(reportData)
         .filter(year => year.subjects[subName]);
-      
+
       if (yearsWithThisSubject.length > 0) {
-        // Find latest year (based on yearStr)
         const latestYear = yearsWithThisSubject.sort((a, b) => b.academicYear.localeCompare(a.academicYear))[0];
         latestYear.subjects[subName].skill = ss.nilai;
       }

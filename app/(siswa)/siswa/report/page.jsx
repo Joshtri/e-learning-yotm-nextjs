@@ -59,7 +59,7 @@ export default function StudentReportPage() {
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Info className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-xl font-semibold">Belum Ada Data Nilai</p>
-            <p className="text-muted-foreground">Data rapor akan muncul setelah tutor atau wali kelas melakukan penilaian akhir.</p>
+            <p className="text-muted-foreground">Data rapor akan muncul setelah wali kelas menyimpan nilai akhir.</p>
           </CardContent>
         </Card>
       </main>

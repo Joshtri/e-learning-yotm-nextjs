@@ -4,10 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import axios from "@/lib/axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 export default function StudentForumDetailPage() {
   const { id } = useParams();
@@ -29,6 +30,17 @@ export default function StudentForumDetailPage() {
     };
     fetchUser();
   }, []);
+
+  // Query info forum (termasuk status closed)
+  const { data: forumInfo } = useQuery({
+    queryKey: ["forum-info", id],
+    queryFn: async () => {
+      const res = await axios.get(`/forums/${id}`);
+      return res.data.data;
+    },
+  });
+
+  const isClosed = forumInfo?.closed || false;
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["forum-messages", id],
@@ -80,7 +92,15 @@ export default function StudentForumDetailPage() {
   return (
     <div className="container max-w-4xl mx-auto p-4">
       <div className="flex items-center justify-between mb-4 border-b pb-3">
-        <h1 className="text-xl font-bold">Forum Diskusi</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">Forum Diskusi</h1>
+          {isClosed && (
+            <Badge variant="destructive" className="flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              Ditutup
+            </Badge>
+          )}
+        </div>
         <div className="text-sm text-muted-foreground">
           {messages.length} pesan
         </div>
@@ -190,34 +210,43 @@ export default function StudentForumDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="mt-4 flex items-end gap-2">
-        <div className="relative flex-1">
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Tulis pesan..."
-            className="min-h-[80px] resize-none pr-12"
-          />
-          <Button
-            onClick={() => message.trim() && sendMessage()}
-            disabled={sending || !message.trim()}
-            size="icon"
-            className="absolute bottom-2 right-2"
-          >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            <span className="sr-only">Kirim</span>
-          </Button>
+      {isClosed ? (
+        <div className="mt-4 flex items-center justify-center gap-2 p-4 bg-muted rounded-lg text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          <span className="text-sm">Forum ini telah diakhiri. Tidak dapat mengirim pesan.</span>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-end gap-2">
+            <div className="relative flex-1">
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Tulis pesan..."
+                className="min-h-[80px] resize-none pr-12"
+              />
+              <Button
+                onClick={() => message.trim() && sendMessage()}
+                disabled={sending || !message.trim()}
+                size="icon"
+                className="absolute bottom-2 right-2"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                <span className="sr-only">Kirim</span>
+              </Button>
+            </div>
+          </div>
 
-      <div className="mt-2 text-xs text-muted-foreground text-center">
-        Tekan Enter untuk mengirim, Shift+Enter untuk baris baru
-      </div>
+          <div className="mt-2 text-xs text-muted-foreground text-center">
+            Tekan Enter untuk mengirim, Shift+Enter untuk baris baru
+          </div>
+        </>
+      )}
     </div>
   );
 }
