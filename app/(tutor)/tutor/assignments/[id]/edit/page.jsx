@@ -76,7 +76,7 @@ export default function AssignmentEditPage() {
     }
   }, [assignmentId, setValue, router]);
 
-  const fetchClassOptions = async () => {
+  const fetchClassOptions = useCallback(async () => {
     try {
       const res = await api.get("/tutor/my-classes");
       const all = res.data.data || [];
@@ -90,12 +90,12 @@ export default function AssignmentEditPage() {
     } catch {
       toast.error("Gagal memuat kelas Anda");
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchClassOptions();
     fetchAssignmentData();
-  }, [fetchClassOptions, fetchAssignmentData]);
+  }, [fetchAssignmentData, fetchClassOptions]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
