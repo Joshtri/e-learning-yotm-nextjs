@@ -105,6 +105,7 @@ export default function AddQuestionsPage() {
     append({
       teks: "",
       jenis: "MULTIPLE_CHOICE",
+      poin: 1,
       options: [
         { teks: "", adalahBenar: false },
         { teks: "", adalahBenar: false },
@@ -422,7 +423,30 @@ export default function AddQuestionsPage() {
                     </div>
                     <div>
                       <Label>Poin</Label>
-                      <Input disabled placeholder="(Otomatis)" />
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="Masukkan poin soal"
+                        {...register(
+                          `questions.${currentQuestionIndex}.poin`,
+                          {
+                            required: "Poin wajib diisi",
+                            min: {
+                              value: 0,
+                              message: "Poin tidak boleh negatif",
+                            },
+                            valueAsNumber: true,
+                          }
+                        )}
+                      />
+                      {errors.questions?.[currentQuestionIndex]?.poin && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {
+                            errors.questions[currentQuestionIndex].poin
+                              .message
+                          }
+                        </p>
+                      )}
                     </div>
                   </div>
 

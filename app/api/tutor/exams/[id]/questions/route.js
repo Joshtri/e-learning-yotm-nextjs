@@ -116,13 +116,25 @@ export async function POST(req, { params }) {
       for (const q of questions) {
         const isAutoGraded = ["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis);
 
+        // Gunakan poin yang diinput tutor; fallback ke pembagian otomatis bila kosong
+        const inputPoin =
+          q.poin !== undefined && q.poin !== null && q.poin !== ""
+            ? Number(q.poin)
+            : null;
+        const poinFinal =
+          inputPoin !== null && !Number.isNaN(inputPoin)
+            ? inputPoin
+            : isAutoGraded
+              ? poinPerQuestion
+              : 0;
+
         const createdQuestion = await prisma.question.create({
           data: {
             assignmentId,
             teks: q.teks,
             image: q.image || null, // ✅ Handle image
             jenis: q.jenis,
-            poin: isAutoGraded ? poinPerQuestion : 0,
+            poin: poinFinal,
             jawabanBenar: isAutoGraded ? q.jawabanBenar || null : null,
             pembahasan: q.pembahasan || null,
           },

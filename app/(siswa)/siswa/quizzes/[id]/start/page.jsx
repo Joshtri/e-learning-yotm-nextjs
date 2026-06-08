@@ -110,12 +110,40 @@ export default function QuizStartPage() {
   };
 
   const handleTimeUp = () => {
+    if (timeUp) return;
     setTimeUp(true);
-    toast.warning("Waktu habis! Jawaban akan dikumpulkan otomatis");
-    handleSubmit();
+    // Waktu habis: simpan otomatis seluruh jawaban yang sudah diisi (tanpa validasi kelengkapan)
+    handleSubmit(true);
   };
 
-  const handleSubmit = async () => {
+  // Validasi sebelum pengiriman manual oleh siswa
+  const getUnansweredQuestions = () => {
+    if (!quiz) return [];
+    return quiz.questions.filter((q) => !isQuestionAnswered(q.id));
+  };
+
+  const handleManualSubmit = () => {
+    const unanswered = getUnansweredQuestions();
+    if (unanswered.length > 0) {
+      toast.warning(
+        `Masih ada ${unanswered.length} soal yang belum dijawab`,
+        {
+          description:
+            "Anda harus menjawab seluruh soal terlebih dahulu sebelum mengirim kuis.",
+          duration: 5000,
+        },
+      );
+      // Arahkan siswa ke soal pertama yang belum dijawab
+      const firstIdx = quiz.questions.findIndex(
+        (q) => !isQuestionAnswered(q.id),
+      );
+      if (firstIdx >= 0) setCurrentQuestionIndex(firstIdx);
+      return;
+    }
+    handleSubmit(false);
+  };
+
+  const handleSubmit = async (isAutoSubmit = false) => {
     if (isSubmitting) return;
 
     try {
@@ -127,12 +155,31 @@ export default function QuizStartPage() {
 
       const {
         message,
+        currentScore,
         totalNilai,
         kkm,
         passedKKM,
         attemptNumber,
         remainingAttempts,
       } = response.data;
+
+      const nilaiTampil = currentScore ?? totalNilai;
+
+      // Pengiriman otomatis karena waktu habis: cukup beri tahu kuis berakhir & jawaban tersimpan
+      if (isAutoSubmit) {
+        toast.success(
+          "Waktu habis! Kuis telah berakhir dan seluruh jawaban Anda berhasil disimpan.",
+          {
+            description:
+              nilaiTampil !== undefined && nilaiTampil !== null
+                ? `Nilai Anda: ${nilaiTampil} | KKM: ${kkm}`
+                : undefined,
+            duration: 5000,
+          },
+        );
+        setTimeout(() => router.push("/siswa/quizzes"), 2500);
+        return;
+      }
 
       // Show detailed feedback based on KKM result
       if (passedKKM) {
@@ -475,23 +522,35 @@ export default function QuizStartPage() {
               </Button>
 
               {currentQuestionIndex === quiz.questions.length - 1 ? (
-                <ConfirmationDialog
-                  title="Konfirmasi Pengumpulan"
-                  description="Apakah Anda yakin ingin mengumpulkan jawaban sekarang? Setelah dikumpulkan, Anda tidak dapat mengubah jawaban."
-                  confirmText="Ya, kumpulkan"
-                  cancelText="Kembali"
-                  loading={isSubmitting}
-                  onConfirm={handleSubmit}
-                  trigger={
-                    <Button
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={isSubmitting || timeUp}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      {isSubmitting ? "Mengirim..." : "Kirim Semua Jawaban"}
-                    </Button>
-                  }
-                />
+                getUnansweredQuestions().length === 0 ? (
+                  <ConfirmationDialog
+                    title="Konfirmasi Pengumpulan"
+                    description="Apakah Anda yakin ingin mengumpulkan jawaban sekarang? Setelah dikumpulkan, Anda tidak dapat mengubah jawaban."
+                    confirmText="Ya, kumpulkan"
+                    cancelText="Kembali"
+                    loading={isSubmitting}
+                    onConfirm={() => handleSubmit(false)}
+                    trigger={
+                      <Button
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={isSubmitting || timeUp}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {isSubmitting ? "Mengirim..." : "Kirim Semua Jawaban"}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  // Masih ada soal yang belum dijawab: tampilkan notifikasi & blokir pengiriman
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={isSubmitting || timeUp}
+                    onClick={handleManualSubmit}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Kirim Semua Jawaban
+                  </Button>
+                )
               ) : (
                 <Button
                   onClick={goToNextQuestion}

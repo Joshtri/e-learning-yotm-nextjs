@@ -11,7 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, CheckCircle, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 export default function GradeSubmissionPage() {
   const { id: assignmentId, submissionId } = useParams();
@@ -24,10 +30,47 @@ export default function GradeSubmissionPage() {
   const [nilai, setNilai] = useState("");
   const [feedback, setFeedback] = useState("");
   const [answerGrades, setAnswerGrades] = useState({});
+  // Daftar submission siswa lain (untuk navigasi Sebelumnya/Selanjutnya)
+  const [navList, setNavList] = useState([]);
 
   useEffect(() => {
     fetchData();
   }, [submissionId]);
+
+  // Ambil daftar submission siswa untuk navigasi antar jawaban
+  useEffect(() => {
+    const fetchNavList = async () => {
+      try {
+        const res = await api.get(
+          `/tutor/assignments/${assignmentId}/student-answers`,
+        );
+        const list = (res.data.data.submissions || []).filter(
+          (s) => s.submissionId,
+        );
+        setNavList(list);
+      } catch {
+        // Navigasi opsional, abaikan jika gagal
+      }
+    };
+    fetchNavList();
+  }, [assignmentId]);
+
+  const currentNavIndex = navList.findIndex(
+    (s) => s.submissionId === submissionId,
+  );
+  const prevSubmission =
+    currentNavIndex > 0 ? navList[currentNavIndex - 1] : null;
+  const nextSubmission =
+    currentNavIndex >= 0 && currentNavIndex < navList.length - 1
+      ? navList[currentNavIndex + 1]
+      : null;
+
+  const goToSubmission = (subId) => {
+    if (!subId) return;
+    router.push(
+      `/tutor/assignments/${assignmentId}/student-answers/${subId}/grade`,
+    );
+  };
 
   const fetchData = async () => {
     try {
@@ -150,15 +193,48 @@ export default function GradeSubmissionPage() {
           { label: "Beri Nilai" },
         ]}
         actions={
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/tutor/assignments/${assignmentId}/student-answers`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Kembali
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => goToSubmission(prevSubmission?.submissionId)}
+              disabled={!prevSubmission}
+              title={
+                prevSubmission ? `Siswa: ${prevSubmission.nama}` : undefined
+              }
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Sebelumnya
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => goToSubmission(nextSubmission?.submissionId)}
+              disabled={!nextSubmission}
+              title={
+                nextSubmission ? `Siswa: ${nextSubmission.nama}` : undefined
+              }
+            >
+              Selanjutnya
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                router.push(
+                  `/tutor/assignments/${assignmentId}/student-answers`,
+                )
+              }
+            >
+              Kembali ke Daftar
+            </Button>
+          </div>
         }
       />
+
+      {navList.length > 0 && currentNavIndex >= 0 && (
+        <p className="text-sm text-muted-foreground -mt-2">
+          Jawaban siswa {currentNavIndex + 1} dari {navList.length}
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -365,19 +441,41 @@ export default function GradeSubmissionPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push(`/tutor/assignments/${assignmentId}/student-answers`)}
-            disabled={saving}
-          >
-            Batal
-          </Button>
-          <Button type="submit" disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? "Menyimpan..." : "Simpan Penilaian"}
-          </Button>
+        <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => goToSubmission(prevSubmission?.submissionId)}
+              disabled={saving || !prevSubmission}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Sebelumnya
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => goToSubmission(nextSubmission?.submissionId)}
+              disabled={saving || !nextSubmission}
+            >
+              Selanjutnya
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push(`/tutor/assignments/${assignmentId}/student-answers`)}
+              disabled={saving}
+            >
+              Batal
+            </Button>
+            <Button type="submit" disabled={saving}>
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? "Menyimpan..." : "Simpan Penilaian"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

@@ -80,6 +80,7 @@ export default function QuizQuestionsPage() {
           image: "", // ✅ Add default image field
           jenis: "MULTIPLE_CHOICE",
           jawabanBenar: "",
+          poin: 1,
           options: [{ teks: "" }, { teks: "" }],
         },
       ],
@@ -165,6 +166,7 @@ export default function QuizQuestionsPage() {
       image: "", // ✅ Add default image field
       jenis: "MULTIPLE_CHOICE",
       jawabanBenar: "",
+      poin: 1,
       options: [{ teks: "" }, { teks: "" }],
     });
 
@@ -462,12 +464,17 @@ function QuestionEditor({
             />
 
             <FormField
-              label="Poin (otomatis)"
+              label="Poin Soal"
               name={`questions.${currentQuestionIndex}.poin`}
               type="number"
               control={control}
-              disabled
-              placeholder="Ditentukan otomatis"
+              min={0}
+              placeholder="Masukkan poin soal"
+              rules={{
+                required: "Poin soal wajib diisi",
+                min: { value: 0, message: "Poin tidak boleh negatif" },
+              }}
+              error={errors?.questions?.[currentQuestionIndex]?.poin?.message}
             />
           </div>
 

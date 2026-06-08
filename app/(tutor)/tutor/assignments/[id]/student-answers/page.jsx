@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 export default function AssignmentSubmissionsPage() {
   const { id } = useParams(); // assignmentId
@@ -92,42 +92,24 @@ export default function AssignmentSubmissionsPage() {
     {
       header: "Aksi",
       cell: (row) => {
-        return (
-          <div className="flex gap-2 flex-wrap">
-            {/* Tombol Lihat Jawaban - hanya jika sudah ada submission */}
-            {row.status !== "NOT_STARTED" && row.submissionId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  router.push(
-                    `/tutor/assignments/${id}/student-answers/${row.submissionId}/view`,
-                  )
-                }
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Lihat Jawaban
-              </Button>
-            )}
+        // Hanya satu tombol: Beri Nilai (menampilkan jawaban siswa sekaligus form penilaian)
+        if (row.status === "NOT_STARTED" || !row.submissionId) {
+          return <span className="text-muted-foreground text-sm">-</span>;
+        }
 
-            {/* Tombol Beri Nilai - hanya jika sudah ada submission tapi belum dinilai */}
-            {row.status !== "NOT_STARTED" &&
-              row.submissionId &&
-              row.nilai == null && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() =>
-                    router.push(
-                      `/tutor/assignments/${id}/student-answers/${row.submissionId}/grade`,
-                    )
-                  }
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Beri Nilai
-                </Button>
-              )}
-          </div>
+        return (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() =>
+              router.push(
+                `/tutor/assignments/${id}/student-answers/${row.submissionId}/grade`,
+              )
+            }
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Beri Nilai
+          </Button>
         );
       },
     },
