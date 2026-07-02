@@ -222,7 +222,9 @@ export async function POST(req, { params }) {
 
       newAnswers.push({
         questionId: q.id,
-        jawaban: jawabanSiswa,
+        // Kolom jawaban wajib terisi di schema; soal yang belum dijawab
+        // (mis. auto-submit saat waktu habis) disimpan sebagai string kosong
+        jawaban: jawabanSiswa ?? "",
         image: imageSiswa || null,
         adalahBenar: benar,
         nilai,
@@ -234,64 +236,64 @@ export async function POST(req, { params }) {
     const newHighestScore = Math.max(currentHighestScore, totalNilai);
     const shouldSaveAnswers = totalNilai >= currentHighestScore; // Simpan jawaban jika nilai baru lebih tinggi
 
-    let submission;
-
     if (existingSubmission) {
-      // Update submission yang sudah ada
-      submission = await prisma.submission.update({
-        where: { id: existingSubmission.id },
-        data: {
-          attemptCount: newAttemptCount,
-          highestScore: newHighestScore,
-          nilai: newHighestScore, // Nilai di submission selalu yang tertinggi
-          waktuKumpul,
-          waktuDinilai: new Date(),
-          status: "GRADED",
-        },
-      });
-
-      // Jika nilai baru lebih tinggi, hapus jawaban lama dan simpan yang baru
-      if (shouldSaveAnswers) {
-        // Hapus jawaban lama
-        await prisma.answer.deleteMany({
-          where: { submissionId: submission.id },
-        });
-
-        // Simpan jawaban baru
-        for (const answerData of newAnswers) {
-          await prisma.answer.create({
-            data: {
-              submissionId: submission.id,
-              ...answerData,
-            },
-          });
-        }
-      }
-    } else {
-      // Buat submission baru (percobaan pertama)
-      submission = await prisma.submission.create({
-        data: {
-          studentId,
-          quizId,
-          status: "GRADED",
-          waktuMulai: waktuKumpul,
-          waktuKumpul,
-          nilai: totalNilai,
-          waktuDinilai: new Date(),
-          attemptCount: 1,
-          highestScore: totalNilai,
-        },
-      });
-
-      // Simpan semua jawaban
-      for (const answerData of newAnswers) {
-        await prisma.answer.create({
+      // Update submission + ganti jawaban dalam satu transaksi agar jawaban
+      // lama tidak hilang jika penyimpanan jawaban baru gagal di tengah jalan
+      await prisma.$transaction(async (tx) => {
+        const updated = await tx.submission.update({
+          where: { id: existingSubmission.id },
           data: {
-            submissionId: submission.id,
-            ...answerData,
+            attemptCount: newAttemptCount,
+            highestScore: newHighestScore,
+            nilai: newHighestScore, // Nilai di submission selalu yang tertinggi
+            waktuKumpul,
+            waktuDinilai: new Date(),
+            status: "GRADED",
           },
         });
-      }
+
+        // Jika nilai baru lebih tinggi, hapus jawaban lama dan simpan yang baru
+        if (shouldSaveAnswers) {
+          await tx.answer.deleteMany({
+            where: { submissionId: updated.id },
+          });
+
+          await tx.answer.createMany({
+            data: newAnswers.map((answerData) => ({
+              submissionId: updated.id,
+              ...answerData,
+            })),
+          });
+        }
+
+        return updated;
+      });
+    } else {
+      // Buat submission baru (percobaan pertama)
+      await prisma.$transaction(async (tx) => {
+        const created = await tx.submission.create({
+          data: {
+            studentId,
+            quizId,
+            status: "GRADED",
+            waktuMulai: waktuKumpul,
+            waktuKumpul,
+            nilai: totalNilai,
+            waktuDinilai: new Date(),
+            attemptCount: 1,
+            highestScore: totalNilai,
+          },
+        });
+
+        await tx.answer.createMany({
+          data: newAnswers.map((answerData) => ({
+            submissionId: created.id,
+            ...answerData,
+          })),
+        });
+
+        return created;
+      });
     }
 
     // Hitung status lulus KKM berdasarkan highest score

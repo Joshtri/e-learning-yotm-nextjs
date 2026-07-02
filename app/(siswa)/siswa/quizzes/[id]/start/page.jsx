@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { toast } from "sonner";
@@ -30,6 +30,17 @@ export default function QuizStartPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+  const [autoSubmitFailed, setAutoSubmitFailed] = useState(false);
+
+  // Ref agar submit dari callback timer selalu membawa isian terbaru siswa
+  const answersRef = useRef(answers);
+  const answerImagesRef = useRef(answerImages);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+  useEffect(() => {
+    answerImagesRef.current = answerImages;
+  }, [answerImages]);
 
   // Fetch quiz data
   useEffect(() => {
@@ -148,9 +159,10 @@ export default function QuizStartPage() {
 
     try {
       setIsSubmitting(true);
+      setAutoSubmitFailed(false);
       const response = await api.post(`/student/quizzes/${id}/submit`, {
-        answers,
-        answerImages,
+        answers: answersRef.current,
+        answerImages: answerImagesRef.current,
       });
 
       const {
@@ -213,7 +225,17 @@ export default function QuizStartPage() {
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Gagal mengirim jawaban";
-      toast.error(errorMessage);
+      if (isAutoSubmit) {
+        // Jangan biarkan jawaban siswa hangus: tampilkan panel kirim ulang
+        setAutoSubmitFailed(true);
+        toast.error(errorMessage, {
+          description:
+            "Jawaban Anda belum tersimpan. Silakan tekan tombol 'Coba Kirim Ulang'.",
+          duration: 8000,
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -323,6 +345,31 @@ export default function QuizStartPage() {
         isVisible={isSubmitting}
         message="Mengirim jawaban kuis..."
       />
+
+      {/* Panel kirim ulang jika pengiriman otomatis saat waktu habis gagal */}
+      {timeUp && autoSubmitFailed && (
+        <Card className="mb-6 border-red-400 bg-red-50">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-sm text-red-700">
+              <p className="font-semibold">
+                Waktu habis, tetapi jawaban Anda belum berhasil terkirim.
+              </p>
+              <p>
+                Jangan tutup halaman ini. Tekan tombol di samping untuk
+                mengirim ulang jawaban Anda.
+              </p>
+            </div>
+            <Button
+              onClick={() => handleSubmit(true)}
+              disabled={isSubmitting}
+              className="bg-red-600 hover:bg-red-700 shrink-0"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Mengirim..." : "Coba Kirim Ulang"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Header Card */}
       <Card className="mb-6">

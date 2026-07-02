@@ -15,9 +15,9 @@
       "Bash(dir:*)",
       "Bash(npm install:*)",
       "Bash(findstr:*)",
-      "Bash(move \"app\\(tutor)\\tutor\\assignments\\[id]\\submissions\\[studentId]\\edit\\page.jsx\" \"app\\(tutor)\\tutor\\assignments\\[id]\\input-answer\\[studentId]\\page.jsx\")",
       "Bash(find:*)",
-      "Bash(powershell -Command \"Get-Item *.png | Select-Object Name, Length\")"
+      "Bash(powershell -Command \"Get-Item *.png | Select-Object Name, Length\")",
+      "PowerShell(npx next lint --file \"app/\\(siswa\\)/siswa/quizzes/[id]/start/page.jsx\" --file \"app/api/student/quizzes/[id]/submit/route.js\")"
     ],
     "deny": [],
     "ask": []
