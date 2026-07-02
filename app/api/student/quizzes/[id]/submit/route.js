@@ -295,7 +295,7 @@ export async function POST(req, { params }) {
         return created;
       });
     }
-
+    //yostri disini
     // Hitung status lulus KKM berdasarkan highest score
     const passedKKM = newHighestScore >= kkm;
     const remainingAttempts = 3 - newAttemptCount;
