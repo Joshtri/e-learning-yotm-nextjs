@@ -18,6 +18,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { PDFViewerButton } from "@/components/ui/pdf-viewer";
 
 export default function GradeSubmissionPage() {
   const { id: assignmentId, submissionId } = useParams();
@@ -289,6 +290,22 @@ export default function GradeSubmissionPage() {
           </div>
         </CardContent>
       </Card>
+
+      {submission.answerPdf && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Jawaban PDF Siswa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PDFViewerButton
+              pdfData={submission.answerPdf}
+              title={`Jawaban - ${student?.namaLengkap || student?.user?.nama}`}
+              downloadFileName={`Jawaban_${student?.namaLengkap || student?.user?.nama}.pdf`}
+              buttonLabel="Lihat Jawaban PDF"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {assignment?.questions && assignment.questions.length > 0 && (

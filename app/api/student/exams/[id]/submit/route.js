@@ -152,15 +152,10 @@ export async function POST(req, { params }) {
       let nilai = 0;
 
       if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis)) {
-        // Find the correct option directly from schema setup
-        const opsiBenar = q.options.find(
-          (opt, i) => String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar
-        );
+        const opsiBenar = q.options.find((opt) => opt.adalahBenar === true);
 
         if (opsiBenar) {
-          // Check if student's answer text matches true options exactly, or if it matched via `kode` (OPSI_A vs OPSI_0)
           benar =
-            jawabanSiswa?.trim().toLowerCase() === opsiBenar.teks?.trim().toLowerCase() ||
             jawabanSiswa?.trim().toLowerCase() === opsiBenar.kode?.trim().toLowerCase();
 
           nilai = benar ? q.poin : 0;

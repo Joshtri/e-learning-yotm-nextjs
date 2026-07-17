@@ -17,7 +17,9 @@
       "Bash(findstr:*)",
       "Bash(find:*)",
       "Bash(powershell -Command \"Get-Item *.png | Select-Object Name, Length\")",
-      "PowerShell(npx next lint --file \"app/\\(siswa\\)/siswa/quizzes/[id]/start/page.jsx\" --file \"app/api/student/quizzes/[id]/submit/route.js\")"
+      "PowerShell(npx next lint --file \"app/\\(siswa\\)/siswa/quizzes/[id]/start/page.jsx\" --file \"app/api/student/quizzes/[id]/submit/route.js\")",
+      "PowerShell(Select-String *)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\code\\\\e-learning-yotm-nextjs\\\\app\" -Recurse -Name | Where-Object { $_ -match \"grade|student-answer|submission\" })"
     ],
     "deny": [],
     "ask": []

@@ -203,17 +203,12 @@ export async function POST(req, { params }) {
         benar = null;
         nilai = 0;
       } else {
-        const opsiBenar = q.options.find(
-          (opt, i) =>
-            String(i) === q.jawabanBenar || opt.kode === q.jawabanBenar,
-        );
+        const opsiBenar = q.options.find((opt) => opt.adalahBenar === true);
 
         if (opsiBenar) {
           benar =
             jawabanSiswa?.trim().toLowerCase() ===
-              opsiBenar.teks?.trim().toLowerCase() ||
-            jawabanSiswa?.trim().toLowerCase() ===
-              opsiBenar.kode?.trim().toLowerCase();
+            opsiBenar.kode?.trim().toLowerCase();
         }
 
         nilai = benar ? q.poin : 0;

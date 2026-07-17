@@ -181,10 +181,10 @@ export default function StudentExamStartPage() {
         </CardHeader>
         <CardContent>
           {/* Countdown Timer */}
-          {examInfo?.durasiMenit && (
+          {examInfo?.batasWaktuMenit && (
             <div className="mb-4">
               <CountdownTimer
-                totalMinutes={examInfo.durasiMenit}
+                totalMinutes={examInfo.batasWaktuMenit}
                 onTimeUp={handleTimeUp}
               />
             </div>
