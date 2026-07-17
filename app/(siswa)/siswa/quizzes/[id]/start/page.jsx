@@ -196,7 +196,7 @@ export default function QuizStartPage() {
       // Show detailed feedback based on KKM result
       if (passedKKM) {
         toast.success(message, {
-          description: `Nilai Anda: ${totalNilai} | KKM: ${kkm}`,
+          description: `Nilai Anda: ${nilaiTampil} | KKM: ${kkm}`,
           duration: 5000,
         });
         setTimeout(() => router.push("/siswa/quizzes"), 2000);

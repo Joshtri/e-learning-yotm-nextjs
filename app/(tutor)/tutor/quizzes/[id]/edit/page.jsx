@@ -210,12 +210,13 @@ export default function QuizEditPage() {
           </div>
 
           <FormField
-            label="Nilai Maksimal"
+            label="KKM (Kriteria Ketuntasan Minimal)"
             name="nilaiMaksimal"
             control={control}
-            placeholder="Nilai maksimal kuis"
+            placeholder="Nilai KKM"
             type="number"
             {...register("nilaiMaksimal", { valueAsNumber: true })}
+            description="Batas remedial: 3x jika nilai < KKM"
           />
         </div>
 

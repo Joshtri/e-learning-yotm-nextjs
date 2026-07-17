@@ -188,6 +188,7 @@ export async function POST(req, { params }) {
     });
 
     let totalNilai = 0;
+    let totalPossiblePoin = 0;
     const newAnswers = [];
 
     // Hitung nilai dari jawaban yang baru
@@ -216,6 +217,7 @@ export async function POST(req, { params }) {
         }
 
         nilai = benar ? q.poin : 0;
+        totalPossiblePoin += q.poin;
       }
 
       totalNilai += nilai;
@@ -231,10 +233,16 @@ export async function POST(req, { params }) {
       });
     }
 
+    // Normalisasi skor ke skala 0-100 agar sesuai dengan KKM
+    const skorNormalisasi =
+      totalPossiblePoin > 0
+        ? Math.round((totalNilai / totalPossiblePoin) * 100)
+        : 0;
+
     // Update attempt count
     const newAttemptCount = currentAttemptCount + 1;
-    const newHighestScore = Math.max(currentHighestScore, totalNilai);
-    const shouldSaveAnswers = totalNilai >= currentHighestScore; // Simpan jawaban jika nilai baru lebih tinggi
+    const newHighestScore = Math.max(currentHighestScore, skorNormalisasi);
+    const shouldSaveAnswers = skorNormalisasi >= currentHighestScore; // Simpan jawaban jika nilai baru lebih tinggi
 
     if (existingSubmission) {
       // Update submission + ganti jawaban dalam satu transaksi agar jawaban
@@ -278,10 +286,10 @@ export async function POST(req, { params }) {
             status: "GRADED",
             waktuMulai: waktuKumpul,
             waktuKumpul,
-            nilai: totalNilai,
+            nilai: skorNormalisasi,
             waktuDinilai: new Date(),
             attemptCount: 1,
-            highestScore: totalNilai,
+            highestScore: skorNormalisasi,
           },
         });
 
@@ -303,27 +311,27 @@ export async function POST(req, { params }) {
     let message = "";
 
     if (passedKKM) {
-      if (totalNilai >= kkm) {
-        message = `Selamat! Anda lulus dengan nilai ${totalNilai}. KKM: ${kkm}`;
+      if (skorNormalisasi >= kkm) {
+        message = `Selamat! Anda lulus dengan nilai ${skorNormalisasi}. KKM: ${kkm}`;
       } else {
-        message = `Nilai percobaan ini: ${totalNilai}. Anda sudah lulus dengan nilai tertinggi ${newHighestScore}. KKM: ${kkm}`;
+        message = `Nilai percobaan ini: ${skorNormalisasi}. Anda sudah lulus dengan nilai tertinggi ${newHighestScore}. KKM: ${kkm}`;
       }
     } else {
       if (remainingAttempts > 0) {
-        if (totalNilai > currentHighestScore) {
-          message = `Nilai percobaan ${newAttemptCount}: ${totalNilai} (tertinggi baru). Belum mencapai KKM (${kkm}). Sisa ${remainingAttempts} kesempatan.`;
+        if (skorNormalisasi > currentHighestScore) {
+          message = `Nilai percobaan ${newAttemptCount}: ${skorNormalisasi} (tertinggi baru). Belum mencapai KKM (${kkm}). Sisa ${remainingAttempts} kesempatan.`;
         } else {
-          message = `Nilai percobaan ${newAttemptCount}: ${totalNilai}. Nilai tertinggi tetap ${newHighestScore}. Belum mencapai KKM (${kkm}). Sisa ${remainingAttempts} kesempatan.`;
+          message = `Nilai percobaan ${newAttemptCount}: ${skorNormalisasi}. Nilai tertinggi tetap ${newHighestScore}. Belum mencapai KKM (${kkm}). Sisa ${remainingAttempts} kesempatan.`;
         }
       } else {
-        message = `Nilai percobaan ${newAttemptCount}: ${totalNilai}. Nilai tertinggi Anda: ${newHighestScore}. Belum mencapai KKM (${kkm}). Kesempatan telah habis.`;
+        message = `Nilai percobaan ${newAttemptCount}: ${skorNormalisasi}. Nilai tertinggi Anda: ${newHighestScore}. Belum mencapai KKM (${kkm}). Kesempatan telah habis.`;
       }
     }
 
     return NextResponse.json({
       success: true,
       message,
-      currentScore: totalNilai,
+      currentScore: skorNormalisasi,
       highestScore: newHighestScore,
       kkm,
       passedKKM,
