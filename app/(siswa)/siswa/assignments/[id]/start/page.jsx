@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountdownTimer } from "@/components/ui/countdown-timer";
 import { LoadingOverlay } from "@/components/ui/loading";
 import SkeletonTable from "@/components/ui/skeleton/SkeletonTable";
-import { FileText, Upload, Eye } from "lucide-react";
+import { FileText, Upload, Eye, AlertTriangle, Clock, Send } from "lucide-react";
 
 export default function AssignmentStartPage() {
   const { id } = useParams();
@@ -26,6 +26,25 @@ export default function AssignmentStartPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+  const [autoSubmitFailed, setAutoSubmitFailed] = useState(false);
+
+  // Refs so auto-submit callback always reads the latest values
+  const answersRef = useRef({});
+  const answerImagesRef = useRef({});
+  const answerFileRef = useRef(null);
+  const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    answerImagesRef.current = answerImages;
+  }, [answerImages]);
+
+  useEffect(() => {
+    answerFileRef.current = answerFile;
+  }, [answerFile]);
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -98,38 +117,52 @@ export default function AssignmentStartPage() {
   };
 
   const handleTimeUp = () => {
+    if (timeUp) return;
     setTimeUp(true);
-    toast.warning("Waktu habis! Jawaban akan dikumpulkan otomatis");
-    handleSubmit();
+    submitAssignment(true);
   };
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-
+  const submitAssignment = async (isAutoSubmit = false) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+
     try {
       let payload = {};
 
-      if (assignment?.questionsFromPdf && answerFile) {
-        // PDF-based assignment
-        const base64 = await convertFileToBase64(answerFile);
+      if (assignment?.questionsFromPdf && answerFileRef.current) {
+        const base64 = await convertFileToBase64(answerFileRef.current);
         payload = { answerPdf: base64 };
       } else {
-        // Traditional question-based assignment
         payload = {
           answers: questions.map((q) => ({
             questionId: q.id,
-            jawaban: answers[q.id] || "",
-            image: answerImages[q.id] || null, // ✅ Send image if exists
+            jawaban: answersRef.current[q.id] || "",
+            image: answerImagesRef.current[q.id] || null,
           })),
         };
       }
 
       await api.post(`/student/assignments/${id}/submit`, payload);
-      toast.success("Jawaban berhasil dikumpulkan");
-      router.push("/siswa/assignments/list");
+
+      if (isAutoSubmit) {
+        toast.success("Waktu habis! Seluruh jawaban berhasil disimpan.", {
+          description: "Tugas telah berakhir. Jawaban Anda telah tersimpan.",
+          duration: 5000,
+        });
+      } else {
+        toast.success("Jawaban berhasil dikumpulkan!");
+      }
+      setTimeout(() => router.push("/siswa/assignments/list"), 2500);
     } catch (error) {
-      if (error.response?.status === 403) {
+      if (isAutoSubmit) {
+        setAutoSubmitFailed(true);
+        toast.error("Gagal menyimpan jawaban otomatis.", {
+          description:
+            "Jawaban Anda belum tersimpan. Tekan tombol 'Coba Kirim Ulang'.",
+          duration: 8000,
+        });
+      } else if (error.response?.status === 403) {
         const errorData = error.response.data;
         toast.error(errorData.message);
         router.push("/siswa/assignments/list");
@@ -137,6 +170,7 @@ export default function AssignmentStartPage() {
         toast.error("Gagal mengumpulkan jawaban");
       }
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -150,6 +184,62 @@ export default function AssignmentStartPage() {
         isVisible={isSubmitting}
         message="Mengumpulkan jawaban tugas..."
       />
+
+      {/* Time-up notification banner */}
+      {timeUp && !autoSubmitFailed && (
+        <Card className="mb-6 border-red-400 bg-red-50 shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-center sm:text-left flex-1">
+                <p className="text-lg font-bold text-red-700">
+                  Waktu Pengerjaan Telah Berakhir
+                </p>
+                <p className="text-sm text-red-600">
+                  Semua jawaban Anda telah berhasil disimpan secara otomatis.
+                  Anda akan dialihkan ke halaman daftar tugas.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-red-500 shrink-0">
+                <Clock className="h-4 w-4 animate-spin" />
+                <span>Menyimpan...</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-submit failure recovery panel */}
+      {timeUp && autoSubmitFailed && (
+        <Card className="mb-6 border-red-400 bg-red-50 shadow-lg">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-sm text-red-700">
+                <p className="font-semibold text-base">
+                  Gagal Menyimpan Jawaban
+                </p>
+                <p>
+                  Waktu habis, tetapi jawaban Anda belum berhasil terkirim.
+                  Jangan tutup halaman ini. Tekan tombol di samping untuk
+                  mengirim ulang jawaban Anda.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => submitAssignment(true)}
+              className="bg-red-600 hover:bg-red-700 shrink-0"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Coba Kirim Ulang
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <PageHeader
         title={`Pengerjaan Tugas: ${assignment?.judul}`}
@@ -174,7 +264,7 @@ export default function AssignmentStartPage() {
 
       {assignment?.questionsFromPdf ? (
         /* PDF-based Assignment */
-        <div className="mt-6 space-y-6">
+        <div className={`mt-6 space-y-6 ${timeUp ? "opacity-60 pointer-events-none" : ""}`}>
           <Card>
             <CardHeader>
               <CardTitle>Soal dalam bentuk PDF</CardTitle>
@@ -209,7 +299,7 @@ export default function AssignmentStartPage() {
                       link.click();
                       document.body.removeChild(link);
                       URL.revokeObjectURL(url);
-                    } catch (error) {
+                    } catch {
                       toast.error("Gagal mengunduh file PDF");
                     }
                   }}
@@ -237,7 +327,7 @@ export default function AssignmentStartPage() {
                           </body>
                         </html>
                       `);
-                    } catch (error) {
+                    } catch {
                       toast.error("Gagal membuka PDF");
                     }
                   }}
@@ -284,7 +374,7 @@ export default function AssignmentStartPage() {
         </div>
       ) : (
         /* Traditional Question-based Assignment */
-        <form className="mt-6 space-y-6">
+        <form className={`mt-6 space-y-6 ${timeUp ? "opacity-60 pointer-events-none" : ""}`}>
           {questions.map((q, i) => (
             <Card key={q.id}>
               <CardHeader>
@@ -432,7 +522,7 @@ export default function AssignmentStartPage() {
       <div className="mt-6 text-right">
         <Button
           type="button"
-          onClick={handleSubmit}
+          onClick={() => submitAssignment(false)}
           disabled={
             isSubmitting ||
             timeUp ||

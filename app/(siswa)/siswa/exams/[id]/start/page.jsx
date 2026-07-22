@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import FormField from "@/components/ui/form-field";
-import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send } from "lucide-react";
+import { CheckCircle, Circle, ArrowLeft, ArrowRight, Send, Clock, AlertTriangle } from "lucide-react";
 import { CountdownTimer } from "@/components/ui/countdown-timer";
 import { LoadingOverlay } from "@/components/ui/loading";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -204,18 +204,50 @@ export default function StudentExamStartPage() {
         message="Mengirim jawaban ujian..."
       />
 
+      {/* Time-up notification banner */}
+      {timeUp && !autoSubmitFailed && (
+        <Card className="mb-6 border-red-400 bg-red-50 shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-center sm:text-left flex-1">
+                <p className="text-lg font-bold text-red-700">
+                  Waktu Pengerjaan Telah Berakhir
+                </p>
+                <p className="text-sm text-red-600">
+                  Semua jawaban Anda telah berhasil disimpan secara otomatis.
+                  Anda akan dialihkan ke halaman daftar ujian.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-red-500 shrink-0">
+                <Clock className="h-4 w-4 animate-spin" />
+                <span>Menyimpan...</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Auto-submit failure recovery panel */}
       {timeUp && autoSubmitFailed && (
-        <Card className="mb-6 border-red-400 bg-red-50">
-          <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-sm text-red-700">
-              <p className="font-semibold">
-                Waktu habis, tetapi jawaban Anda belum berhasil terkirim.
-              </p>
-              <p>
-                Jangan tutup halaman ini. Tekan tombol di samping untuk
-                mengirim ulang jawaban Anda.
-              </p>
+        <Card className="mb-6 border-red-400 bg-red-50 shadow-lg">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-sm text-red-700">
+                <p className="font-semibold text-base">
+                  Gagal Menyimpan Jawaban
+                </p>
+                <p>
+                  Waktu habis, tetapi jawaban Anda belum berhasil terkirim.
+                  Jangan tutup halaman ini. Tekan tombol di samping untuk
+                  mengirim ulang jawaban Anda.
+                </p>
+              </div>
             </div>
             <Button
               onClick={() => submitExam(true)}
@@ -257,7 +289,7 @@ export default function StudentExamStartPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar soal */}
         <div className="md:col-span-1">
-          <Card>
+          <Card className={timeUp ? "opacity-60 pointer-events-none" : ""}>
             <CardHeader>
               <CardTitle className="text-base">Daftar Soal</CardTitle>
             </CardHeader>
@@ -268,13 +300,14 @@ export default function StudentExamStartPage() {
                     key={question.id}
                     type="button"
                     onClick={() => setCurrentIndex(index)}
+                    disabled={timeUp}
                     className={`flex items-center justify-center h-10 w-10 rounded-full border ${
                       currentIndex === index
                         ? "border-primary bg-primary text-primary-foreground"
                         : isQuestionAnswered(question.id)
                         ? "border-green-500 bg-green-100 text-green-700"
                         : "border-gray-300 bg-background"
-                    }`}
+                    } ${timeUp ? "cursor-not-allowed" : ""}`}
                   >
                     {index + 1}
                   </button>
@@ -296,14 +329,18 @@ export default function StudentExamStartPage() {
 
         {/* Konten soal */}
         <div className="md:col-span-3">
-          <Card>
+          <Card className={timeUp ? "opacity-60" : ""}>
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">
                   Soal {currentIndex + 1} dari {questions.length}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  {isQuestionAnswered(currentQuestion.id) ? (
+                  {timeUp ? (
+                    <span className="flex items-center text-red-600 font-semibold">
+                      <AlertTriangle className="h-4 w-4 mr-1" /> Waktu Habis
+                    </span>
+                  ) : isQuestionAnswered(currentQuestion.id) ? (
                     <span className="flex items-center text-green-600">
                       <CheckCircle className="h-4 w-4 mr-1" /> Sudah dijawab
                     </span>
@@ -339,7 +376,7 @@ export default function StudentExamStartPage() {
                         watchedAnswers[currentQuestion.id] === opt.kode
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 hover:border-gray-300"
-                      } cursor-pointer transition-colors`}
+                      } ${timeUp ? "cursor-not-allowed opacity-70" : "cursor-pointer"} transition-colors`}
                     >
                       <div
                         className={`flex items-center justify-center h-5 w-5 rounded-full border ${
@@ -357,6 +394,7 @@ export default function StudentExamStartPage() {
                         name={`answers.${currentQuestion.id}`}
                         value={opt.kode}
                         className="sr-only"
+                        disabled={timeUp}
                         onChange={() =>
                           handleAnswerChange(currentQuestion.id, opt.kode)
                         }
@@ -374,7 +412,7 @@ export default function StudentExamStartPage() {
                           watchedAnswers[currentQuestion.id] === val
                             ? "border-primary bg-primary/5"
                             : "border-gray-200 hover:border-gray-300"
-                        } cursor-pointer transition-colors`}
+                        } ${timeUp ? "cursor-not-allowed opacity-70" : "cursor-pointer"} transition-colors`}
                       >
                         <div
                           className={`flex items-center justify-center h-5 w-5 rounded-full border ${
@@ -391,6 +429,7 @@ export default function StudentExamStartPage() {
                           type="radio"
                           value={val}
                           className="sr-only"
+                          disabled={timeUp}
                           onChange={() =>
                             handleAnswerChange(currentQuestion.id, val)
                           }
@@ -406,61 +445,64 @@ export default function StudentExamStartPage() {
                     name={`answers.${currentQuestion.id}`}
                     control={control}
                     type="textarea"
-                    placeholder="Tulis jawaban di sini..."
+                    placeholder={timeUp ? "Waktu telah habis" : "Tulis jawaban di sini..."}
                     rows={5}
                     className="min-h-[120px]"
+                    disabled={timeUp}
                   />
                 )}
 
                 {/* Answer image upload */}
-                <div className="space-y-2 pt-4 border-top">
-                  <label className="text-sm font-medium text-gray-700">
-                    Upload Gambar Jawaban (Opsional)
-                  </label>
-                  <div className="flex flex-col gap-2">
-                    {answerImages[currentQuestion.id] ? (
-                      <div className="relative w-full max-w-sm rounded-md border p-2 bg-gray-50">
-                        <img
-                          src={answerImages[currentQuestion.id]}
-                          alt="Preview Jawaban"
-                          className="w-full h-auto rounded-md"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                          onClick={() => removeImage(currentQuestion.id)}
-                        >
-                          <span className="sr-only">Hapus gambar</span>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                {!timeUp && (
+                  <div className="space-y-2 pt-4 border-top">
+                    <label className="text-sm font-medium text-gray-700">
+                      Upload Gambar Jawaban (Opsional)
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      {answerImages[currentQuestion.id] ? (
+                        <div className="relative w-full max-w-sm rounded-md border p-2 bg-gray-50">
+                          <img
+                            src={answerImages[currentQuestion.id]}
+                            alt="Preview Jawaban"
+                            className="w-full h-auto rounded-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => removeImage(currentQuestion.id)}
                           >
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                          </svg>
-                        </Button>
-                      </div>
-                    ) : (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleImageUpload(currentQuestion.id, e)
-                        }
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                    )}
+                            <span className="sr-only">Hapus gambar</span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </Button>
+                        </div>
+                      ) : (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleImageUpload(currentQuestion.id, e)
+                          }
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
@@ -468,7 +510,7 @@ export default function StudentExamStartPage() {
                 type="button"
                 variant="outline"
                 onClick={goToPreviousQuestion}
-                disabled={currentIndex === 0}
+                disabled={currentIndex === 0 || timeUp}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" /> Sebelumnya
               </Button>
