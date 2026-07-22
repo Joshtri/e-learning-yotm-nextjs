@@ -232,7 +232,7 @@ export default function StudentExamsPage() {
 
           {/* Action Button */}
           <div className="pt-2">
-            {exam.submission?.status === "GRADED" && (
+            {exam.submission && exam.submission.nilai !== null && (
               <>
                 {exam.submission.nilai >= (exam.nilaiMaksimal || 75) ? (
                   <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -244,41 +244,21 @@ export default function StudentExamsPage() {
                     </span>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <span className="text-sm font-medium">
-                        ⚠️ Belum Lulus KKM - Nilai:
-                      </span>
-                      <span className="text-xl font-bold text-orange-700">
-                        {exam.submission.nilai?.toFixed(2) || 0}
-                      </span>
-                    </div>
-                    {exam.submissionCount < 3 && exam.canStart ? (
-                      <Button
-                        onClick={() =>
-                          router.push(`/siswa/exams/${exam.id}/start`)
-                        }
-                        variant="outline"
-                        className="w-full text-orange-600 border-orange-600 hover:bg-orange-50"
-                      >
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        🔄 Remedial ({3 - exam.submissionCount}x kesempatan)
-                      </Button>
-                    ) : exam.submissionCount >= 3 ? (
-                      <div className="p-3 bg-red-50 rounded-lg text-center">
-                        <span className="text-sm text-red-600">
-                          Kesempatan remedial habis
-                        </span>
-                      </div>
-                    ) : null}
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <span className="text-sm font-medium">
+                      ⚠️ Belum Lulus KKM - Nilai:
+                    </span>
+                    <span className="text-xl font-bold text-orange-700">
+                      {exam.submission.nilai?.toFixed(2) || 0}
+                    </span>
                   </div>
                 )}
               </>
             )}
-            {exam.submission?.status === "SUBMITTED" && (
+            {exam.submission && exam.submission.nilai === null && (
               <div className="p-3 bg-blue-50 rounded-lg text-center">
                 <span className="text-sm text-blue-800">
-                  Menunggu penilaian dari guru
+                  Menunggu hasil penilaian...
                 </span>
               </div>
             )}

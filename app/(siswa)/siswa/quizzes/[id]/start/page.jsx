@@ -484,30 +484,30 @@ export default function QuizStartPage() {
                       <label
                         key={opt.id}
                         className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          answers[currentQuestion.id] === opt.teks
+                          answers[currentQuestion.id] === opt.kode
                             ? "border-primary bg-primary/5"
                             : "border-gray-200 hover:border-gray-300"
                         } cursor-pointer transition-colors`}
                       >
                         <div
                           className={`flex items-center justify-center h-5 w-5 rounded-full border ${
-                            answers[currentQuestion.id] === opt.teks
+                            answers[currentQuestion.id] === opt.kode
                               ? "border-primary"
                               : "border-gray-400"
                           }`}
                         >
-                          {answers[currentQuestion.id] === opt.teks && (
+                          {answers[currentQuestion.id] === opt.kode && (
                             <div className="h-3 w-3 rounded-full bg-primary"></div>
                           )}
                         </div>
                         <input
                           type="radio"
                           name={currentQuestion.id}
-                          value={opt.teks}
+                          value={opt.kode}
                           onChange={() =>
-                            handleAnswerChange(currentQuestion.id, opt.teks)
+                            handleAnswerChange(currentQuestion.id, opt.kode)
                           }
-                          checked={answers[currentQuestion.id] === opt.teks}
+                          checked={answers[currentQuestion.id] === opt.kode}
                           className="sr-only"
                         />
                         <span>{opt.teks}</span>

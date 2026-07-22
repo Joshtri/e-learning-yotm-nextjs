@@ -9,7 +9,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Eye, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default function ExamSubmissionsPage() {
@@ -54,13 +54,13 @@ export default function ExamSubmissionsPage() {
     {
       header: "Status",
       cell: (row) => {
-        const isGraded = row.status === "GRADED" || row.waktuDinilai;
+        const isGraded = row.status === "GRADED" || row.nilai !== null;
         return (
           <Badge variant={isGraded ? "default" : "secondary"}>
             {isGraded ? (
-              <><CheckCircle className="h-3 w-3 mr-1" /> Sudah Dinilai</>
+              <><CheckCircle className="h-3 w-3 mr-1" /> Dinilai Otomatis</>
             ) : (
-              <><Clock className="h-3 w-3 mr-1" /> Belum Dinilai</>
+              <><Clock className="h-3 w-3 mr-1" /> Menunggu</>
             )}
           </Badge>
         );
@@ -84,10 +84,10 @@ export default function ExamSubmissionsPage() {
     {
       header: "Aksi",
       cell: (row) => (
-        <Button size="sm" asChild>
+        <Button size="sm" variant="outline" asChild>
           <Link href={`/tutor/exams/${id}/submissions/${row.id}`}>
             <Eye className="h-4 w-4 mr-1" />
-            Periksa Jawaban
+            Lihat Detail
           </Link>
         </Button>
       ),

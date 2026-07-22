@@ -32,16 +32,23 @@ export async function GET(req, { params }) {
         submissionId: submission.id,
       },
       include: {
-        question: true,
+        question: {
+          include: { options: true },
+        },
       },
     });
 
-    const result = answers.map((item) => ({
-      soal: item.question.teks,
-      jawaban: item.jawaban,
-      benar: item.adalahBenar,
-      nilai: item.nilai,
-    }));
+    const result = answers.map((item) => {
+      const selectedOption = item.question.options.find(
+        (opt) => opt.kode?.trim().toLowerCase() === item.jawaban?.trim().toLowerCase()
+      );
+      return {
+        soal: item.question.teks,
+        jawaban: selectedOption ? `${item.jawaban} - ${selectedOption.teks}` : item.jawaban,
+        benar: item.adalahBenar,
+        nilai: item.nilai,
+      };
+    });
 
     return NextResponse.json(result);
   } catch (error) {
