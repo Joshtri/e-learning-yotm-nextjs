@@ -4,6 +4,51 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
+/**
+ * Menilai satu soal pilihan ganda / benar-salah.
+ * Mendukung data lama (jawabanBenar di Question, kode null pada opsi)
+ * maupun data baru (adalahBenar pada AnswerOption, kode tersedia).
+ */
+function gradeMultipleChoice(q, jawabanSiswa) {
+  if (!jawabanSiswa) return { benar: false, nilai: 0 };
+
+  // 1. Cari opsi benar via flag adalahBenar (data baru)
+  let opsiBenar = q.options.find((opt) => opt.adalahBenar === true);
+
+  // 2. Fallback: pakai jawabanBenar di level Question (data lama)
+  if (!opsiBenar && q.jawabanBenar != null) {
+    const jb = String(q.jawabanBenar).trim();
+    opsiBenar =
+      q.options.find((o) => o.kode?.trim() === jb) ||
+      q.options.find((o) => o.kode?.trim() === `OPSI_${jb}`);
+
+    // Jika masih tidak ketemu, coba sebagai indeks numerik
+    if (!opsiBenar) {
+      const idx = parseInt(jb);
+      if (!isNaN(idx) && idx >= 0 && idx < q.options.length) {
+        opsiBenar = q.options[idx];
+      }
+    }
+  }
+
+  if (!opsiBenar) return { benar: false, nilai: 0 };
+
+  const studentNorm = String(jawabanSiswa).trim().toLowerCase();
+  const poin = q.poin ?? 0;
+
+  // 3. Bandingkan via kode (standar)
+  if (opsiBenar.kode) {
+    const benar = studentNorm === opsiBenar.kode.trim().toLowerCase();
+    return { benar, nilai: benar ? poin : 0 };
+  }
+
+  // 4. Fallback: kode null → bandingkan via posisi indeks (OPSI_N)
+  const correctIdx = q.options.indexOf(opsiBenar);
+  const studentIdx = parseInt(studentNorm.replace("opsi_", ""));
+  const benar = !isNaN(studentIdx) && studentIdx === correctIdx;
+  return { benar, nilai: benar ? poin : 0 };
+}
+
 export async function GET(_, { params }) {
   const { id } = params;
 
@@ -152,26 +197,18 @@ export async function POST(req, { params }) {
       let nilai = 0;
 
       if (["MULTIPLE_CHOICE", "TRUE_FALSE"].includes(q.jenis)) {
-        const opsiBenar = q.options.find((opt) => opt.adalahBenar === true);
-
-        if (opsiBenar) {
-          benar =
-            jawabanSiswa?.trim().toLowerCase() === opsiBenar.kode?.trim().toLowerCase();
-
-          nilai = benar ? q.poin : 0;
-          totalNilai += nilai;
-        } else {
-          benar = false;
-          nilai = 0;
-        }
+        const result = gradeMultipleChoice(q, jawabanSiswa);
+        benar = result.benar;
+        nilai = result.nilai;
+        totalNilai += nilai;
       }
 
       await prisma.answer.create({
         data: {
           submissionId: submission.id,
           questionId: q.id,
-          jawaban: jawabanSiswa,
-          image: imageSiswa || null, // ✅ Simpan gambar jawaban
+          jawaban: jawabanSiswa ?? "",
+          image: imageSiswa || null,
           adalahBenar: benar,
           nilai,
         },

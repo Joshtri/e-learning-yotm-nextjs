@@ -9,13 +9,14 @@ import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, CheckCircle, Clock } from "lucide-react";
+import { Eye, CheckCircle, Clock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 export default function ExamSubmissionsPage() {
   const { id } = useParams();
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRegrading, setIsRegrading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -27,6 +28,20 @@ export default function ExamSubmissionsPage() {
       toast.error("Gagal memuat hasil ujian");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRegrade = async () => {
+    try {
+      setIsRegrading(true);
+      const res = await api.post(`/tutor/exams/${id}/regrade`);
+      toast.success(`Penilaian ulang selesai: ${res.data.regraded} submission dinilai ulang.`);
+      await fetchData();
+    } catch (error) {
+      console.error("Gagal re-grade:", error);
+      toast.error("Gagal menilai ulang submission");
+    } finally {
+      setIsRegrading(false);
     }
   };
 
@@ -108,6 +123,17 @@ export default function ExamSubmissionsPage() {
               { label: "Ujian", href: "/tutor/exams" },
               { label: "Hasil Ujian", href: `/tutor/exams/${id}` },
             ]}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRegrade}
+                disabled={isRegrading || data.length === 0}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRegrading ? "animate-spin" : ""}`} />
+                {isRegrading ? "Menilai Ulang..." : "Nilai Ulang PG Otomatis"}
+              </Button>
+            }
           />
 
           <Tabs defaultValue="all" className="space-y-6">

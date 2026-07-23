@@ -33,6 +33,7 @@ export default function StudentExamStartPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isManualSubmitting, setIsManualSubmitting] = useState(false);
   const [autoSubmitFailed, setAutoSubmitFailed] = useState(false);
+  const [autoRetryCount, setAutoRetryCount] = useState(0);
 
   const { setValue, watch, control } = useForm({
     defaultValues: { answers: {} },
@@ -44,6 +45,9 @@ export default function StudentExamStartPage() {
   const watchedAnswersRef = useRef({});
   const answerImagesRef = useRef({});
   const isSubmittingRef = useRef(false);
+  const autoRetryCountRef = useRef(0);
+
+  const MAX_AUTO_RETRIES = 5;
 
   useEffect(() => {
     watchedAnswersRef.current = watchedAnswers;
@@ -52,6 +56,20 @@ export default function StudentExamStartPage() {
   useEffect(() => {
     answerImagesRef.current = answerImages;
   }, [answerImages]);
+
+  // Auto-save text answers to localStorage as backup
+  useEffect(() => {
+    if (!examId) return;
+    const saved = {
+      answers: watchedAnswers,
+      timestamp: Date.now(),
+    };
+    try {
+      localStorage.setItem(`exam_draft_${examId}`, JSON.stringify(saved));
+    } catch {
+      // localStorage mungkin penuh, abaikan
+    }
+  }, [watchedAnswers, examId]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -121,6 +139,10 @@ export default function StudentExamStartPage() {
         answerImages: answerImagesRef.current,
       });
 
+      try {
+        localStorage.removeItem(`exam_draft_${examId}`);
+      } catch {}
+
       if (isAutoSubmit) {
         toast.success("Waktu habis! Seluruh jawaban berhasil disimpan.", {
           description: "Ujian telah berakhir. Jawaban Anda telah tersimpan.",
@@ -130,20 +152,39 @@ export default function StudentExamStartPage() {
         toast.success("Jawaban berhasil dikumpulkan!");
       }
       setTimeout(() => router.push("/siswa/exams"), 2500);
+      // Biarkan isSubmittingRef.current = true setelah sukses supaya tidak double-submit
     } catch {
+      isSubmittingRef.current = false;
+
       if (isAutoSubmit) {
-        setAutoSubmitFailed(true);
-        toast.error("Gagal menyimpan jawaban otomatis.", {
-          description:
-            "Jawaban Anda belum tersimpan. Tekan tombol 'Coba Kirim Ulang'.",
-          duration: 8000,
-        });
+        const nextRetry = autoRetryCountRef.current + 1;
+        autoRetryCountRef.current = nextRetry;
+        setAutoRetryCount(nextRetry);
+
+        if (nextRetry <= MAX_AUTO_RETRIES) {
+          toast.warning(`Koneksi bermasalah, mencoba kirim ulang (${nextRetry}/${MAX_AUTO_RETRIES})...`, {
+            duration: 3000,
+          });
+          setTimeout(() => submitExam(true), 3000);
+        } else {
+          setAutoSubmitFailed(true);
+          toast.error("Gagal menyimpan jawaban otomatis.", {
+            description:
+              "Jawaban Anda belum tersimpan. Tekan tombol 'Coba Kirim Ulang'.",
+            duration: 8000,
+          });
+        }
       } else {
         toast.error("Gagal mengirim jawaban");
       }
-    } finally {
-      isSubmittingRef.current = false;
     }
+  };
+
+  const handleManualRetry = () => {
+    autoRetryCountRef.current = 0;
+    setAutoRetryCount(0);
+    setAutoSubmitFailed(false);
+    submitExam(true);
   };
 
   const handleTimeUp = () => {
@@ -217,13 +258,16 @@ export default function StudentExamStartPage() {
                   Waktu Pengerjaan Telah Berakhir
                 </p>
                 <p className="text-sm text-red-600">
-                  Semua jawaban Anda telah berhasil disimpan secara otomatis.
-                  Anda akan dialihkan ke halaman daftar ujian.
+                  {autoRetryCount > 0
+                    ? `Menyimpan jawaban... percobaan ke-${autoRetryCount} dari ${MAX_AUTO_RETRIES}`
+                    : "Sedang menyimpan jawaban Anda secara otomatis..."}
                 </p>
               </div>
               <div className="flex items-center gap-2 text-sm text-red-500 shrink-0">
                 <Clock className="h-4 w-4 animate-spin" />
-                <span>Menyimpan...</span>
+                <span>
+                  {autoRetryCount > 0 ? `${autoRetryCount}/${MAX_AUTO_RETRIES}` : "Menyimpan..."}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -250,7 +294,7 @@ export default function StudentExamStartPage() {
               </div>
             </div>
             <Button
-              onClick={() => submitExam(true)}
+              onClick={handleManualRetry}
               className="bg-red-600 hover:bg-red-700 shrink-0"
             >
               <Send className="h-4 w-4 mr-2" />

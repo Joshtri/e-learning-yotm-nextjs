@@ -119,6 +119,11 @@ export async function GET(req, { params }) {
   }
 }
 
+// PUT: alias untuk PATCH (dipakai oleh halaman detail submission tutor)
+export async function PUT(req, { params }) {
+  return PATCH(req, { params });
+}
+
 // PATCH: Update nilai dan feedback untuk submission
 export async function PATCH(req, { params }) {
   try {
